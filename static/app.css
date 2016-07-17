@@ -1,0 +1,194 @@
+body { margin-bottom: 32px; }
+
+button, select, textarea {
+    font-size: 12px;
+}
+
+textarea {
+    height: 14em;
+}
+
+select {
+    width: 100%;
+}
+
+.cmd-link {
+    text-decoration: none;
+    color: #66C;
+}
+
+.cmd-link-span {
+    color: #ccc;
+}
+
+.wqueue-state-appoint {
+    color: #00f;
+}
+
+a { text-decoration: none; }
+
+a.cmd-link {
+    text-decoration: none;
+}
+
+a.cmd-link:hover {
+    color: brown;
+}
+
+a.disabled {
+    color: gray;
+}
+
+.kanji {
+    ime-mode: active
+}
+
+.alpha {
+    ime-mode: inactive
+}
+
+.alpha-only {
+    ime-mode: disabled
+}
+
+.cursor-pointer {
+    cursor: pointer
+}
+
+.current-menu-wrapper button {
+    width: 6em;
+}
+
+.visit-date {
+    background-color: #eee;
+    padding: 4px;
+}
+
+.visit-date.current {
+    background-color: #ff9;
+}
+
+.visit-date.currentTmp {
+    background-color: #9ff;
+}
+
+.record-title {
+    font-weight: bold;
+}
+
+.record-title-workarea {
+    font-size: 14px;
+    padding: 4px;
+}
+
+a.record-title {
+    text-decoration: none;
+    color: black;
+}
+
+.record-text-wrapper {
+    padding-right: 16px;
+    font-size: 14px;
+}
+
+.record-text-wrapper textarea {
+    font-size: 14px;
+}
+
+.record-text {
+    margin-bottom: 1em;
+}
+
+.record-text:hover {
+    background-color: #eee;
+}
+
+.enter-text textarea, .edit-text textarea {
+    width: 100%
+}
+
+.record-right-wrapper {
+    font-size: 14px;
+}
+
+.edit-conduct-wrapper {
+    border: 2px solid #ccc;
+    margin: 6px 0;
+    padding: 6px;
+}
+
+.workarea {
+    border: 2px solid #ccc;
+    margin: 6px 0;
+    padding: 6px;
+}
+
+.workarea .title {
+    margin-bottom: 4px;
+    padding: 4px;
+    background-color: #eee;
+    font-weight: bold;
+}
+
+.workarea hr {
+    color: #eee;
+    background-color: #eee;
+    height: 1px;
+}
+
+.workarea .workarea-commandbox, .workarea .commandbox, .dialog-commandbox {
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    padding: 4px;
+}
+
+#disease-wrapper, #disease-wrapper table {
+    font-size: 13px;
+}
+
+#disease-wrapper a.disease-full-name {
+    text-decoration: none;
+    color: black;
+}
+
+#disease-wrapper .disease-nen, #disease-wrapper .disease-month,
+#disease-wrapper .disease-day {
+    width: 1.6em
+}
+
+#disease-wrapper .dateinput {
+    font-size: 13px
+}
+
+#disease-wrapper .dateinput-nen,
+#disease-wrapper .dateinput-month,
+#disease-wrapper .dateinput-day {
+    width: 1.6em
+}
+
+
+
+.error-box {
+    color: red;
+    margin: 4px, 0;
+    padding: 4px;
+    border: 1px solid red;
+}
+
+.enter-xp-widget select {
+    margin: 4px 0;
+}
+
+.edit-conduct-subwidget {
+    margin: 2px 0;
+    padding: 4px;
+    border: 1px solid #ccc
+}
+
+.sidebar-links {
+    font-size: 13px;
+}
+
+.shinryou-item {
+    cursor: pointer
+}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Hello</title>
+	<title>診察</title>
+	<link rel="stylesheet" type="text/css" href="app.css">
+</head>
+<body>
+<h1>診察</h1>
+<table width=800>
+    <tr valign="top">
+        <td>
+            <div id="patient-info-wrapper"></div>
+            <div id="current-manip-pane" class="app-pane" style="font-size:13px;"></div>
+            <div id="records-wrapper">
+                <div class="record-nav-wrapper"></div>
+                <div id="record-list"></div>
+                <div class="record-nav-wrapper"></div>
+            </div>
+        </td>
+        <td width=200>
+            <div id="disease-wrapper"></div>
+            <div id="sidebar-menu">
+                <div id="select-patient-wrapper"></div>
+                <div id="search-patient-wrapper"></div>
+                <div id="recent-visits-wrapper"></div>
+            </div>
+            <hr/>
+            <div id="todays-visits-wrapper"></div>
+            <hr/>
+            <div class="sidebar-links">
+                <a id="reception-link" href="javascript:void(0)" class="cmd-link">受付</a> |
+                <a id="all-text-search-link" href="#" class="cmd-link">全文章検索</a> |
+                <a href="drug-example.html" class="cmd-link">処方例管理</a>
+            </div>
+        </td>
+    </tr>
+</table>
+<script src="bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "myclinic-practice",
+  "version": "0.1.0",
+  "description": "A web service component for myclinic (an electronic medical record system for private clinics)",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "Hangil Chang",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.14.0",
+    "myclinic-db": "^0.2.0",
+    "mysql": "^2.11.1"
+  },
+  "devDependencies": {
+    "conti": "^1.0.0",
+    "hogan": "^1.0.2",
+    "jquery": "^3.1.0",
+    "kanjidate": "^1.1.0",
+    "moment": "^2.14.1",
+    "raw-loader": "^0.5.1",
+    "webpack": "^1.13.1"
+  }
+}
