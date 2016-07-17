@@ -26052,6 +26052,8 @@
 	var Hoken = __webpack_require__(126);
 	var DrugMenu = __webpack_require__(128);
 	var Drug = __webpack_require__(130);
+	var ShinryouMenu = __webpack_require__(133);
+	var Shinryou = __webpack_require__(135);
 
 	var recordTmplSrc = __webpack_require__(132);
 	var recordTmpl = hogan.compile(recordTmplSrc);
@@ -26074,6 +26076,13 @@
 			new Drug(de).render().update(drugIndex++, mUtil.drugRep(drug));
 			drugWrapper.append(de);
 		});
+		new ShinryouMenu(e.find("[mc-name=shinryouMenu]")).render().update();
+		var shinryouWrapper = e.find("[mc-name=shinryouList]");
+		visit.shinryou_list.forEach(function(shinryou){
+			var se = $("<div></div>");
+			new Shinryou(se).render().update(shinryou.name);
+			shinryouWrapper.append(se);
+		})
 		return e;
 	}
 
@@ -26301,6 +26310,85 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div class=\"conduct-title-workarea\" style=\"display:none\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
+
+/***/ },
+/* 133 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var kanjidate = __webpack_require__(117);
+	var myclinicUtil = __webpack_require__(8);
+
+	var tmplSrc = __webpack_require__(134);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function ShinryouMenu(dom){
+		this.dom = dom;
+	}
+
+	ShinryouMenu.prototype.render = function(){
+		return this;
+	};
+
+	ShinryouMenu.prototype.update = function(){
+		var html = tmpl.render({
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = ShinryouMenu;
+
+
+
+/***/ },
+/* 134 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n"
+
+/***/ },
+/* 135 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var kanjidate = __webpack_require__(117);
+	var myclinicUtil = __webpack_require__(8);
+
+	var tmplSrc = __webpack_require__(136);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function RecordShinryou(dom){
+		this.dom = dom;
+	}
+
+	RecordShinryou.prototype.render = function(){
+		return this;
+	};
+
+	RecordShinryou.prototype.update = function(label){
+		var html = tmpl.render({
+			label: label
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = RecordShinryou;
+
+
+
+/***/ },
+/* 136 */
+/***/ function(module, exports) {
+
+	module.exports = "{{label}}"
 
 /***/ }
 /******/ ]);

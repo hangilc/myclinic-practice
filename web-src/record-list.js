@@ -9,6 +9,8 @@ var Text = require("./record/text");
 var Hoken = require("./record/hoken");
 var DrugMenu = require("./record/drug-menu");
 var Drug = require("./record/drug");
+var ShinryouMenu = require("./record/shinryou-menu");
+var Shinryou = require("./record/shinryou");
 
 var recordTmplSrc = require("raw!./record.html");
 var recordTmpl = hogan.compile(recordTmplSrc);
@@ -31,6 +33,13 @@ function makeRecord(visit){
 		new Drug(de).render().update(drugIndex++, mUtil.drugRep(drug));
 		drugWrapper.append(de);
 	});
+	new ShinryouMenu(e.find("[mc-name=shinryouMenu]")).render().update();
+	var shinryouWrapper = e.find("[mc-name=shinryouList]");
+	visit.shinryou_list.forEach(function(shinryou){
+		var se = $("<div></div>");
+		new Shinryou(se).render().update(shinryou.name);
+		shinryouWrapper.append(se);
+	})
 	return e;
 }
 
