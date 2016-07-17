@@ -32,3 +32,11 @@ exports.getPatient = function(patientId, cb){
 	request("get_patient", {patient_id: patientId}, "GET", cb);
 };
 
+exports.calcVisits = function(patientId, cb){
+	request("calc_visits", {patient_id: patientId}, "GET", cb);
+};
+
+exports.listFullVisits = function(patientId, offset, n, cb){
+	request("list_full_visits", {patient_id: patientId, offset: offset, n: n}, "GET", cb);
+};
+
