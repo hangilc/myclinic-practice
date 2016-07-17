@@ -11341,11 +11341,33 @@
 			default:
 				return drug.name + " " + drug.d_amount + drug.unit;
 		}
-	}
+	};
 
 	exports.conductDrugRep = function(drug){
-	  return drug.name + " " + drug.d_amount + drug.unit;
-	}
+	  return drug.name + " " + drug.amount + drug.unit;
+	};
+
+	exports.conductKindToKanji = function(kind) {
+	    kind = parseInt(kind, 10);
+	    switch (kind) {
+	        case mConsts.ConductKindHikaChuusha:
+	            return "皮下・筋肉注射";
+	        case mConsts.ConductKindJoumyakuChuusha:
+	            return "静脈注射";
+	        case mConsts.ConductKindOtherChuusha:
+	            return "その他注射";
+	        case mConsts.ConductKindGazou:
+	            return "画像";
+	        default:
+	            return "不明";
+	    }
+	};
+
+	exports.conductKizaiRep = function(kizai){
+		return kizai.name + " " + kizai.amount + kizai.unit;
+	};
+
+
 
 
 /***/ },
@@ -26052,10 +26074,12 @@
 	var Hoken = __webpack_require__(126);
 	var DrugMenu = __webpack_require__(128);
 	var Drug = __webpack_require__(130);
-	var ShinryouMenu = __webpack_require__(133);
-	var Shinryou = __webpack_require__(135);
+	var ShinryouMenu = __webpack_require__(132);
+	var Shinryou = __webpack_require__(134);
+	var ConductMenu = __webpack_require__(136);
+	var ConductList = __webpack_require__(139);
 
-	var recordTmplSrc = __webpack_require__(132);
+	var recordTmplSrc = __webpack_require__(138);
 	var recordTmpl = hogan.compile(recordTmplSrc);
 
 	function makeRecord(visit){
@@ -26082,7 +26106,9 @@
 			var se = $("<div></div>");
 			new Shinryou(se).render().update(shinryou.name);
 			shinryouWrapper.append(se);
-		})
+		});
+		new ConductMenu(e.find("[mc-name=conductMenu]")).render().update();
+		new ConductList(e.find("[mc-name=conducts]")).render().update(visit.conducts);
 		return e;
 	}
 
@@ -26307,12 +26333,6 @@
 
 /***/ },
 /* 132 */
-/***/ function(module, exports) {
-
-	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div class=\"conduct-title-workarea\" style=\"display:none\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
-
-/***/ },
-/* 133 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26322,7 +26342,7 @@
 	var kanjidate = __webpack_require__(117);
 	var myclinicUtil = __webpack_require__(8);
 
-	var tmplSrc = __webpack_require__(134);
+	var tmplSrc = __webpack_require__(133);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function ShinryouMenu(dom){
@@ -26345,13 +26365,13 @@
 
 
 /***/ },
-/* 134 */
+/* 133 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n"
 
 /***/ },
-/* 135 */
+/* 134 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26361,7 +26381,7 @@
 	var kanjidate = __webpack_require__(117);
 	var myclinicUtil = __webpack_require__(8);
 
-	var tmplSrc = __webpack_require__(136);
+	var tmplSrc = __webpack_require__(135);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordShinryou(dom){
@@ -26385,10 +26405,216 @@
 
 
 /***/ },
-/* 136 */
+/* 135 */
 /***/ function(module, exports) {
 
 	module.exports = "{{label}}"
+
+/***/ },
+/* 136 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var kanjidate = __webpack_require__(117);
+	var myclinicUtil = __webpack_require__(8);
+
+	var tmplSrc = __webpack_require__(137);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function ConductMenu(dom){
+		this.dom = dom;
+	}
+
+	ConductMenu.prototype.render = function(){
+		return this;
+	};
+
+	ConductMenu.prototype.update = function(){
+		var html = tmpl.render({
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = ConductMenu;
+
+
+
+/***/ },
+/* 137 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n"
+
+/***/ },
+/* 138 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
+
+/***/ },
+/* 139 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var Conduct = __webpack_require__(140);
+
+	function ConductList(dom){
+		this.dom = dom;
+	}
+
+	ConductList.prototype.render = function(){
+		return this;
+	};
+
+	ConductList.prototype.update = function(conducts){
+		var wrapper = this.dom.html("");
+		conducts.forEach(function(data){
+			var ce = $("<div></div>");
+			new Conduct(ce).render().update(data);
+			wrapper.append(ce);
+		})
+	};
+
+	module.exports = ConductList;
+
+
+
+/***/ },
+/* 140 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var kanjidate = __webpack_require__(117);
+	var mUtil = __webpack_require__(8);
+	var ConductShinryouList = __webpack_require__(142);
+	var ConductDrugList = __webpack_require__(143);
+	var ConductKizaiList = __webpack_require__(144);
+
+	var tmplSrc = __webpack_require__(141);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function RecordConduct(dom){
+		this.dom = dom;
+	}
+
+	RecordConduct.prototype.render = function(){
+		return this;
+	};
+
+	RecordConduct.prototype.update = function(conduct){
+		console.log(conduct);
+		var data = mUtil.assign({}, conduct, {
+			kind_label: mUtil.conductKindToKanji(conduct.kind)
+		})
+		var html = tmpl.render(data);
+		this.dom.html(html);
+		new ConductShinryouList(this.dom.find("[mc-name=shinryouList]")).render().update(conduct.shinryou_list);
+		new ConductDrugList(this.dom.find("[mc-name=drugs]")).render().update(conduct.drugs);
+		new ConductKizaiList(this.dom.find("[mc-name=kizaiList]")).render().update(conduct.kizai_list);
+		return this;
+	};
+
+	module.exports = RecordConduct;
+
+
+
+/***/ },
+/* 141 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n\r\n"
+
+/***/ },
+/* 142 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+
+	function ConductShinryouList(dom){
+		this.dom = dom;
+	}
+
+	ConductShinryouList.prototype.render = function(){
+		return this;
+	};
+
+	ConductShinryouList.prototype.update = function(list){
+		var wrapper = this.dom.html("");
+		list.forEach(function(data){
+			var e = $("<div></div>");
+			e.text(data.name);
+			wrapper.append(e);
+		});
+	};
+
+	module.exports = ConductShinryouList;
+
+/***/ },
+/* 143 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var mUtil = __webpack_require__(8);
+
+	function ConductDrugList(dom){
+		this.dom = dom;
+	}
+
+	ConductDrugList.prototype.render = function(){
+		return this;
+	};
+
+	ConductDrugList.prototype.update = function(list){
+		var wrapper = this.dom.html("");
+		list.forEach(function(data){
+			var e = $("<div></div>");
+			e.text(mUtil.conductDrugRep(data));
+			wrapper.append(e);
+		});
+	};
+
+	module.exports = ConductDrugList;
+
+/***/ },
+/* 144 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var mUtil = __webpack_require__(8);
+
+	function ConductKizaiList(dom){
+		this.dom = dom;
+	}
+
+	ConductKizaiList.prototype.render = function(){
+		return this;
+	};
+
+	ConductKizaiList.prototype.update = function(list){
+		var wrapper = this.dom.html("");
+		list.forEach(function(data){
+			var e = $("<div></div>");
+			e.text(mUtil.conductKizaiRep(data));
+			wrapper.append(e);
+		});
+	};
+
+	module.exports = ConductKizaiList;
 
 /***/ }
 /******/ ]);

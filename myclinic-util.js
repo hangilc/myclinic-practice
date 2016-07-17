@@ -150,8 +150,30 @@ exports.drugRep = function(drug){
 		default:
 			return drug.name + " " + drug.d_amount + drug.unit;
 	}
-}
+};
 
 exports.conductDrugRep = function(drug){
-  return drug.name + " " + drug.d_amount + drug.unit;
-}
+  return drug.name + " " + drug.amount + drug.unit;
+};
+
+exports.conductKindToKanji = function(kind) {
+    kind = parseInt(kind, 10);
+    switch (kind) {
+        case mConsts.ConductKindHikaChuusha:
+            return "皮下・筋肉注射";
+        case mConsts.ConductKindJoumyakuChuusha:
+            return "静脈注射";
+        case mConsts.ConductKindOtherChuusha:
+            return "その他注射";
+        case mConsts.ConductKindGazou:
+            return "画像";
+        default:
+            return "不明";
+    }
+};
+
+exports.conductKizaiRep = function(kizai){
+	return kizai.name + " " + kizai.amount + kizai.unit;
+};
+
+
