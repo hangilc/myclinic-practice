@@ -2,6 +2,7 @@
   "name": "myclinic-practice",
   "version": "0.1.0",
   "description": "A web service component for myclinic (an electronic medical record system for private clinics)",
+  "package": "git@github.com/hangilc/myclinic-practice.git",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
