@@ -1,0 +1,10 @@
+{{#has_charge}}
+	<div mc-name="chargeWrapper">
+		請求額： <span mc-name="charge">{{charge_rep}}</span> 円
+	</div>
+{{/has_charge}}
+{{^has_charge}}
+	<div mc-name="noChargeWrapper">
+	（未請求）
+	</div>
+{{/has_charge}}

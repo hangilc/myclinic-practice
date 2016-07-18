@@ -20,7 +20,14 @@ exports.padNumber = function(num, nDigits){
     }
 };
 
+exports.formatNumber = function(num){
+	return Number(num).toLocaleString();
+};
+
 function assign2(dst, src){
+	if( src === null || src === undefined ){
+		return dst;
+	}
 	Object.keys(src).forEach(function(key){
 		dst[key] = src[key];
 	});

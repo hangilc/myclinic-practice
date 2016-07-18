@@ -13,6 +13,7 @@ var ShinryouMenu = require("./record/shinryou-menu");
 var Shinryou = require("./record/shinryou");
 var ConductMenu = require("./record/conduct-menu");
 var ConductList = require("./record/conduct-list");
+var Charge = require("./record/charge");
 
 var recordTmplSrc = require("raw!./record.html");
 var recordTmpl = hogan.compile(recordTmplSrc);
@@ -44,6 +45,7 @@ function makeRecord(visit){
 	});
 	new ConductMenu(e.find("[mc-name=conductMenu]")).render().update();
 	new ConductList(e.find("[mc-name=conducts]")).render().update(visit.conducts);
+	new Charge(e.find("[mc-name=charge]")).render().update(visit.charge);
 	return e;
 }
 

@@ -11211,7 +11211,14 @@
 	    }
 	};
 
+	exports.formatNumber = function(num){
+		return Number(num).toLocaleString();
+	};
+
 	function assign2(dst, src){
+		if( src === null || src === undefined ){
+			return dst;
+		}
 		Object.keys(src).forEach(function(key){
 			dst[key] = src[key];
 		});
@@ -26078,6 +26085,7 @@
 	var Shinryou = __webpack_require__(134);
 	var ConductMenu = __webpack_require__(136);
 	var ConductList = __webpack_require__(139);
+	var Charge = __webpack_require__(145);
 
 	var recordTmplSrc = __webpack_require__(138);
 	var recordTmpl = hogan.compile(recordTmplSrc);
@@ -26109,6 +26117,7 @@
 		});
 		new ConductMenu(e.find("[mc-name=conductMenu]")).render().update();
 		new ConductList(e.find("[mc-name=conducts]")).render().update(visit.conducts);
+		new Charge(e.find("[mc-name=charge]")).render().update(visit.charge);
 		return e;
 	}
 
@@ -26615,6 +26624,51 @@
 	};
 
 	module.exports = ConductKizaiList;
+
+/***/ },
+/* 145 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var mUtil = __webpack_require__(8);
+
+	var tmplSrc = __webpack_require__(146);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function Charge(dom){
+		this.dom = dom;
+	}
+
+	Charge.prototype.render = function(){
+		return this;
+	};
+
+	Charge.prototype.update = function(data){
+		if( data ){
+			data = mUtil.assign({}, data, {
+				has_charge: true,
+				charge_rep: mUtil.formatNumber(data.charge)
+			})
+		} else {
+			data = { has_charge: false };
+		}
+		var html = tmpl.render(data);
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = Charge;
+
+
+
+/***/ },
+/* 146 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ }
 /******/ ]);
