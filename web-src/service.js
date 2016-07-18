@@ -40,3 +40,7 @@ exports.suspendExam = function(visitId, done){
 	request("suspend_exam", {visit_id: visitId}, "POST", done);
 };
 
+exports.listCurrentFullDiseases = function(patientId, cb){
+	request("list_current_full_diseases", {patient_id: patientId}, "GET", cb);
+};
+

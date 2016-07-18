@@ -54,6 +54,7 @@
 	var CurrentManip = __webpack_require__(147);
 	var RecordNav = __webpack_require__(119);
 	var RecordList = __webpack_require__(121);
+	var Disease = __webpack_require__(149);
 
 	var currentPatientId = 0;
 	var currentPatient = null;
@@ -72,6 +73,8 @@
 	}).get();
 
 	var recordList = new RecordList($("#record-list")).render();
+
+	var disease = new Disease($("#disease-wrapper")).render();
 
 	$("body").on("start-patient", function(event, patientId){
 		conti.exec([
@@ -107,6 +110,16 @@
 						nav.setTotalItems(count);
 					});
 					$("body").trigger("goto-page", 1);
+					done();
+				})
+			},
+			function(done){
+				service.listCurrentFullDiseases(currentPatientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					disease.update(result);
 					done();
 				})
 			}
@@ -155,6 +168,7 @@
 				alert(err);
 				return;
 			}
+			update();
 			patientInfo.update(currentPatient);
 			currentManip.update(currentPatientId, currentVisitId);
 			recordNavs.forEach(function(nav){
@@ -10338,6 +10352,10 @@
 		request("suspend_exam", {visit_id: visitId}, "POST", done);
 	};
 
+	exports.listCurrentFullDiseases = function(patientId, cb){
+		request("list_current_full_diseases", {patient_id: patientId}, "GET", cb);
+	};
+
 
 
 /***/ },
@@ -11411,6 +11429,17 @@
 		return kizai.name + " " + kizai.amount + kizai.unit;
 	};
 
+	exports.diseaseFullName = function(disease) {
+	    var name = (disease ? disease.name : ""), pre = "", post = "";
+	    disease.adj_list.forEach(function (a) {
+	        if (mConsts.SmallestPostfixShuushokugoCode > a.shuushokugocode) {
+	            pre += a.name;
+	        } else {
+	            post += a.name;
+	        }
+	    });
+	    return pre + name + post;
+	};
 
 
 
@@ -26759,6 +26788,129 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+
+/***/ },
+/* 149 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+
+	var tmplSrc = __webpack_require__(150);
+	var tmpl = hogan.compile(tmplSrc);
+
+	var ListPane = __webpack_require__(151)
+
+	function Disease(dom){
+		this.dom = dom;
+		this.mode = "list";
+	}
+
+	Disease.prototype.render = function(){
+		return this;
+	};
+
+	Disease.prototype.update = function(diseaseList){
+		this.dom.hide();
+		this.dom.html(tmpl.render({}));
+		var wrapper = this.dom.find("[mc-name=workarea]");
+		switch(this.mode){
+			case "list": 
+				new ListPane(wrapper).render().update(diseaseList); break;
+			default: wrapper.text(this.mode); break;
+		}
+		this.dom.show();
+	};
+
+	module.exports = Disease;
+
+
+
+/***/ },
+/* 150 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
+
+/***/ },
+/* 151 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+
+	var tmplSrc = __webpack_require__(152);
+	var tmpl = hogan.compile(tmplSrc);
+
+	var DiseaseListItem = __webpack_require__(153);
+
+	function DiseaseListPane(dom){
+		this.dom = dom;
+	}
+
+	DiseaseListPane.prototype.render = function(){
+		return this;
+	};
+
+	DiseaseListPane.prototype.update = function(diseaseList){
+		var e = $("<div></div>");
+		e.html(tmpl.render({}));
+		var wrapper = e.find("[mc-name=list]");
+		diseaseList.forEach(function(disease){
+			var tr = $("<tr></tr>");
+			new DiseaseListItem(tr).update(disease);
+			wrapper.append(tr);
+		});
+		this.dom.html("").append(e);
+		return this;
+	};
+
+	module.exports = DiseaseListPane;
+
+/***/ },
+/* 152 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
+
+/***/ },
+/* 153 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var kanjidate = __webpack_require__(117);
+	var mUtil = __webpack_require__(8);
+
+	var tmplSrc = __webpack_require__(154);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function DiseaseListItem(dom){
+		this.dom = dom;
+	}
+
+	DiseaseListItem.prototype.update = function(data){
+		data = mUtil.assign({}, data, {
+			label: mUtil.diseaseFullName(data),
+			start_date_label: kanjidate.format("{G:a}{N}.{M}.{D}.", data.start_date)
+		});
+		this.dom.html(tmpl.render(data));
+		return this;
+	};
+
+	module.exports = DiseaseListItem;
+
+/***/ },
+/* 154 */
+/***/ function(module, exports) {
+
+	module.exports = "<td>\r\n\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t{{label}}\r\n\t</a>\r\n\t<span style=\"color:#999\">\r\n\t\t({{start_date_label}})\r\n\t</span>\r\n</td>\r\n"
 
 /***/ }
 /******/ ]);

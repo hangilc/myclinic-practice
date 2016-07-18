@@ -183,4 +183,15 @@ exports.conductKizaiRep = function(kizai){
 	return kizai.name + " " + kizai.amount + kizai.unit;
 };
 
+exports.diseaseFullName = function(disease) {
+    var name = (disease ? disease.name : ""), pre = "", post = "";
+    disease.adj_list.forEach(function (a) {
+        if (mConsts.SmallestPostfixShuushokugoCode > a.shuushokugocode) {
+            pre += a.name;
+        } else {
+            post += a.name;
+        }
+    });
+    return pre + name + post;
+};
 

@@ -8,6 +8,7 @@ var PatientInfo = require("./patient-info");
 var CurrentManip = require("./current-manip");
 var RecordNav = require("./record-nav");
 var RecordList = require("./record-list");
+var Disease = require("./disease");
 
 var currentPatientId = 0;
 var currentPatient = null;
@@ -26,6 +27,8 @@ var recordNavs = $(".record-nav-wrapper").map(function(index, e){
 }).get();
 
 var recordList = new RecordList($("#record-list")).render();
+
+var disease = new Disease($("#disease-wrapper")).render();
 
 $("body").on("start-patient", function(event, patientId){
 	conti.exec([
@@ -61,6 +64,16 @@ $("body").on("start-patient", function(event, patientId){
 					nav.setTotalItems(count);
 				});
 				$("body").trigger("goto-page", 1);
+				done();
+			})
+		},
+		function(done){
+			service.listCurrentFullDiseases(currentPatientId, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				disease.update(result);
 				done();
 			})
 		}
@@ -109,6 +122,7 @@ currentManip.dom.on("end-patient", function(event){
 			alert(err);
 			return;
 		}
+		update();
 		patientInfo.update(currentPatient);
 		currentManip.update(currentPatientId, currentVisitId);
 		recordNavs.forEach(function(nav){
