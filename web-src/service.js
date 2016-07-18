@@ -24,10 +24,6 @@ exports.recentVisits = function(cb){
 	request("recent_visits", "", "GET", cb);
 };
 
-exports.suspendExam = function(patientId, cb){
-	request("suspend_exam", {patient_id: patientId}, "GET", cb);
-};
-
 exports.getPatient = function(patientId, cb){
 	request("get_patient", {patient_id: patientId}, "GET", cb);
 };
@@ -38,5 +34,9 @@ exports.calcVisits = function(patientId, cb){
 
 exports.listFullVisits = function(patientId, offset, n, cb){
 	request("list_full_visits", {patient_id: patientId, offset: offset, n: n}, "GET", cb);
+};
+
+exports.suspendExam = function(visitId, done){
+	request("suspend_exam", {visit_id: visitId}, "POST", done);
 };
 

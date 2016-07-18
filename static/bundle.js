@@ -51,6 +51,7 @@
 	var service = __webpack_require__(3);
 	var RecentVisits = __webpack_require__(4);
 	var PatientInfo = __webpack_require__(116);
+	var CurrentManip = __webpack_require__(147);
 	var RecordNav = __webpack_require__(119);
 	var RecordList = __webpack_require__(121);
 
@@ -63,6 +64,8 @@
 	new RecentVisits($("#recent-visits-wrapper")).render();
 
 	var patientInfo = new PatientInfo($("#patient-info-wrapper")).render();
+
+	var currentManip = new CurrentManip($("#current-manip-pane")).render();
 
 	var recordNavs = $(".record-nav-wrapper").map(function(index, e){
 		return new RecordNav($(e), itemsPerPage).render();
@@ -81,6 +84,9 @@
 			},
 			function(done){
 				currentPatientId = +patientId;
+				currentPatient = null;
+				currentVisitId = 0;
+				currentManip.update(currentPatientId, currentVisitId);
 				service.getPatient(patientId, function(err, patient){
 					if( err ){
 						done(err);
@@ -126,6 +132,37 @@
 				return;
 			}
 		})
+	});
+
+	currentManip.dom.on("end-patient", function(event){
+		event.stopPropagation();
+		conti.exec([
+			function(done){
+				if( currentVisitId > 0 ){
+					service.suspendExam(currentVisitId, done);
+				} else {
+					done();
+				}
+			},
+			function(done){
+				currentPatientId = 0;
+				currentPatient = null;
+				currentVisitId = 0;
+				done();
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			patientInfo.update(currentPatient);
+			currentManip.update(currentPatientId, currentVisitId);
+			recordNavs.forEach(function(nav){
+				nav.setTotalItems(0);
+				nav.update(0);
+			});
+			recordList.update(0, 0, 0, function(){});
+		});
 	});
 
 
@@ -10285,10 +10322,6 @@
 		request("recent_visits", "", "GET", cb);
 	};
 
-	exports.suspendExam = function(patientId, cb){
-		request("suspend_exam", {patient_id: patientId}, "GET", cb);
-	};
-
 	exports.getPatient = function(patientId, cb){
 		request("get_patient", {patient_id: patientId}, "GET", cb);
 	};
@@ -10299,6 +10332,10 @@
 
 	exports.listFullVisits = function(patientId, offset, n, cb){
 		request("list_full_visits", {patient_id: patientId, offset: offset, n: n}, "GET", cb);
+	};
+
+	exports.suspendExam = function(visitId, done){
+		request("suspend_exam", {visit_id: visitId}, "POST", done);
 	};
 
 
@@ -26130,6 +26167,11 @@
 	};
 
 	RecordList.prototype.update = function(patientId, offset, n, done){
+		if( patientId === 0 ){
+			this.dom.html("");
+			done();
+			return;
+		}
 		var wrapper = $("<div></div>");
 		this.dom.html("").append(wrapper);
 		service.listFullVisits(patientId, offset, n, function(err, result){
@@ -26668,6 +26710,55 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
+
+/***/ },
+/* 147 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+
+	var tmplSrc = __webpack_require__(148);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function CurrentManip(dom){
+		this.dom = dom;
+	}
+
+	CurrentManip.prototype.render = function(){
+		this.bindEndPatient();
+		return this;
+	};
+
+	CurrentManip.prototype.bindEndPatient = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=endPatientButton]", function(event){
+			event.preventDefault();
+			self.dom.trigger("end-patient");
+		})
+	};
+
+	CurrentManip.prototype.update = function(patientId, visitId){
+		this.patientId = patientId;
+		this.visitId = visitId;
+		this.dom.html("");
+		if( patientId > 0 ){
+			this.dom.html(tmpl.render({}));
+		} else {
+			this.dom.html("");
+		}
+	};
+
+	module.exports = CurrentManip;
+
+
+/***/ },
+/* 148 */
+/***/ function(module, exports) {
+
+	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
 
 /***/ }
 /******/ ]);

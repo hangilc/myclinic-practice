@@ -5,6 +5,7 @@ var conti = require("conti");
 var service = require("./service");
 var RecentVisits = require("./recent-visits");
 var PatientInfo = require("./patient-info");
+var CurrentManip = require("./current-manip");
 var RecordNav = require("./record-nav");
 var RecordList = require("./record-list");
 
@@ -17,6 +18,8 @@ var itemsPerPage = 10;
 new RecentVisits($("#recent-visits-wrapper")).render();
 
 var patientInfo = new PatientInfo($("#patient-info-wrapper")).render();
+
+var currentManip = new CurrentManip($("#current-manip-pane")).render();
 
 var recordNavs = $(".record-nav-wrapper").map(function(index, e){
 	return new RecordNav($(e), itemsPerPage).render();
@@ -35,6 +38,9 @@ $("body").on("start-patient", function(event, patientId){
 		},
 		function(done){
 			currentPatientId = +patientId;
+			currentPatient = null;
+			currentVisitId = 0;
+			currentManip.update(currentPatientId, currentVisitId);
 			service.getPatient(patientId, function(err, patient){
 				if( err ){
 					done(err);
@@ -80,5 +86,36 @@ $("body").on("goto-page", function(event, page){
 			return;
 		}
 	})
+});
+
+currentManip.dom.on("end-patient", function(event){
+	event.stopPropagation();
+	conti.exec([
+		function(done){
+			if( currentVisitId > 0 ){
+				service.suspendExam(currentVisitId, done);
+			} else {
+				done();
+			}
+		},
+		function(done){
+			currentPatientId = 0;
+			currentPatient = null;
+			currentVisitId = 0;
+			done();
+		}
+	], function(err){
+		if( err ){
+			alert(err);
+			return;
+		}
+		patientInfo.update(currentPatient);
+		currentManip.update(currentPatientId, currentVisitId);
+		recordNavs.forEach(function(nav){
+			nav.setTotalItems(0);
+			nav.update(0);
+		});
+		recordList.update(0, 0, 0, function(){});
+	});
 });
 

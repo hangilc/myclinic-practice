@@ -58,6 +58,11 @@ RecordList.prototype.render = function(){
 };
 
 RecordList.prototype.update = function(patientId, offset, n, done){
+	if( patientId === 0 ){
+		this.dom.html("");
+		done();
+		return;
+	}
 	var wrapper = $("<div></div>");
 	this.dom.html("").append(wrapper);
 	service.listFullVisits(patientId, offset, n, function(err, result){
