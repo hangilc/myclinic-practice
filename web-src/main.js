@@ -9,6 +9,7 @@ var RecordNav = require("./record-nav");
 var RecordList = require("./record-list");
 var Disease = require("./disease");
 var SelectPatient = require("./select-patient");
+var SearchPatient = require("./search-patient");
 var RecentVisits = require("./recent-visits");
 
 var currentPatientId = 0;
@@ -30,6 +31,7 @@ var recordList = new RecordList($("#record-list")).render();
 var disease = new Disease($("#disease-wrapper")).render();
 
 new SelectPatient($("#select-patient-wrapper")).update();
+new SearchPatient($("#search-patient-wrapper")).update();
 new RecentVisits($("#recent-visits-wrapper")).render();
 
 function setStates(patientId, visitId){

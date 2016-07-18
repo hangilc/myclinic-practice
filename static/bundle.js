@@ -55,6 +55,7 @@
 	var RecordList = __webpack_require__(120);
 	var Disease = __webpack_require__(146);
 	var SelectPatient = __webpack_require__(152);
+	var SearchPatient = __webpack_require__(159);
 	var RecentVisits = __webpack_require__(154);
 
 	var currentPatientId = 0;
@@ -76,6 +77,7 @@
 	var disease = new Disease($("#disease-wrapper")).render();
 
 	new SelectPatient($("#select-patient-wrapper")).update();
+	new SearchPatient($("#search-patient-wrapper")).update();
 	new RecentVisits($("#recent-visits-wrapper")).render();
 
 	function setStates(patientId, visitId){
@@ -10427,10 +10429,13 @@
 		request("list_full_wqueue_for_exam", {}, "GET", cb);
 	};
 
-
 	exports.getVisit = function(visitId, cb){
 		request("get_visit", {visit_id: +visitId}, "GET", cb);
-	}
+	};
+
+	exports.searchPatient = function(text, cb){
+		request("search_patient", {text: text}, "GET", cb);
+	};
 
 
 /***/ },
@@ -27124,6 +27129,114 @@
 /***/ function(module, exports) {
 
 	module.exports = "[{{state_label}}] {{last_name}} {{first_name}}"
+
+/***/ },
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var service = __webpack_require__(3);
+	var mUtil = __webpack_require__(9);
+
+	var tmplSrc = __webpack_require__(160);
+	var tmpl = hogan.compile(tmplSrc);
+
+	var itemTmplSrc = __webpack_require__(161);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+
+	function SearchPatient(dom){
+		this.dom = dom;
+		this.bindButton();
+		this.bindForm();
+		this.bindOption();
+	}
+
+	SearchPatient.prototype.bindButton = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=button]", function(){
+			var ws = self.getWorkspaceDom();
+			if( ws.is(":visible") ){
+				self.hideWorkspace();
+			} else {
+				ws.show();
+				self.getInputDom().focus();
+			}
+		});
+	};
+
+	SearchPatient.prototype.bindForm = function(){
+		var self = this;
+		this.dom.on("submit", "form", function(){
+			var text = self.getInputDom().val();
+			if( text === "" ){
+				return;
+			}
+			service.searchPatient(text, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = self.getSelectDom().html("");
+				result.forEach(function(patient){
+					var data = mUtil.assign({}, patient, {
+						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
+					});
+					var opt = itemTmpl.render(data);
+					select.append(opt);
+				});
+			})
+		});
+	};
+
+	SearchPatient.prototype.bindOption = function(){
+		var self = this;
+		this.dom.on("dblclick", "option", function(){
+			var opt = $(this);
+			var patientId = +opt.val();
+			opt.trigger("start-patient", [patientId]);
+			self.hideWorkspace();
+		})
+	};
+
+	SearchPatient.prototype.hideWorkspace = function(){
+		this.getWorkspaceDom().hide();
+		this.getInputDom().val("");
+		this.getSelectDom().html("");
+	};
+
+	SearchPatient.prototype.getWorkspaceDom = function(){
+		return this.dom.find("[mc-name=workspace]");
+	};
+
+	SearchPatient.prototype.getInputDom = function(){
+		return this.dom.find("[mc-name=searchForm] input.search-patient-input");
+	};
+
+	SearchPatient.prototype.getSelectDom = function(){
+		return this.dom.find("select");
+	};
+
+	SearchPatient.prototype.update = function(){
+		this.dom.html(tmpl.render({}));
+		return this;
+	};
+
+	module.exports = SearchPatient;
+
+/***/ },
+/* 160 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
+
+/***/ },
+/* 161 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
 
 /***/ }
 /******/ ]);

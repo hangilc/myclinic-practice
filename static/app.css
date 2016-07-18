@@ -192,3 +192,7 @@ a.record-title {
 .shinryou-item {
     cursor: pointer
 }
+
+.search-patient-input {
+    width: 10em;
+}
