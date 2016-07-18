@@ -55,8 +55,8 @@
 	var RecordList = __webpack_require__(120);
 	var Disease = __webpack_require__(146);
 	var SelectPatient = __webpack_require__(152);
-	var SearchPatient = __webpack_require__(159);
-	var RecentVisits = __webpack_require__(154);
+	var SearchPatient = __webpack_require__(156);
+	var RecentVisits = __webpack_require__(159);
 	var TodaysVisits = __webpack_require__(162);
 
 	var currentPatientId = 0;
@@ -26943,9 +26943,9 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(5);
 	var service = __webpack_require__(3);
-	var SelectPatientItem = __webpack_require__(157);
+	var SelectPatientItem = __webpack_require__(153);
 
-	var tmplSrc = __webpack_require__(153);
+	var tmplSrc = __webpack_require__(155);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function SelectPatient(dom){
@@ -27009,103 +27009,6 @@
 
 /***/ },
 /* 153 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
-
-/***/ },
-/* 154 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var hogan = __webpack_require__(5);
-	var myclinicUtil = __webpack_require__(9);
-	var service = __webpack_require__(3);
-	var $ = __webpack_require__(1);
-
-	var tmplSrc = __webpack_require__(155);
-	var listTmplSrc = __webpack_require__(156);
-
-	var tmpl = hogan.compile(tmplSrc);
-	var listTmpl = hogan.compile(listTmplSrc);
-
-	function RecentVisits(dom){
-		this.dom = dom;
-	}
-
-	RecentVisits.prototype.getButtonDom = function(){
-		return this.dom.find("[mc-name=button]");
-	};
-
-	RecentVisits.prototype.getSelectDom = function(){
-		return this.dom.find("[mc-name=select]");
-	};
-
-	RecentVisits.prototype.render = function(data){
-		this.dom.html(tmpl.render(data));
-		this.bindButton();
-		this.bindSelect();
-		return this;
-	};
-
-	RecentVisits.prototype.bindButton = function(){
-		var self = this;
-		this.getButtonDom().click(function(){
-			var select = self.getSelectDom();
-			if( select.is(":visible") ){
-				select.hide();
-				select.html("");
-			} else {
-				service.recentVisits(function(err, list){
-					if( err ){
-						alert(err);
-						return;
-					}
-					self.updateSelect(list);
-					select.show();
-				});
-			}
-		});
-	};
-
-	RecentVisits.prototype.bindSelect = function(){
-		var self = this;
-		this.getSelectDom().on("dblclick", "option", function(){
-			var e = $(this);
-			var patientId = e.val();
-			$("body").trigger("start-patient", [patientId]);
-			self.getSelectDom().hide().html("");
-		});
-	};
-
-	RecentVisits.prototype.updateSelect = function(list){
-		var data = list.map(function(item){
-			return myclinicUtil.assign({}, item, {
-				patient_id_part: myclinicUtil.padNumber(item.patient_id, 4)
-			})
-		});
-		var html = listTmpl.render({list: data});
-		this.getSelectDom().html(html);
-	};
-
-	module.exports = RecentVisits;
-
-
-/***/ },
-/* 155 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">最近の受診</button>\r\n<div>\r\n  <select mc-name=\"select\" size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
-
-/***/ },
-/* 156 */
-/***/ function(module, exports) {
-
-	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}"
-
-/***/ },
-/* 157 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27114,7 +27017,7 @@
 	var hogan = __webpack_require__(5);
 	var mUtil = __webpack_require__(9);
 
-	var tmplSrc = __webpack_require__(158);
+	var tmplSrc = __webpack_require__(154);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function SelectPatientItem(dom){
@@ -27131,13 +27034,19 @@
 	module.exports = SelectPatientItem;
 
 /***/ },
-/* 158 */
+/* 154 */
 /***/ function(module, exports) {
 
 	module.exports = "[{{state_label}}] {{last_name}} {{first_name}}"
 
 /***/ },
-/* 159 */
+/* 155 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
+
+/***/ },
+/* 156 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27147,10 +27056,10 @@
 	var service = __webpack_require__(3);
 	var mUtil = __webpack_require__(9);
 
-	var tmplSrc = __webpack_require__(160);
+	var tmplSrc = __webpack_require__(157);
 	var tmpl = hogan.compile(tmplSrc);
 
-	var itemTmplSrc = __webpack_require__(161);
+	var itemTmplSrc = __webpack_require__(158);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	function SearchPatient(dom){
@@ -27233,16 +27142,107 @@
 	module.exports = SearchPatient;
 
 /***/ },
-/* 160 */
+/* 157 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
-/* 161 */
+/* 158 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var hogan = __webpack_require__(5);
+	var myclinicUtil = __webpack_require__(9);
+	var service = __webpack_require__(3);
+	var $ = __webpack_require__(1);
+
+	var tmplSrc = __webpack_require__(160);
+	var listTmplSrc = __webpack_require__(161);
+
+	var tmpl = hogan.compile(tmplSrc);
+	var listTmpl = hogan.compile(listTmplSrc);
+
+	function RecentVisits(dom){
+		this.dom = dom;
+	}
+
+	RecentVisits.prototype.getButtonDom = function(){
+		return this.dom.find("[mc-name=button]");
+	};
+
+	RecentVisits.prototype.getSelectDom = function(){
+		return this.dom.find("[mc-name=select]");
+	};
+
+	RecentVisits.prototype.render = function(data){
+		this.dom.html(tmpl.render(data));
+		this.bindButton();
+		this.bindSelect();
+		return this;
+	};
+
+	RecentVisits.prototype.bindButton = function(){
+		var self = this;
+		this.getButtonDom().click(function(){
+			var select = self.getSelectDom();
+			if( select.is(":visible") ){
+				select.hide();
+				select.html("");
+			} else {
+				service.recentVisits(function(err, list){
+					if( err ){
+						alert(err);
+						return;
+					}
+					self.updateSelect(list);
+					select.show();
+				});
+			}
+		});
+	};
+
+	RecentVisits.prototype.bindSelect = function(){
+		var self = this;
+		this.getSelectDom().on("dblclick", "option", function(){
+			var e = $(this);
+			var patientId = e.val();
+			$("body").trigger("start-patient", [patientId]);
+			self.getSelectDom().hide().html("");
+		});
+	};
+
+	RecentVisits.prototype.updateSelect = function(list){
+		var data = list.map(function(item){
+			return myclinicUtil.assign({}, item, {
+				patient_id_part: myclinicUtil.padNumber(item.patient_id, 4)
+			})
+		});
+		var html = listTmpl.render({list: data});
+		this.getSelectDom().html(html);
+	};
+
+	module.exports = RecentVisits;
+
+
+/***/ },
+/* 160 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">最近の受診</button>\r\n<div>\r\n  <select mc-name=\"select\" size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
+
+/***/ },
+/* 161 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}"
 
 /***/ },
 /* 162 */

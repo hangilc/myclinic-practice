@@ -5,7 +5,7 @@
   "repository": "git@github.com:hangilc/myclinic-practice.git",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "build": "webpack web-src/main.js static/bundle.js"
   },
   "author": "Hangil Chang",
   "license": "MIT",
