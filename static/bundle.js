@@ -57,6 +57,7 @@
 	var SelectPatient = __webpack_require__(152);
 	var SearchPatient = __webpack_require__(159);
 	var RecentVisits = __webpack_require__(154);
+	var TodaysVisits = __webpack_require__(162);
 
 	var currentPatientId = 0;
 	var currentPatient = null;
@@ -79,6 +80,7 @@
 	new SelectPatient($("#select-patient-wrapper")).update();
 	new SearchPatient($("#search-patient-wrapper")).update();
 	new RecentVisits($("#recent-visits-wrapper")).render();
+	new TodaysVisits($("#todays-visits-wrapper")).update();
 
 	function setStates(patientId, visitId){
 		currentPatientId = +patientId;
@@ -10435,6 +10437,10 @@
 
 	exports.searchPatient = function(text, cb){
 		request("search_patient", {text: text}, "GET", cb);
+	};
+
+	exports.listTodaysVisits = function(cb){
+		request("list_todays_visits", {}, "GET", cb);
 	};
 
 
@@ -27237,6 +27243,94 @@
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 162 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+	var service = __webpack_require__(3);
+	var mUtil = __webpack_require__(9);
+
+	var tmplSrc = __webpack_require__(163);
+	var tmpl = hogan.compile(tmplSrc);
+	var itemTmplSrc = __webpack_require__(164);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+
+	function makeOption(data){
+		data = mUtil.assign({}, data, {
+			patient_id_label: mUtil.padNumber(+data.patient_id, 4)
+		});
+		return $(itemTmpl.render(data)).val(data.patient_id);
+	}
+
+	function TodaysVisits(dom){
+		this.dom = dom;
+		this.bindButton();
+		this.bindOption();
+	}
+
+	TodaysVisits.prototype.bindButton = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=button]", function(){
+			var ws = self.getWorkspaceDom();
+			if( ws.is(":visible") ){
+				ws.hide();
+				self.getSelectDom().html("");
+			} else {
+				service.listTodaysVisits(function(err, result){
+					if( err ){
+						alert(err);
+						return;
+					}
+					var select = self.getSelectDom().html("");
+					result.forEach(function(data){
+						var opt = makeOption(data);
+						select.append(opt);
+					})
+					ws.show();
+				})
+			}
+		})
+	};
+
+	TodaysVisits.prototype.bindOption = function(){
+		this.dom.on("dblclick", "option", function(){
+			var opt = $(this);
+			var patientId = opt.val();
+			opt.trigger("start-patient", [patientId]);
+		});
+	};
+
+	TodaysVisits.prototype.getWorkspaceDom = function(){
+		return this.dom.find("[mc-name=selectWrapper]");
+	};
+
+	TodaysVisits.prototype.getSelectDom = function(){
+		return this.dom.find("select");
+	};
+
+	TodaysVisits.prototype.update = function(){
+		this.dom.html(tmpl.render({}));
+		return this;
+	};
+
+	module.exports = TodaysVisits;
+
+/***/ },
+/* 163 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
+
+/***/ },
+/* 164 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ }
 /******/ ]);

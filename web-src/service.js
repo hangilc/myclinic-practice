@@ -59,3 +59,7 @@ exports.getVisit = function(visitId, cb){
 exports.searchPatient = function(text, cb){
 	request("search_patient", {text: text}, "GET", cb);
 };
+
+exports.listTodaysVisits = function(cb){
+	request("list_todays_visits", {}, "GET", cb);
+};
