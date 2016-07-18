@@ -122,7 +122,6 @@ currentManip.dom.on("end-patient", function(event){
 			alert(err);
 			return;
 		}
-		update();
 		patientInfo.update(currentPatient);
 		currentManip.update(currentPatientId, currentVisitId);
 		recordNavs.forEach(function(nav){
@@ -130,6 +129,7 @@ currentManip.dom.on("end-patient", function(event){
 			nav.update(0);
 		});
 		recordList.update(0, 0, 0, function(){});
+		disease.update(null);
 	});
 });
 

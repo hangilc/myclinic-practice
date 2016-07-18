@@ -168,7 +168,6 @@
 				alert(err);
 				return;
 			}
-			update();
 			patientInfo.update(currentPatient);
 			currentManip.update(currentPatientId, currentVisitId);
 			recordNavs.forEach(function(nav){
@@ -176,6 +175,7 @@
 				nav.update(0);
 			});
 			recordList.update(0, 0, 0, function(){});
+			disease.update(null);
 		});
 	});
 
@@ -26813,6 +26813,10 @@
 	};
 
 	Disease.prototype.update = function(diseaseList){
+		if( diseaseList === null || diseaseList === undefined ){
+			this.dom.html("");
+			return;
+		}
 		this.dom.hide();
 		this.dom.html(tmpl.render({}));
 		var wrapper = this.dom.find("[mc-name=workarea]");

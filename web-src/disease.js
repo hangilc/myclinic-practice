@@ -18,6 +18,10 @@ Disease.prototype.render = function(){
 };
 
 Disease.prototype.update = function(diseaseList){
+	if( diseaseList === null || diseaseList === undefined ){
+		this.dom.html("");
+		return;
+	}
 	this.dom.hide();
 	this.dom.html(tmpl.render({}));
 	var wrapper = this.dom.find("[mc-name=workarea]");
