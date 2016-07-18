@@ -195,3 +195,26 @@ exports.diseaseFullName = function(disease) {
     return pre + name + post;
 };
 
+exports.wqueueStateToKanji = function(wqState) {
+    var state = wqState - 0;
+    if (state == mConsts.WqueueStateWaitExam) return "診待";
+    if (state == mConsts.WqueueStateInExam) return "診中";
+    if (state == mConsts.WqueueStateWaitCashier) return "会待";
+    if (state == mConsts.WqueueStateWaitDrug) return "薬待";
+    if (state == mConsts.WqueueStateWaitReExam) return "再待";
+    if (state == mConsts.WqueueStateWaitAppointedExam) return "予待";
+    if (state == mConsts.WqueueStateWaitReAppointedExam) return "予再";
+    return "不明";
+};
+
+exports.wqueueStateToName = function(wqState){
+    var state = wqState - 0;
+    if (state == mConsts.WqueueStateWaitExam) return "waitExam";
+    if (state == mConsts.WqueueStateInExam) return "inExam";
+    if (state == mConsts.WqueueStateWaitCashier) return "waitCashier";
+    if (state == mConsts.WqueueStateWaitDrug) return "waitDrug";
+    if (state == mConsts.WqueueStateWaitReExam) return "waitReExam";
+    if (state == mConsts.WqueueStateWaitAppointedExam) return "waitAppointedExam";
+    if (state == mConsts.WqueueStateWaitReAppointedExam) return "waitReAppointedExam";
+    return "unknown";
+};

@@ -36,6 +36,10 @@ exports.listFullVisits = function(patientId, offset, n, cb){
 	request("list_full_visits", {patient_id: patientId, offset: offset, n: n}, "GET", cb);
 };
 
+exports.startExam = function(visitId, done){
+	request("start_exam", {visit_id: visitId}, "POST", done);
+};
+
 exports.suspendExam = function(visitId, done){
 	request("suspend_exam", {visit_id: visitId}, "POST", done);
 };
@@ -44,3 +48,11 @@ exports.listCurrentFullDiseases = function(patientId, cb){
 	request("list_current_full_diseases", {patient_id: patientId}, "GET", cb);
 };
 
+exports.listFullWqueueForExam = function(cb){
+	request("list_full_wqueue_for_exam", {}, "GET", cb);
+};
+
+
+exports.getVisit = function(visitId, cb){
+	request("get_visit", {visit_id: +visitId}, "GET", cb);
+}
