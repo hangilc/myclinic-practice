@@ -26520,7 +26520,6 @@
 	};
 
 	RecordConduct.prototype.update = function(conduct){
-		console.log(conduct);
 		var data = mUtil.assign({}, conduct, {
 			kind_label: mUtil.conductKindToKanji(conduct.kind)
 		})
