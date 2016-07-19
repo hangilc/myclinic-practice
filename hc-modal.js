@@ -1,5 +1,4 @@
-/* global $ */
-(function(exports){
+var $ = require("jquery");
 
 var screen = $('<div></div>').css({
     position:"fixed",
@@ -103,11 +102,18 @@ function reposition() {
     dialog.css("max-height", (screen_height - 100) + "px");
 }
 
-exports.start = function(title_str, onOpen, onClose){
+exports.open = function(title_str, onOpen, onClose){
     title.text(title_str);
     content.html("");
-    onOpen(content[0]);
-    closeBox.on("click", function(event){ onClose(content[0]); });
+    onOpen(content);
+    closeBox.on("click", function(event){
+    	if( onClose ){
+    		if( onClose() === false ){
+    			return;
+    		}
+    	}
+		exports.close();
+    });
     screen.show();
     dialog.hide();
     $("body").append(dialog);
@@ -115,10 +121,9 @@ exports.start = function(title_str, onOpen, onClose){
     dialog.show();
 };
 
-exports.stop = function(){
+exports.close = function(){
     closeBox.off("click");
     dialog.detach();
     screen.hide();
-}
+};
 
-})(window.modal = {});
