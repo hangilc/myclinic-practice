@@ -28,6 +28,9 @@ RecordNav.prototype.render = function(){
 
 RecordNav.prototype.bindGotoFirst = function(){
 	var self = this;
+	if( this.numberOfPages < 1 ){
+		return;
+	}
 	this.dom.on("click", "[mc-name=gotoFirst]", function(event){
 		event.preventDefault();
 		if( self.currentPage === 1 ){
@@ -61,6 +64,9 @@ RecordNav.prototype.bindGotoNext = function(){
 
 RecordNav.prototype.bindGotoLast = function(){
 	var self = this;
+	if( this.numberOfPages < 1 ){
+		return;
+	}
 	this.dom.on("click", "[mc-name=gotoLast]", function(event){
 		event.preventDefault();
 		if( self.currentPage === self.numberOfPages ){
@@ -77,12 +83,18 @@ RecordNav.prototype.setTotalItems = function(n){
 };
 
 RecordNav.prototype.update = function(page){
-	if( this.numberOfPages <= 1 ){
+	if( this.numberOfPages <= 0 ){
+		this.currentPage = 0;
+		this.dom.html("");
+	}
+	if( this.numberOfPages === 1 ){
+		this.currentPage = 1;
 		this.dom.html("");
 	} else {
-		if( page < 1 || page > this.numberOfPages ){
-			alert("cannot happen (invalid page): " + page);
-			return;
+		if( page < 1 ){
+			page = 1;
+		} else if( page > this.numberOfPages ){
+			page = this.numberOfPages;
 		}
 		var data = {
 			page: page,

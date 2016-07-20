@@ -63,6 +63,7 @@
 	var currentPatientId = 0;
 	var currentPatient = null;
 	var currentVisitId = 0;
+	var tempVisitId = 0;
 
 	var itemsPerPage = 10;
 
@@ -220,6 +221,9 @@
 		if( currentPatientId <= 0 ){
 			return;
 		}
+		if( page <= 0 ){
+			page = 1;
+		}
 		var offset = itemsPerPage * (page-1);
 		recordNavs.forEach(function(nav){
 			nav.update(page);
@@ -229,6 +233,42 @@
 				alert(err);
 				return;
 			}
+		})
+	});
+
+	$("body").on("visit-deleted", function(event, visitId){
+		if( !(currentPatientId > 0) ){
+			return;
+		}
+		var page = recordNavs[0].currentPage;
+		conti.exec([
+			function(done){
+				service.calcVisits(currentPatientId, function(err, count){
+					if( err ){
+						done(err);
+						return;
+					}
+					recordNavs.forEach(function(nav){
+						nav.setTotalItems(count);
+					});
+					done();
+				})
+			},
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var numPages = recordNavs[0].numberOfPages;
+			if( page > numPages ){
+				page = numPages;
+			}
+			if( currentVisitId === visitId ){
+				currentVisitId = 0;
+			} else if( tempVisitId === visitId ){
+				tempVisitId = 0;
+			}
+			$("body").trigger("goto-page", [page]);
 		})
 	});
 
@@ -10451,6 +10491,10 @@
 
 	exports.startVisit = function(patientId, at, done){
 		request("start_visit", {patient_id: patientId, at: at}, "POST", done);
+	};
+
+	exports.deleteVisit = function(visitId, done){
+		request("delete_visit", {visit_id: visitId}, "POST", done);
 	};
 
 
@@ -26154,6 +26198,9 @@
 
 	RecordNav.prototype.bindGotoFirst = function(){
 		var self = this;
+		if( this.numberOfPages < 1 ){
+			return;
+		}
 		this.dom.on("click", "[mc-name=gotoFirst]", function(event){
 			event.preventDefault();
 			if( self.currentPage === 1 ){
@@ -26187,6 +26234,9 @@
 
 	RecordNav.prototype.bindGotoLast = function(){
 		var self = this;
+		if( this.numberOfPages < 1 ){
+			return;
+		}
 		this.dom.on("click", "[mc-name=gotoLast]", function(event){
 			event.preventDefault();
 			if( self.currentPage === self.numberOfPages ){
@@ -26203,12 +26253,18 @@
 	};
 
 	RecordNav.prototype.update = function(page){
-		if( this.numberOfPages <= 1 ){
+		if( this.numberOfPages <= 0 ){
+			this.currentPage = 0;
+			this.dom.html("");
+		}
+		if( this.numberOfPages === 1 ){
+			this.currentPage = 1;
 			this.dom.html("");
 		} else {
-			if( page < 1 || page > this.numberOfPages ){
-				alert("cannot happen (invalid page): " + page);
-				return;
+			if( page < 1 ){
+				page = 1;
+			} else if( page > this.numberOfPages ){
+				page = this.numberOfPages;
 			}
 			var data = {
 				page: page,
@@ -26253,7 +26309,7 @@
 
 	function makeRecord(visit){
 		var e = $(recordTmpl.render(visit));
-		new Title(e.find("[mc-name=title]")).render().update(visit.v_datetime);
+		new Title(e.find("[mc-name=title]")).update(visit.v_datetime, visit.visit_id);
 		var textWrapper = e.find("[mc-name=texts]");
 		visit.texts.forEach(function(text){
 			var te = $("<div></div>");
@@ -26323,16 +26379,51 @@
 	var kanjidate = __webpack_require__(8);
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(5);
+	var service = __webpack_require__(3);
 
 	var tmplSrc = __webpack_require__(122);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordTitle(dom){
 		this.dom = dom;
+		this.bindClick();
+		this.bindDeleteClick();
 	}
 
-	RecordTitle.prototype.render = function(){
-		return this;
+	RecordTitle.prototype.getWorkspaceDom = function(){
+		return this.dom.find("[mc-name=workarea]")
+	};
+
+	RecordTitle.prototype.bindClick = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=titleBox] a", function(event){
+			event.preventDefault();
+			var ws = self.getWorkspaceDom();
+			if( ws.is(":visible") ){
+				ws.hide();
+			} else {
+				ws.show();
+			}
+		});
+	};
+
+	RecordTitle.prototype.bindDeleteClick = function(){
+		var self = this;
+		this.dom.on("click", "a[mc-name=deleteVisitLink]", function(event){
+			event.preventDefault();
+			var visitId = self.visitId;
+			if( !(visitId > 0) ){
+				alert("invalid visit_id");
+				return;
+			}
+			service.deleteVisit(visitId, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				self.dom.trigger("visit-deleted", [visitId]);
+			})
+		});
 	};
 
 	RecordTitle.prototype.update = function(at, visitId){
@@ -26341,6 +26432,7 @@
 			label: label
 		};
 		var html = tmpl.render(data);
+		this.visitId = visitId;
 		this.dom.html(html);
 	}
 

@@ -67,3 +67,7 @@ exports.listTodaysVisits = function(cb){
 exports.startVisit = function(patientId, at, done){
 	request("start_visit", {patient_id: patientId, at: at}, "POST", done);
 };
+
+exports.deleteVisit = function(visitId, done){
+	request("delete_visit", {visit_id: visitId}, "POST", done);
+};

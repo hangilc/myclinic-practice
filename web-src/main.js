@@ -17,6 +17,7 @@ var Reception = require("./reception");
 var currentPatientId = 0;
 var currentPatient = null;
 var currentVisitId = 0;
+var tempVisitId = 0;
 
 var itemsPerPage = 10;
 
@@ -174,6 +175,9 @@ $("body").on("goto-page", function(event, page){
 	if( currentPatientId <= 0 ){
 		return;
 	}
+	if( page <= 0 ){
+		page = 1;
+	}
 	var offset = itemsPerPage * (page-1);
 	recordNavs.forEach(function(nav){
 		nav.update(page);
@@ -183,6 +187,42 @@ $("body").on("goto-page", function(event, page){
 			alert(err);
 			return;
 		}
+	})
+});
+
+$("body").on("visit-deleted", function(event, visitId){
+	if( !(currentPatientId > 0) ){
+		return;
+	}
+	var page = recordNavs[0].currentPage;
+	conti.exec([
+		function(done){
+			service.calcVisits(currentPatientId, function(err, count){
+				if( err ){
+					done(err);
+					return;
+				}
+				recordNavs.forEach(function(nav){
+					nav.setTotalItems(count);
+				});
+				done();
+			})
+		},
+	], function(err){
+		if( err ){
+			alert(err);
+			return;
+		}
+		var numPages = recordNavs[0].numberOfPages;
+		if( page > numPages ){
+			page = numPages;
+		}
+		if( currentVisitId === visitId ){
+			currentVisitId = 0;
+		} else if( tempVisitId === visitId ){
+			tempVisitId = 0;
+		}
+		$("body").trigger("goto-page", [page]);
 	})
 });
 

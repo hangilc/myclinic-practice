@@ -20,7 +20,7 @@ var recordTmpl = hogan.compile(recordTmplSrc);
 
 function makeRecord(visit){
 	var e = $(recordTmpl.render(visit));
-	new Title(e.find("[mc-name=title]")).render().update(visit.v_datetime);
+	new Title(e.find("[mc-name=title]")).update(visit.v_datetime, visit.visit_id);
 	var textWrapper = e.find("[mc-name=texts]");
 	visit.texts.forEach(function(text){
 		var te = $("<div></div>");
