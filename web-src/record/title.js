@@ -17,13 +17,16 @@ exports.setup = function(dom, visit, currentVisitId, tempVisitId){
 	render(dom);
 	bindClick(dom);
 	bindDelete(dom);
+	bindSetTemp(dom);
+	bindUnsetTemp(dom);
+	dom.addClass("rx-set-temp-visit-id");
+	dom.data("rx-set-temp-visit-id", function(newTempVisitId){
+		dom.data("temp-visit-id", newTempVisitId);
+		renderClass(dom);
+	});
 };
 
-function render(dom){
-	var html = tmpl.render({
-		label: dom.data("label")
-	});
-	dom.html(html);
+function renderClass(dom){
 	var dateDom = dom.find(".visit-date");
 	dateDom.removeClass("current currentTmp");
 	if( dom.data("visit-id") === dom.data("current-visit-id") ){
@@ -31,6 +34,14 @@ function render(dom){
 	} else if( dom.data("visit-id") === dom.data("temp-visit-id") ){
 		dateDom.addClass("currentTmp");
 	}
+}
+
+function render(dom){
+	var html = tmpl.render({
+		label: dom.data("label")
+	});
+	dom.html(html);
+	renderClass(dom);
 }
 
 function getWorkspaceDom(dom){
@@ -65,6 +76,25 @@ function bindDelete(dom){
 			dom.trigger("visit-deleted", [visitId]);
 		})
 	});
+}
+
+function bindSetTemp(dom){
+	dom.on("click", "a[mc-name=setCurrentTmpVisitId]", function(event){
+		event.preventDefault();
+		dom.trigger("set-temp-visit-id", [dom.data("visit-id")]);
+		getWorkspaceDom(dom).hide();
+	})
+}
+
+function bindUnsetTemp(dom){
+	dom.on("click", "a[mc-name=unsetCurrentTmpVisitId]", function(event){
+		event.preventDefault();
+		if( dom.data("visit-id") !== dom.data("temp-visit-id") ){
+			return;
+		}
+		dom.trigger("set-temp-visit-id", [0]);
+		getWorkspaceDom(dom).hide();
+	})
 }
 
 

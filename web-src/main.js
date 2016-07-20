@@ -47,12 +47,14 @@ function setStates(patientId, visitId){
 	currentPatientId = +patientId;
 	currentPatient = null;
 	currentVisitId = +visitId;
+	tempVisitId = 0;
 }
 
 function clearStates(){
 	currentPatientId = 0;
 	currentPatient = null;
 	currentVisitId = 0;
+	tempVisitId = 0;
 }
 
 function clearComponents(){
@@ -265,3 +267,13 @@ $("body").on("total-visits-changed", function(event, count, triggerPageLoad){
 
 $("body").trigger("total-visits-changed", [0, true]);
 
+$("body").on("set-temp-visit-id", function(event, visitId){
+	if( currentVisitId > 0 ){
+		alert("現在診察中なので、暫定診察設定ができません。");
+		return;
+	}
+	tempVisitId = visitId;
+	$(".rx-set-temp-visit-id").each(function(){
+		$(this).data("rx-set-temp-visit-id")(visitId);
+	})
+});

@@ -37,6 +37,10 @@ exports.setup = function(dom){
 			render(dom, page, itemsPerPage);
 		}
 	})
+	dom.addClass("rx-set-temp-visit-id");
+	dom.data("rx-set-temp-visit-id", function(newTempVisitId){
+		dom.data("temp-visit-id", newTempVisitId);
+	})
 }
 
 function render(dom, page, itemsPerPage){
