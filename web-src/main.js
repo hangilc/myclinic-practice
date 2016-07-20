@@ -25,11 +25,11 @@ PatientInfo.setup($("#patient-info-wrapper"));
 
 CurrentManip.setup($("#current-manip-pane"));
 
-$(".record-nav-wrapper").each(function(){
-	RecordNav.setup($(this), itemsPerPage);
+$(".record-nav-wrapper").each(function(i){
+	RecordNav.setup($(this), itemsPerPage, i === 0);
 });
 
-var recordList = new RecordList($("#record-list")).render();
+RecordList.setup($("#record-list"));
 
 var disease = new Disease($("#disease-wrapper")).render();
 
@@ -65,7 +65,7 @@ function clearComponents(){
 	// 	nav.setTotalItems(0);
 	// 	nav.update(0);
 	// });
-	recordList.update(0, 0, 0, function(){});
+	//recordList.update(0, 0, 0, function(){});
 	disease.update(null);
 }
 
@@ -95,7 +95,7 @@ function updateComponents(){
 				// recordNavs.forEach(function(nav){
 				// 	nav.setTotalItems(count);
 				// });
-				$("body").trigger("goto-page", 1);
+				$("body").trigger("goto-page", [1]);
 				done();
 			})
 		},
@@ -186,24 +186,22 @@ $("body").on("goto-page", function(event, page){
 	}
 	var offset = itemsPerPage * (page-1);
 	$(".rx-goto-page").each(function(){
-		$(this).data("rx-goto-page")(page);
+		$(this).data("rx-goto-page")(page, itemsPerPage);
 	})
-/*	recordNavs.forEach(function(nav){
-		nav.update(page);
-	})
-*/	recordList.update(currentPatientId, offset, itemsPerPage, function(err){
-		if( err ){
-			alert(err);
-			return;
-		}
-	})
+	// recordList.update(currentPatientId, offset, itemsPerPage, function(err){
+	// 	if( err ){
+	// 		alert(err);
+	// 		return;
+	// 	}
+	// })
 });
 
 $("body").on("visit-deleted", function(event, visitId){
-	if( !(currentPatientId > 0) ){
-		return;
+	if( currentVisitId === visitId ){
+		currentVisitId = 0;
+	} else if( tempVisitId === visitId ){
+		tempVisitId = 0;
 	}
-	var page = recordNavs[0].currentPage;
 	conti.exec([
 		function(done){
 			service.calcVisits(currentPatientId, function(err, count){
@@ -211,9 +209,7 @@ $("body").on("visit-deleted", function(event, visitId){
 					done(err);
 					return;
 				}
-				recordNavs.forEach(function(nav){
-					nav.setTotalItems(count);
-				});
+				$("body").trigger("total-visits-changed", [count, true]);
 				done();
 			})
 		},
@@ -222,12 +218,6 @@ $("body").on("visit-deleted", function(event, visitId){
 			alert(err);
 			return;
 		}
-		if( currentVisitId === visitId ){
-			currentVisitId = 0;
-		} else if( tempVisitId === visitId ){
-			tempVisitId = 0;
-		}
-		$("body").trigger("goto-page", [page]);
 	})
 });
 
@@ -267,11 +257,11 @@ $("body").on("visit-changed", function(event, patientId, visitId){
 
 $("body").trigger("visit-changed", [0, 0]);
 
-$("body").on("total-visits-changed", function(event, count){
+$("body").on("total-visits-changed", function(event, count, triggerPageLoad){
 	$(".rx-total-visits-changed").each(function(){
-		$(this).data("rx-total-visits-changed")(count);
+		$(this).data("rx-total-visits-changed")(count, triggerPageLoad);
 	})	
 });
 
-$("body").trigger("total-visits-changed", [0]);
+$("body").trigger("total-visits-changed", [0, true]);
 

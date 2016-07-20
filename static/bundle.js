@@ -71,11 +71,11 @@
 
 	CurrentManip.setup($("#current-manip-pane"));
 
-	$(".record-nav-wrapper").each(function(){
-		RecordNav.setup($(this), itemsPerPage);
+	$(".record-nav-wrapper").each(function(i){
+		RecordNav.setup($(this), itemsPerPage, i === 0);
 	});
 
-	var recordList = new RecordList($("#record-list")).render();
+	RecordList.setup($("#record-list"));
 
 	var disease = new Disease($("#disease-wrapper")).render();
 
@@ -111,7 +111,7 @@
 		// 	nav.setTotalItems(0);
 		// 	nav.update(0);
 		// });
-		recordList.update(0, 0, 0, function(){});
+		//recordList.update(0, 0, 0, function(){});
 		disease.update(null);
 	}
 
@@ -141,7 +141,7 @@
 					// recordNavs.forEach(function(nav){
 					// 	nav.setTotalItems(count);
 					// });
-					$("body").trigger("goto-page", 1);
+					$("body").trigger("goto-page", [1]);
 					done();
 				})
 			},
@@ -232,24 +232,22 @@
 		}
 		var offset = itemsPerPage * (page-1);
 		$(".rx-goto-page").each(function(){
-			$(this).data("rx-goto-page")(page);
+			$(this).data("rx-goto-page")(page, itemsPerPage);
 		})
-	/*	recordNavs.forEach(function(nav){
-			nav.update(page);
-		})
-	*/	recordList.update(currentPatientId, offset, itemsPerPage, function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-		})
+		// recordList.update(currentPatientId, offset, itemsPerPage, function(err){
+		// 	if( err ){
+		// 		alert(err);
+		// 		return;
+		// 	}
+		// })
 	});
 
 	$("body").on("visit-deleted", function(event, visitId){
-		if( !(currentPatientId > 0) ){
-			return;
+		if( currentVisitId === visitId ){
+			currentVisitId = 0;
+		} else if( tempVisitId === visitId ){
+			tempVisitId = 0;
 		}
-		var page = recordNavs[0].currentPage;
 		conti.exec([
 			function(done){
 				service.calcVisits(currentPatientId, function(err, count){
@@ -257,9 +255,7 @@
 						done(err);
 						return;
 					}
-					recordNavs.forEach(function(nav){
-						nav.setTotalItems(count);
-					});
+					$("body").trigger("total-visits-changed", [count, true]);
 					done();
 				})
 			},
@@ -268,12 +264,6 @@
 				alert(err);
 				return;
 			}
-			if( currentVisitId === visitId ){
-				currentVisitId = 0;
-			} else if( tempVisitId === visitId ){
-				tempVisitId = 0;
-			}
-			$("body").trigger("goto-page", [page]);
 		})
 	});
 
@@ -313,13 +303,13 @@
 
 	$("body").trigger("visit-changed", [0, 0]);
 
-	$("body").on("total-visits-changed", function(event, count){
+	$("body").on("total-visits-changed", function(event, count, triggerPageLoad){
 		$(".rx-total-visits-changed").each(function(){
-			$(this).data("rx-total-visits-changed")(count);
+			$(this).data("rx-total-visits-changed")(count, triggerPageLoad);
 		})	
 	});
 
-	$("body").trigger("total-visits-changed", [0]);
+	$("body").trigger("total-visits-changed", [0, true]);
 
 
 
@@ -11783,11 +11773,55 @@
 	var ConductList = __webpack_require__(137);
 	var Charge = __webpack_require__(143);
 
-	var recordTmplSrc = __webpack_require__(145);
+	var recordTmplSrc = __webpack_require__(174);
 	var recordTmpl = hogan.compile(recordTmplSrc);
 
-	function makeRecord(visit){
+	exports.setup = function(dom){
+		dom.addClass("rx-visit-changed");
+		dom.data("rx-visit-changed", function(patientId, visitId){
+			dom.data("current-patient-id", patientId);
+			dom.data("current-visit-id", visitId);
+			dom.data("temp-visit-id", 0);
+			if( patientId === 0 ){
+				dom.html("");
+			}
+		})
+		dom.addClass("rx-goto-page");
+		dom.data("rx-goto-page", function(page, itemsPerPage){
+			var patientId = dom.data("current-patient-id");
+			if( page <= 0 || patientId === 0 ){
+				dom.html("");
+			} else {
+				render(dom, page, itemsPerPage);
+			}
+		})
+	}
+
+	function render(dom, page, itemsPerPage){
+		var patientId = dom.data("current-patient-id");
+		var currentVisitId = dom.data("current-visit-id");
+		var tempVisitId = dom.data("temp-visit-id");
+		var offset = itemsPerPage * (page - 1);
+		dom.html("");
+		service.listFullVisits(patientId, offset, itemsPerPage, function(err, result){
+			if( err ){
+				alert(err);
+				return;
+			}
+			result.forEach(function(data){
+				dom.append(makeRecord(data, currentVisitId, tempVisitId));
+			})
+		})
+
+	}
+
+	function makeRecord(visit, currentVisitId, tempVisitId){
 		var e = $(recordTmpl.render(visit));
+		Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
+		return e;
+	}
+
+	function makeRecordOrig(visit){
 		new Title(e.find("[mc-name=title]")).update(visit.v_datetime, visit.visit_id);
 		var textWrapper = e.find("[mc-name=texts]");
 		visit.texts.forEach(function(text){
@@ -11847,7 +11881,7 @@
 		})
 	};
 
-	module.exports = RecordList;
+	//module.exports = RecordList;
 
 
 /***/ },
@@ -26238,6 +26272,66 @@
 	var tmplSrc = __webpack_require__(122);
 	var tmpl = hogan.compile(tmplSrc);
 
+	exports.setup = function(dom, visit, currentVisitId, tempVisitId){
+		var label = kanjidate.format("{G}{N:2}年{M:2}月{D:2}日（{W}） {h:2}時{m:2}分", visit.v_datetime);
+		dom.data("label", label);
+		dom.data("visit-id", visit.visit_id);
+		dom.data("current-visit-id", currentVisitId);
+		dom.data("temp-visit-id", tempVisitId);
+		render(dom);
+		bindClick(dom);
+		bindDelete(dom);
+	};
+
+	function render(dom){
+		var html = tmpl.render({
+			label: dom.data("label")
+		});
+		dom.html(html);
+		var dateDom = dom.find(".visit-date");
+		dateDom.removeClass("current currentTmp");
+		if( dom.data("visit-id") === dom.data("current-visit-id") ){
+			dateDom.addClass("current");
+		} else if( dom.data("visit-id") === dom.data("temp-visit-id") ){
+			dateDom.addClass("currentTmp");
+		}
+	}
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=workarea]")
+	};
+
+	function bindClick(dom){
+		dom.on("click", "[mc-name=titleBox] a", function(event){
+			event.preventDefault();
+			var ws = getWorkspaceDom(dom);
+			if( ws.is(":visible") ){
+				ws.hide();
+			} else {
+				ws.show();
+			}
+		});
+	}
+
+	function bindDelete(dom){
+		dom.on("click", "a[mc-name=deleteVisitLink]", function(event){
+			event.preventDefault();
+			var visitId = dom.data("visit-id");
+			if( !(visitId > 0) ){
+				alert("invalid visit_id");
+				return;
+			}
+			service.deleteVisit(visitId, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("visit-deleted", [visitId]);
+			})
+		});
+	}
+
+
 	function RecordTitle(dom){
 		this.dom = dom;
 		this.bindClick();
@@ -26290,7 +26384,7 @@
 		this.dom.html(html);
 	}
 
-	module.exports = RecordTitle;
+	//module.exports = RecordTitle;
 
 /***/ },
 /* 122 */
@@ -26776,12 +26870,7 @@
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
-/* 145 */
-/***/ function(module, exports) {
-
-	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
-
-/***/ },
+/* 145 */,
 /* 146 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -27605,11 +27694,12 @@
 	var tmplSrc = __webpack_require__(173);
 	var tmpl = hogan.compile(tmplSrc);
 
-	exports.setup = function(dom, itemsPerPage){
+	exports.setup = function(dom, itemsPerPage, isMain){
 		dom.data("number-of-pages", 0);
 		dom.data("page", 0);
+		dom.data("is-main", isMain);
 		dom.addClass("rx-total-visits-changed");
-		dom.data("rx-total-visits-changed", function(count){
+		dom.data("rx-total-visits-changed", function(count, pageLoad){
 			dom.data("total-items", count);
 			var numPages = calcNumberOfPages(count, itemsPerPage);
 			dom.data("number-of-pages", numPages);
@@ -27617,6 +27707,9 @@
 			page = adjustPage(page, numPages);
 			dom.data("page", page);
 			render(dom);
+			if( pageLoad && dom.data("is-main") ){
+				dom.trigger("goto-page", [page]);
+			}
 		});
 		dom.addClass("rx-goto-page");
 		dom.data("rx-goto-page", function(page){
@@ -27691,7 +27784,6 @@
 			var numPages = dom.data("number-of-pages");
 			var page = dom.data("page");
 			event.preventDefault();
-			console.log("goto-page", page, numPages);
 			if( page >= numPages ){
 				return;
 			}
@@ -27718,6 +27810,12 @@
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
+
+/***/ },
+/* 174 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
 
 /***/ }
 /******/ ]);

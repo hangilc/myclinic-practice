@@ -15,11 +15,55 @@ var ConductMenu = require("./record/conduct-menu");
 var ConductList = require("./record/conduct-list");
 var Charge = require("./record/charge");
 
-var recordTmplSrc = require("raw!./record.html");
+var recordTmplSrc = require("raw!./record/record.html");
 var recordTmpl = hogan.compile(recordTmplSrc);
 
-function makeRecord(visit){
+exports.setup = function(dom){
+	dom.addClass("rx-visit-changed");
+	dom.data("rx-visit-changed", function(patientId, visitId){
+		dom.data("current-patient-id", patientId);
+		dom.data("current-visit-id", visitId);
+		dom.data("temp-visit-id", 0);
+		if( patientId === 0 ){
+			dom.html("");
+		}
+	})
+	dom.addClass("rx-goto-page");
+	dom.data("rx-goto-page", function(page, itemsPerPage){
+		var patientId = dom.data("current-patient-id");
+		if( page <= 0 || patientId === 0 ){
+			dom.html("");
+		} else {
+			render(dom, page, itemsPerPage);
+		}
+	})
+}
+
+function render(dom, page, itemsPerPage){
+	var patientId = dom.data("current-patient-id");
+	var currentVisitId = dom.data("current-visit-id");
+	var tempVisitId = dom.data("temp-visit-id");
+	var offset = itemsPerPage * (page - 1);
+	dom.html("");
+	service.listFullVisits(patientId, offset, itemsPerPage, function(err, result){
+		if( err ){
+			alert(err);
+			return;
+		}
+		result.forEach(function(data){
+			dom.append(makeRecord(data, currentVisitId, tempVisitId));
+		})
+	})
+
+}
+
+function makeRecord(visit, currentVisitId, tempVisitId){
 	var e = $(recordTmpl.render(visit));
+	Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
+	return e;
+}
+
+function makeRecordOrig(visit){
 	new Title(e.find("[mc-name=title]")).update(visit.v_datetime, visit.visit_id);
 	var textWrapper = e.find("[mc-name=texts]");
 	visit.texts.forEach(function(text){
@@ -79,4 +123,4 @@ RecordList.prototype.update = function(patientId, offset, n, done){
 	})
 };
 
-module.exports = RecordList;
+//module.exports = RecordList;

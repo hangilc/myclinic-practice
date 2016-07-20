@@ -6,11 +6,12 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./record-nav.html");
 var tmpl = hogan.compile(tmplSrc);
 
-exports.setup = function(dom, itemsPerPage){
+exports.setup = function(dom, itemsPerPage, isMain){
 	dom.data("number-of-pages", 0);
 	dom.data("page", 0);
+	dom.data("is-main", isMain);
 	dom.addClass("rx-total-visits-changed");
-	dom.data("rx-total-visits-changed", function(count){
+	dom.data("rx-total-visits-changed", function(count, pageLoad){
 		dom.data("total-items", count);
 		var numPages = calcNumberOfPages(count, itemsPerPage);
 		dom.data("number-of-pages", numPages);
@@ -18,6 +19,9 @@ exports.setup = function(dom, itemsPerPage){
 		page = adjustPage(page, numPages);
 		dom.data("page", page);
 		render(dom);
+		if( pageLoad && dom.data("is-main") ){
+			dom.trigger("goto-page", [page]);
+		}
 	});
 	dom.addClass("rx-goto-page");
 	dom.data("rx-goto-page", function(page){
@@ -92,7 +96,6 @@ function bindGotoNext(dom){
 		var numPages = dom.data("number-of-pages");
 		var page = dom.data("page");
 		event.preventDefault();
-		console.log("goto-page", page, numPages);
 		if( page >= numPages ){
 			return;
 		}
