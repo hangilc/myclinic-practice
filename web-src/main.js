@@ -3,7 +3,7 @@
 var $ = require("jquery");
 var conti = require("conti");
 var service = require("./service");
-var PatientInfo = require("./patient-info");
+var PatientInfo = require("./patient-info/patient-info");
 var CurrentManip = require("./current-manip");
 var RecordNav = require("./record-nav");
 var RecordList = require("./record-list");
@@ -21,7 +21,7 @@ var tempVisitId = 0;
 
 var itemsPerPage = 10;
 
-var patientInfo = new PatientInfo($("#patient-info-wrapper")).render();
+PatientInfo.setup($("#patient-info-wrapper"));
 
 var currentManip = new CurrentManip($("#current-manip-pane")).render();
 
@@ -56,7 +56,8 @@ function clearStates(){
 }
 
 function clearComponents(){
-	patientInfo.update(null);
+	//patientInfo.update(null);
+	$("body").trigger("patient-changed", [null]);
 	currentManip.update(0, 0);
 	recordNavs.forEach(function(nav){
 		nav.setTotalItems(0);
@@ -75,7 +76,8 @@ function updateComponents(){
 					return;
 				}
 				currentPatient = patient;
-				patientInfo.update(patient);
+				//patientInfo.update(patient);
+				$("body").trigger("patient-changed", [patient]);
 				currentManip.update(currentPatientId, currentVisitId);
 				done();
 			});
@@ -241,4 +243,12 @@ currentManip.dom.on("end-patient", function(event){
 		clearComponents();
 	});
 });
+
+$("body").on("patient-changed", function(event, data){
+	$(".rx-patient-changed").each(function(){
+		$(this).data("rx-patient-changed")(data);
+	})	
+});
+
+$("body").trigger("patient-changed", [null]);
 
