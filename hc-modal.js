@@ -103,27 +103,27 @@ function reposition() {
 }
 
 exports.open = function(title_str, onOpen, onClose){
+    var dom = $("<div></div>");
     title.text(title_str);
-    content.html("");
-    onOpen(content);
-    closeBox.on("click", function(event){
-    	if( onClose ){
-    		if( onClose() === false ){
-    			return;
-    		}
-    	}
-		exports.close();
-    });
+    content.html("").append(dom);
     screen.show();
-    dialog.hide();
     $("body").append(dialog);
+    onOpen(dom);
     reposition();
-    dialog.show();
+    closeBox.on("click", function(event){
+        if( onClose ){
+            if( onClose() === false ){
+                return;
+            }
+        }
+        exports.close();
+    });
 };
 
 exports.close = function(){
     closeBox.off("click");
     dialog.detach();
     screen.hide();
+    content.html("");
 };
 

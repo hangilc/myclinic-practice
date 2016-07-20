@@ -12,6 +12,7 @@ var SelectPatient = require("./select-patient");
 var SearchPatient = require("./search-patient");
 var RecentVisits = require("./recent-visits");
 var TodaysVisits = require("./todays-visits");
+var Reception = require("./reception");
 
 var currentPatientId = 0;
 var currentPatient = null;
@@ -35,6 +36,11 @@ new SelectPatient($("#select-patient-wrapper")).update();
 new SearchPatient($("#search-patient-wrapper")).update();
 new RecentVisits($("#recent-visits-wrapper")).render();
 new TodaysVisits($("#todays-visits-wrapper")).update();
+
+$("#reception-link").click(function(event){
+	event.preventDefault();
+	Reception.open();
+});
 
 function setStates(patientId, visitId){
 	currentPatientId = +patientId;

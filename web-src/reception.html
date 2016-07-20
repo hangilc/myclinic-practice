@@ -1,0 +1,19 @@
+<div mc-name="disp" style="font-size: 13px">
+    {{#patient}}
+        {{> disp}}
+    {{/patient}}
+</div>
+
+<div class="dialog-commandbox">
+    <button mc-name="enterLink">診察受付</button>
+</div>
+
+<div mc-name="searchWrapper">
+    <form mc-name="searchForm" style="margin: 4px 0">
+        <input mc-name="searchText"/>
+        <button mc-name="searchLink">検索</button>
+    </form>
+    <div>
+        <select mc-name="searchResult" size="8"></select>
+    </div>    
+</div>

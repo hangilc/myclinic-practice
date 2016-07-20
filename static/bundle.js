@@ -58,6 +58,7 @@
 	var SearchPatient = __webpack_require__(156);
 	var RecentVisits = __webpack_require__(159);
 	var TodaysVisits = __webpack_require__(162);
+	var Reception = __webpack_require__(165);
 
 	var currentPatientId = 0;
 	var currentPatient = null;
@@ -81,6 +82,11 @@
 	new SearchPatient($("#search-patient-wrapper")).update();
 	new RecentVisits($("#recent-visits-wrapper")).render();
 	new TodaysVisits($("#todays-visits-wrapper")).update();
+
+	$("#reception-link").click(function(event){
+		event.preventDefault();
+		Reception.open();
+	});
 
 	function setStates(patientId, visitId){
 		currentPatientId = +patientId;
@@ -10443,6 +10449,10 @@
 		request("list_todays_visits", {}, "GET", cb);
 	};
 
+	exports.startVisit = function(patientId, at, done){
+		request("start_visit", {patient_id: patientId, at: at}, "POST", done);
+	};
+
 
 /***/ },
 /* 4 */
@@ -11710,6 +11720,24 @@
 	exports.formatNumber = function(num){
 		return Number(num).toLocaleString();
 	};
+
+	exports.toSqlDate = function(m){
+		m = moment(m);
+		return m.format("YYYY-MM-DD");
+	}
+
+	exports.todayAsSqldate = function(){
+		return exports.toSqlDate(moment());
+	};
+
+	exports.toSqlDatetime = function(m){
+		m = moment(m);
+		return m.format("YYYY-MM-DD HH:mm:ss");
+	};
+
+	exports.nowAsSqlDatetime = function(m){
+		return exports.toSqlDatetime(moment());
+	}
 
 	function assign2(dst, src){
 		if( src === null || src === undefined ){
@@ -27331,6 +27359,280 @@
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>\r\n"
+
+/***/ },
+/* 165 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var modal = __webpack_require__(166);
+	var service = __webpack_require__(3);
+	var mUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(5);
+	var kanjidate = __webpack_require__(8);
+
+	var mainTmpl = hogan.compile(__webpack_require__(167));
+	var optionTmpl = hogan.compile(__webpack_require__(168));
+	var dispTmpl = hogan.compile(__webpack_require__(169));
+
+	function getSearchTextDom(dom){
+		return dom.find("input[mc-name=searchText]");
+	}
+
+	function getDispDom(dom){
+		return dom.find("[mc-name=disp]");
+	}
+
+	function bindSelect(dom){
+		dom.on("click", "select[mc-name=searchResult] option", function(){
+			var opt = $(this);
+			var patientId = opt.val();
+			opt.trigger("patient-selected", [patientId]);
+		});
+	}
+
+	function bindPatientSelected(dom){
+		dom.on("patient-selected", function(event, patientId){
+			event.stopPropagation();
+			service.getPatient(patientId, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var data = makePatientData(result);
+				updateDisp(dom, data);
+			})
+		});
+	}
+
+	function bindSearchForm(dom){
+		dom.find("form[mc-name=searchForm]").submit(function(event){
+			event.preventDefault();
+			var text = getSearchTextDom(dom).val();
+			if( text === "" ){
+				return;
+			}
+			service.searchPatient(text, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = dom.find("select[mc-name=searchResult]").html("");
+				result.forEach(function(item){
+					var data = mUtil.assign({}, item, {
+						patient_id_part: mUtil.padNumber(item.patient_id, 4)
+					});
+					var opt = optionTmpl.render(data);
+					select.append(opt);
+				});
+			})
+		});
+	}
+
+	function bindEnter(dom){
+		dom.find("[mc-name=enterLink]").click(function(event){
+			var patientId = dom.data("patient_id");
+			if( !(patientId > 0) ){
+				alert("患者番号が不適切です。");
+				return;
+			}
+			service.startVisit(patientId, mUtil.nowAsSqlDatetime(), function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				modal.close();
+			})
+		})
+	}
+
+	function makeBirthdayLabel(birthday){
+		if( birthday && birthday !== "0000-00-00" ){
+			return kanjidate.format("{G}{N}年{M}月{D}日", birthday) + 
+				"（" + mUtil.calcAge(birthday) + "才）";
+		} else {
+			return "";
+		}
+	}
+
+	function makePatientData(patient){
+		return mUtil.assign({}, patient, {
+			birthday_label: makeBirthdayLabel(patient.birth_day),
+			sex_label: mUtil.sexToKanji(patient.sex)
+		});
+	}
+
+	function updateDisp(dom, data){
+		getDispDom(dom).html(dispTmpl.render(data));
+		dom.data("patient_id", data.patient_id);
+	}
+
+	exports.open = function(){
+		modal.open("受付", function(dom){
+			dom.width("260px");
+			dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+			bindSearchForm(dom);
+			bindSelect(dom);
+			bindPatientSelected(dom);
+			bindEnter(dom);
+			getSearchTextDom(dom).focus();
+		});
+	}
+
+/***/ },
+/* 166 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var $ = __webpack_require__(1);
+
+	var screen = $('<div></div>').css({
+	    position:"fixed",
+	    backgroundColor:"#999",
+	    width:"100%",
+	    height:"100%",
+	    left:0,
+	    top:0,
+	    opacity:0.5,
+	    filter:"alpha(opacity=50)",
+	    zIndex:10,
+	    display:"none"
+	});
+
+	var dialog = $('<div id="modal-dialog-outer-pane"></div>').css({
+	    position:"absolute",
+	    left:"100px",
+	    top:"50px",
+	    padding:"10px",
+	    border:"2px solid gray",
+	    backgroundColor:"white",
+	    opacity:1.0,
+	    filter:"alpha(opacity=100)",
+	    zIndex:20,
+	    overflow: "auto"
+	});
+	var header = $("<table width='100%' cellpadding='0' cellspacing='0'><tr>" +
+	    "<td width='*'></td><td width='auto'></td></tr></table>").css({
+	        margin:0,
+	        padding:0
+	    });
+	dialog.append(header);
+	var handle = $('<div></div>');
+	var title = $("<div></div>").css({
+	    cursor:"move",
+	    backgroundColor:"#ccc",
+	    fontWeight:"bold",
+	    padding:"6px 4px 4px 4px"
+	});
+	handle.append(title);
+	$(header.find("td")[0]).append(handle);
+	var closeBox = $("<a href='javascript:void(0)'>×</a>").css({
+	    fontSize:"13px",
+	    fontWeight:"bold",
+	    margin:"4px 0 4px 4px",
+	    padding:0,
+	    textDecoration:"none",
+	    color:"#333"
+	});
+	$(header.find("td")[1]).css({
+	    width:"16px",
+	    verticalAlign:"middle"
+	}).append(closeBox);
+	var content = $("<div></div>").css({
+	    marginTop:"10px"
+	});
+	dialog.append(content);
+
+	$("body").append(screen);
+
+	handle.on("mousedown", function(event){
+	    event.preventDefault();
+	    var offset = dialog.offset();
+	    var origEvent = event.originalEvent;
+	    var innerX = origEvent.pageX - offset.left;
+	    var innerY = origEvent.pageY - offset.top;
+	    dialog.data({innerX: innerX, innerY: innerY, width: dialog.outerWidth(), height: dialog.outerHeight()});
+	    handle.on("mousemove", function(event){
+	        event.preventDefault();
+	        var origEvent = event.originalEvent;
+	        var newLeft = origEvent.pageX - dialog.data("innerX");
+	        if( newLeft < 0 ){
+	            return;
+	        }
+	        var newTop = origEvent.pageY - dialog.data("innerY");
+	        if( newTop < 0 ){
+	            return;
+	        }
+	        var newRight = newLeft + dialog.data("width");
+	        if( newRight > screen.innerWidth() ){
+	            return;
+	        }
+	        var newBottom = newTop + dialog.data("height");
+	        if( newBottom > screen.innerHeight() ){
+	            return;
+	        }
+	        dialog.css({left: newLeft, top: newTop})
+	    })
+	    handle[0].setCapture();
+	})
+
+	handle.on("mouseup", function(event){
+	    handle.off("mousemove");
+	})
+
+	function reposition() {
+	    var screen_width = $(window).width();
+	    var screen_height = $(window).height();
+	    var dialog_width = dialog.outerWidth();
+	    dialog.css("left", (screen_width - dialog_width) / 2 + "px");
+	    dialog.css("max-height", (screen_height - 100) + "px");
+	}
+
+	exports.open = function(title_str, onOpen, onClose){
+	    var dom = $("<div></div>");
+	    title.text(title_str);
+	    content.html("").append(dom);
+	    screen.show();
+	    $("body").append(dialog);
+	    onOpen(dom);
+	    reposition();
+	    closeBox.on("click", function(event){
+	        if( onClose ){
+	            if( onClose() === false ){
+	                return;
+	            }
+	        }
+	        exports.close();
+	    });
+	};
+
+	exports.close = function(){
+	    closeBox.off("click");
+	    dialog.detach();
+	    screen.hide();
+	    content.html("");
+	};
+
+
+
+/***/ },
+/* 167 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
+
+/***/ },
+/* 168 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 169 */
+/***/ function(module, exports) {
+
+	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
 
 /***/ }
 /******/ ]);

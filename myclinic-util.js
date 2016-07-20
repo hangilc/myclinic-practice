@@ -24,6 +24,24 @@ exports.formatNumber = function(num){
 	return Number(num).toLocaleString();
 };
 
+exports.toSqlDate = function(m){
+	m = moment(m);
+	return m.format("YYYY-MM-DD");
+}
+
+exports.todayAsSqldate = function(){
+	return exports.toSqlDate(moment());
+};
+
+exports.toSqlDatetime = function(m){
+	m = moment(m);
+	return m.format("YYYY-MM-DD HH:mm:ss");
+};
+
+exports.nowAsSqlDatetime = function(m){
+	return exports.toSqlDatetime(moment());
+}
+
 function assign2(dst, src){
 	if( src === null || src === undefined ){
 		return dst;
