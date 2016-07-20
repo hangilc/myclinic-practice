@@ -64,6 +64,11 @@ function render(dom, page, itemsPerPage){
 function makeRecord(visit, currentVisitId, tempVisitId){
 	var e = $(recordTmpl.render(visit));
 	Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
+	var textWrapper = e.find("[mc-name=texts]");
+	visit.texts.forEach(function(text){
+		var te = Text.create(text);
+		textWrapper.append(te);
+	});
 	return e;
 }
 
