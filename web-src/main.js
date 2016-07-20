@@ -213,10 +213,6 @@ $("body").on("visit-deleted", function(event, visitId){
 			alert(err);
 			return;
 		}
-		var numPages = recordNavs[0].numberOfPages;
-		if( page > numPages ){
-			page = numPages;
-		}
 		if( currentVisitId === visitId ){
 			currentVisitId = 0;
 		} else if( tempVisitId === visitId ){

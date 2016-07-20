@@ -259,10 +259,6 @@
 				alert(err);
 				return;
 			}
-			var numPages = recordNavs[0].numberOfPages;
-			if( page > numPages ){
-				page = numPages;
-			}
 			if( currentVisitId === visitId ){
 				currentVisitId = 0;
 			} else if( tempVisitId === visitId ){
@@ -26354,13 +26350,14 @@
 		}
 		var wrapper = $("<div></div>");
 		this.dom.html("").append(wrapper);
+		var main = this.main;
 		service.listFullVisits(patientId, offset, n, function(err, result){
 			if( err ){
 				done(err);
 				return;
 			}
 			result.forEach(function(data){
-				var e = makeRecord(data);
+				var e = makeRecord(data, main);
 				wrapper.append(e);
 			});
 			done();
