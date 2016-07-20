@@ -10,7 +10,7 @@ var RecordList = require("./record-list");
 var Disease = require("./disease");
 var SelectPatient = require("./select-patient");
 var SearchPatient = require("./search-patient");
-var RecentVisits = require("./recent-visits");
+var RecentVisits = require("./recent-visits/recent-visits");
 var TodaysVisits = require("./todays-visits");
 var Reception = require("./reception");
 
@@ -35,7 +35,7 @@ var disease = new Disease($("#disease-wrapper")).render();
 
 new SelectPatient($("#select-patient-wrapper")).update();
 new SearchPatient($("#search-patient-wrapper")).update();
-new RecentVisits($("#recent-visits-wrapper")).render();
+RecentVisits.setup($("#recent-visits-wrapper"));
 new TodaysVisits($("#todays-visits-wrapper")).update();
 
 $("#reception-link").click(function(event){

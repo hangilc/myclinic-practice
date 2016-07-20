@@ -81,7 +81,7 @@
 
 	new SelectPatient($("#select-patient-wrapper")).update();
 	new SearchPatient($("#search-patient-wrapper")).update();
-	new RecentVisits($("#recent-visits-wrapper")).render();
+	RecentVisits.setup($("#recent-visits-wrapper"));
 	new TodaysVisits($("#todays-visits-wrapper")).update();
 
 	$("#reception-link").click(function(event){
@@ -27277,91 +27277,67 @@
 	"use strict";
 
 	var hogan = __webpack_require__(5);
-	var myclinicUtil = __webpack_require__(9);
+	var mUtil = __webpack_require__(9);
 	var service = __webpack_require__(3);
 	var $ = __webpack_require__(1);
 
-	var tmplSrc = __webpack_require__(160);
-	var listTmplSrc = __webpack_require__(161);
+	var tmplHtml = __webpack_require__(160);
+	var optionTmpl = hogan.compile(__webpack_require__(170));
 
-	var tmpl = hogan.compile(tmplSrc);
-	var listTmpl = hogan.compile(listTmplSrc);
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+	};
 
-	function RecentVisits(dom){
-		this.dom = dom;
+	function getSelectDom(dom){
+		return dom.find("select");
 	}
 
-	RecentVisits.prototype.getButtonDom = function(){
-		return this.dom.find("[mc-name=button]");
-	};
-
-	RecentVisits.prototype.getSelectDom = function(){
-		return this.dom.find("[mc-name=select]");
-	};
-
-	RecentVisits.prototype.render = function(data){
-		this.dom.html(tmpl.render(data));
-		this.bindButton();
-		this.bindSelect();
-		return this;
-	};
-
-	RecentVisits.prototype.bindButton = function(){
-		var self = this;
-		this.getButtonDom().click(function(){
-			var select = self.getSelectDom();
+	function bindButton(dom){
+		dom.on("click", "button", function(){
+			var select = getSelectDom(dom);
 			if( select.is(":visible") ){
-				select.hide();
-				select.html("");
+				select.hide().html("");
 			} else {
 				service.recentVisits(function(err, list){
 					if( err ){
 						alert(err);
 						return;
 					}
-					self.updateSelect(list);
+					updateSelect(select, list);
 					select.show();
 				});
 			}
 		});
-	};
+	}
 
-	RecentVisits.prototype.bindSelect = function(){
-		var self = this;
-		this.getSelectDom().on("dblclick", "option", function(){
-			var e = $(this);
-			var patientId = e.val();
-			$("body").trigger("start-patient", [patientId]);
-			self.getSelectDom().hide().html("");
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
+			var patientId = $(this).val();
+			dom.trigger("start-patient", [patientId]);
+			getSelectDom(dom).hide().html("");
 		});
-	};
+	}
 
-	RecentVisits.prototype.updateSelect = function(list){
-		var data = list.map(function(item){
-			return myclinicUtil.assign({}, item, {
-				patient_id_part: myclinicUtil.padNumber(item.patient_id, 4)
-			})
+	function updateSelect(select, list){
+		list.forEach(function(data){
+			data = mUtil.assign({}, data, {
+				patient_id_part: mUtil.padNumber(data.patient_id, 4)
+			});
+			select.append(optionTmpl.render(data))
 		});
-		var html = listTmpl.render({list: data});
-		this.getSelectDom().html(html);
-	};
-
-	module.exports = RecentVisits;
+	}
 
 
 /***/ },
 /* 160 */
 /***/ function(module, exports) {
 
-	module.exports = "<button mc-name=\"button\">最近の受診</button>\r\n<div>\r\n  <select mc-name=\"select\" size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
+	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 161 */
-/***/ function(module, exports) {
-
-	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}"
-
-/***/ },
+/* 161 */,
 /* 162 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -27722,6 +27698,12 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 170 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ }
 /******/ ]);
