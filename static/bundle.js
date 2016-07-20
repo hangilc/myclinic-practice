@@ -50,7 +50,7 @@
 	var conti = __webpack_require__(2);
 	var service = __webpack_require__(3);
 	var PatientInfo = __webpack_require__(4);
-	var CurrentManip = __webpack_require__(10);
+	var CurrentManip = __webpack_require__(170);
 	var RecordNav = __webpack_require__(12);
 	var RecordList = __webpack_require__(14);
 	var Disease = __webpack_require__(146);
@@ -69,7 +69,7 @@
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 
-	var currentManip = new CurrentManip($("#current-manip-pane")).render();
+	CurrentManip.setup($("#current-manip-pane"));
 
 	var recordNavs = $(".record-nav-wrapper").map(function(index, e){
 		return new RecordNav($(e), itemsPerPage).render();
@@ -104,7 +104,8 @@
 	function clearComponents(){
 		//patientInfo.update(null);
 		$("body").trigger("patient-changed", [null]);
-		currentManip.update(0, 0);
+		$("body").trigger("visit-changed", [0, 0]);
+		//currentManip.update(0, 0);
 		recordNavs.forEach(function(nav){
 			nav.setTotalItems(0);
 			nav.update(0);
@@ -124,7 +125,8 @@
 					currentPatient = patient;
 					//patientInfo.update(patient);
 					$("body").trigger("patient-changed", [patient]);
-					currentManip.update(currentPatientId, currentVisitId);
+					$("body").trigger("visit-changed", [currentPatientId, currentVisitId]);
+					//currentManip.update(currentPatientId, currentVisitId);
 					done();
 				});
 			},
@@ -270,7 +272,7 @@
 		})
 	});
 
-	currentManip.dom.on("end-patient", function(event){
+	$("body").on("end-patient", function(event){
 		event.stopPropagation();
 		conti.exec([
 			function(done){
@@ -297,6 +299,14 @@
 	});
 
 	$("body").trigger("patient-changed", [null]);
+
+	$("body").on("visit-changed", function(event, patientId, visitId){
+		$(".rx-visit-changed").each(function(){
+			$(this).data("rx-visit-changed")(patientId, visitId);
+		})	
+	});
+
+	$("body").trigger("visit-changed", [0, 0]);
 
 
 
@@ -11736,55 +11746,8 @@
 	module.exports = "[{{patient_id}}]\r\n{{last_name}} {{first_name}}\r\n（{{last_name_yomi}} {{first_name_yomi}}）\r\n{{birthday_part}}\r\n{{age_part}}\r\n{{sex_as_kanji}}性\r\n<a href=\"javascript:void(0)\" mc-name=\"detailLink\" class=\"cmd-link\" style=\"font-size:13px\">詳細</a>\r\n\r\n<div style=\"display:none; margin:4px; padding:2px 0 0 0; border: 1px solid #ccc\" mc-name=\"patientInfoDetail\">\r\n\t<div style=\"margin:6px;\">電話番号： {{phone}}</div>\r\n\t<div style=\"margin:6px;\">住所： {{address}}</div>\r\n</div>\r\n"
 
 /***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-
-	var tmplSrc = __webpack_require__(11);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function CurrentManip(dom){
-		this.dom = dom;
-	}
-
-	CurrentManip.prototype.render = function(){
-		this.bindEndPatient();
-		return this;
-	};
-
-	CurrentManip.prototype.bindEndPatient = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=endPatientButton]", function(event){
-			event.preventDefault();
-			self.dom.trigger("end-patient");
-		})
-	};
-
-	CurrentManip.prototype.update = function(patientId, visitId){
-		this.patientId = patientId;
-		this.visitId = visitId;
-		this.dom.html("");
-		if( patientId > 0 ){
-			this.dom.html(tmpl.render({}));
-		} else {
-			this.dom.html("");
-		}
-	};
-
-	module.exports = CurrentManip;
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports) {
-
-	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
-
-/***/ },
+/* 10 */,
+/* 11 */,
 /* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -27701,6 +27664,38 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 170 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+
+	var tmplHtml = __webpack_require__(171);
+
+	exports.setup = function(dom){
+		dom.addClass("rx-visit-changed");
+		dom.data("rx-visit-changed", function(patientId, visitId){
+			if( patientId === 0 ){
+				dom.html("");
+			} else {
+				dom.html(tmplHtml);
+			}
+		});
+		dom.on("click", "[mc-name=endPatientButton]", function(event){
+			event.preventDefault();
+			dom.trigger("end-patient");
+		})
+	};
+
+
+/***/ },
+/* 171 */
+/***/ function(module, exports) {
+
+	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
 
 /***/ }
 /******/ ]);

@@ -4,7 +4,7 @@ var $ = require("jquery");
 var conti = require("conti");
 var service = require("./service");
 var PatientInfo = require("./patient-info/patient-info");
-var CurrentManip = require("./current-manip");
+var CurrentManip = require("./current-manip/current-manip");
 var RecordNav = require("./record-nav");
 var RecordList = require("./record-list");
 var Disease = require("./disease");
@@ -23,7 +23,7 @@ var itemsPerPage = 10;
 
 PatientInfo.setup($("#patient-info-wrapper"));
 
-var currentManip = new CurrentManip($("#current-manip-pane")).render();
+CurrentManip.setup($("#current-manip-pane"));
 
 var recordNavs = $(".record-nav-wrapper").map(function(index, e){
 	return new RecordNav($(e), itemsPerPage).render();
@@ -58,7 +58,8 @@ function clearStates(){
 function clearComponents(){
 	//patientInfo.update(null);
 	$("body").trigger("patient-changed", [null]);
-	currentManip.update(0, 0);
+	$("body").trigger("visit-changed", [0, 0]);
+	//currentManip.update(0, 0);
 	recordNavs.forEach(function(nav){
 		nav.setTotalItems(0);
 		nav.update(0);
@@ -78,7 +79,8 @@ function updateComponents(){
 				currentPatient = patient;
 				//patientInfo.update(patient);
 				$("body").trigger("patient-changed", [patient]);
-				currentManip.update(currentPatientId, currentVisitId);
+				$("body").trigger("visit-changed", [currentPatientId, currentVisitId]);
+				//currentManip.update(currentPatientId, currentVisitId);
 				done();
 			});
 		},
@@ -224,7 +226,7 @@ $("body").on("visit-deleted", function(event, visitId){
 	})
 });
 
-currentManip.dom.on("end-patient", function(event){
+$("body").on("end-patient", function(event){
 	event.stopPropagation();
 	conti.exec([
 		function(done){
@@ -251,4 +253,12 @@ $("body").on("patient-changed", function(event, data){
 });
 
 $("body").trigger("patient-changed", [null]);
+
+$("body").on("visit-changed", function(event, patientId, visitId){
+	$(".rx-visit-changed").each(function(){
+		$(this).data("rx-visit-changed")(patientId, visitId);
+	})	
+});
+
+$("body").trigger("visit-changed", [0, 0]);
 
