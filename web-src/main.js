@@ -3,6 +3,7 @@
 var $ = require("jquery");
 var conti = require("conti");
 var service = require("./service");
+var registry = require("../hc-registry");
 var PatientInfo = require("./patient-info/patient-info");
 var CurrentManip = require("./current-manip/current-manip");
 var RecordNav = require("./record-nav/record-nav");
@@ -14,19 +15,28 @@ var RecentVisits = require("./recent-visits/recent-visits");
 var TodaysVisits = require("./todays-visits");
 var Reception = require("./reception");
 
+var itemsPerPage = 10;
+
 var currentPatientId = 0;
-var currentPatient = null;
 var currentVisitId = 0;
 var tempVisitId = 0;
+var currentPage = 0;
+var totalPages = 0;
 
-var itemsPerPage = 10;
+registry.set("getCurrentVisitId", function(){
+	return currentVisitId;
+});
+
+registry.set("getTempVisitId", function(){
+	return tempVisitId;
+});
 
 PatientInfo.setup($("#patient-info-wrapper"));
 
 CurrentManip.setup($("#current-manip-pane"));
 
 $(".record-nav-wrapper").each(function(i){
-	RecordNav.setup($(this), itemsPerPage, i === 0);
+	RecordNav.setup($(this));
 });
 
 RecordList.setup($("#record-list"));
@@ -43,31 +53,49 @@ $("#reception-link").click(function(event){
 	Reception.open();
 });
 
+function calcNumberOfPages(totalItems, itemsPerPage){
+	return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
+}
+
+function adjustPage(page, numPages){
+	if( numPages <= 0 ){
+		page = 0;
+	} else {
+		if( page <= 0 ){
+			page = 1;
+		} else if( page > numPages ){
+			page = numPages;
+		}
+	}
+	return page;
+}
+
+function resetRecordNavData(totalVisits){
+	totalPages = calcNumberOfPages(totalVisits, itemsPerPage);
+	currentPage = adjustPage(1, totalPages);
+}
+
 function setStates(patientId, visitId){
 	currentPatientId = +patientId;
-	currentPatient = null;
 	currentVisitId = +visitId;
 	tempVisitId = 0;
 }
 
 function clearStates(){
 	currentPatientId = 0;
-	currentPatient = null;
 	currentVisitId = 0;
 	tempVisitId = 0;
 }
 
 function clearComponents(){
-	//patientInfo.update(null);
 	$("body").trigger("patient-changed", [null]);
 	$("body").trigger("visit-changed", [0, 0]);
-	$("body").trigger("total-visits-changed", [0]);
-	//currentManip.update(0, 0);
-	// recordNavs.forEach(function(nav){
-	// 	nav.setTotalItems(0);
-	// 	nav.update(0);
-	// });
-	//recordList.update(0, 0, 0, function(){});
+	resetRecordNavData(0);
+	$("body").trigger("page-settings-changed", [{
+		totalPages: totalPages,
+		currentPage: currentPage
+	}]);
+	$("body").trigger("record-list-changed", [[]]);
 	disease.update(null);
 }
 
@@ -79,11 +107,8 @@ function updateComponents(){
 					done(err);
 					return;
 				}
-				currentPatient = patient;
-				//patientInfo.update(patient);
 				$("body").trigger("patient-changed", [patient]);
 				$("body").trigger("visit-changed", [currentPatientId, currentVisitId]);
-				//currentManip.update(currentPatientId, currentVisitId);
 				done();
 			});
 		},
@@ -93,10 +118,11 @@ function updateComponents(){
 					done(err);
 					return;
 				}
-				$("body").trigger("total-visits-changed", [count]);
-				// recordNavs.forEach(function(nav){
-				// 	nav.setTotalItems(count);
-				// });
+				resetRecordNavData(count);
+				$("body").trigger("page-settings-changed", [{
+					totalPages: totalPages,
+					currentPage: currentPage
+				}]);
 				$("body").trigger("goto-page", [1]);
 				done();
 			})
@@ -179,26 +205,49 @@ $("body").on("start-exam", function(event, visitId){
 	})
 });
 
-$("body").on("goto-page", function(event, page){
-	if( currentPatientId <= 0 ){
-		return;
-	}
-	if( page <= 0 ){
-		page = 1;
-	}
-	var offset = itemsPerPage * (page-1);
-	$(".rx-goto-page").each(function(){
-		$(this).data("rx-goto-page")(page, itemsPerPage);
+$("body").on("page-settings-changed", function(event, setting){
+	$("body").find(".rx-page-settings-changed").each(function(){
+		$(this).data("rx-page-settings-changed")(setting);
 	})
-	// recordList.update(currentPatientId, offset, itemsPerPage, function(err){
-	// 	if( err ){
-	// 		alert(err);
-	// 		return;
-	// 	}
-	// })
 });
 
-$("body").on("visit-deleted", function(event, visitId){
+$("body").on("record-list-changed", function(event, list){
+	$("body").find(".rx-record-list-changed").each(function(){
+		$(this).data("rx-record-list-changed")(list);
+	})
+});
+
+
+$("body").on("goto-page", function(event, page){
+	if( currentPatientId <= 0 ){
+		$("body").trigger("record-list-changed", [[]]);
+		return;
+	}
+	currentPage = adjustPage(page, totalPages);
+	$("body").trigger("page-settings-changed", [{
+		totalPages: totalPages,
+		currentPage: currentPage
+	}]);
+	var offset = itemsPerPage * (currentPage-1);
+	service.listFullVisits(currentPatientId, offset, itemsPerPage, function(err, result){
+		if( err ){
+			alert(err);
+			return;
+		}
+		$("body").trigger("record-list-changed", [result]);
+	});
+});
+
+$("body").on("patient-changed", function(event, data){
+	$(".rx-patient-changed").each(function(){
+		$(this).data("rx-patient-changed")(data);
+	})	
+});
+
+
+
+
+/*$("body").on("visit-deleted", function(event, visitId){
 	if( currentVisitId === visitId ){
 		currentVisitId = 0;
 	} else if( tempVisitId === visitId ){
@@ -243,11 +292,18 @@ $("body").on("end-patient", function(event){
 	});
 });
 
-$("body").on("patient-changed", function(event, data){
-	$(".rx-patient-changed").each(function(){
-		$(this).data("rx-patient-changed")(data);
-	})	
+coop.publish($("body"), "page-settings-changed");
+
+coop.trigger($("body"), "page-settings-changed", {
+	totalPages: 3,
+	currentPage: 2
 });
+
+
+
+
+
+
 
 $("body").trigger("patient-changed", [null]);
 
@@ -276,4 +332,4 @@ $("body").on("set-temp-visit-id", function(event, visitId){
 	$(".rx-set-temp-visit-id").each(function(){
 		$(this).data("rx-set-temp-visit-id")(visitId);
 	})
-});
+});*/

@@ -49,6 +49,7 @@
 	var $ = __webpack_require__(1);
 	var conti = __webpack_require__(2);
 	var service = __webpack_require__(3);
+	var registry = __webpack_require__(176);
 	var PatientInfo = __webpack_require__(4);
 	var CurrentManip = __webpack_require__(170);
 	var RecordNav = __webpack_require__(172);
@@ -60,19 +61,28 @@
 	var TodaysVisits = __webpack_require__(162);
 	var Reception = __webpack_require__(165);
 
+	var itemsPerPage = 10;
+
 	var currentPatientId = 0;
-	var currentPatient = null;
 	var currentVisitId = 0;
 	var tempVisitId = 0;
+	var currentPage = 0;
+	var totalPages = 0;
 
-	var itemsPerPage = 10;
+	registry.set("getCurrentVisitId", function(){
+		return currentVisitId;
+	});
+
+	registry.set("getTempVisitId", function(){
+		return tempVisitId;
+	});
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 
 	CurrentManip.setup($("#current-manip-pane"));
 
 	$(".record-nav-wrapper").each(function(i){
-		RecordNav.setup($(this), itemsPerPage, i === 0);
+		RecordNav.setup($(this));
 	});
 
 	RecordList.setup($("#record-list"));
@@ -89,31 +99,49 @@
 		Reception.open();
 	});
 
+	function calcNumberOfPages(totalItems, itemsPerPage){
+		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
+	}
+
+	function adjustPage(page, numPages){
+		if( numPages <= 0 ){
+			page = 0;
+		} else {
+			if( page <= 0 ){
+				page = 1;
+			} else if( page > numPages ){
+				page = numPages;
+			}
+		}
+		return page;
+	}
+
+	function resetRecordNavData(totalVisits){
+		totalPages = calcNumberOfPages(totalVisits, itemsPerPage);
+		currentPage = adjustPage(1, totalPages);
+	}
+
 	function setStates(patientId, visitId){
 		currentPatientId = +patientId;
-		currentPatient = null;
 		currentVisitId = +visitId;
 		tempVisitId = 0;
 	}
 
 	function clearStates(){
 		currentPatientId = 0;
-		currentPatient = null;
 		currentVisitId = 0;
 		tempVisitId = 0;
 	}
 
 	function clearComponents(){
-		//patientInfo.update(null);
 		$("body").trigger("patient-changed", [null]);
 		$("body").trigger("visit-changed", [0, 0]);
-		$("body").trigger("total-visits-changed", [0]);
-		//currentManip.update(0, 0);
-		// recordNavs.forEach(function(nav){
-		// 	nav.setTotalItems(0);
-		// 	nav.update(0);
-		// });
-		//recordList.update(0, 0, 0, function(){});
+		resetRecordNavData(0);
+		$("body").trigger("page-settings-changed", [{
+			totalPages: totalPages,
+			currentPage: currentPage
+		}]);
+		$("body").trigger("record-list-changed", [[]]);
 		disease.update(null);
 	}
 
@@ -125,11 +153,8 @@
 						done(err);
 						return;
 					}
-					currentPatient = patient;
-					//patientInfo.update(patient);
 					$("body").trigger("patient-changed", [patient]);
 					$("body").trigger("visit-changed", [currentPatientId, currentVisitId]);
-					//currentManip.update(currentPatientId, currentVisitId);
 					done();
 				});
 			},
@@ -139,10 +164,11 @@
 						done(err);
 						return;
 					}
-					$("body").trigger("total-visits-changed", [count]);
-					// recordNavs.forEach(function(nav){
-					// 	nav.setTotalItems(count);
-					// });
+					resetRecordNavData(count);
+					$("body").trigger("page-settings-changed", [{
+						totalPages: totalPages,
+						currentPage: currentPage
+					}]);
 					$("body").trigger("goto-page", [1]);
 					done();
 				})
@@ -225,26 +251,49 @@
 		})
 	});
 
-	$("body").on("goto-page", function(event, page){
-		if( currentPatientId <= 0 ){
-			return;
-		}
-		if( page <= 0 ){
-			page = 1;
-		}
-		var offset = itemsPerPage * (page-1);
-		$(".rx-goto-page").each(function(){
-			$(this).data("rx-goto-page")(page, itemsPerPage);
+	$("body").on("page-settings-changed", function(event, setting){
+		$("body").find(".rx-page-settings-changed").each(function(){
+			$(this).data("rx-page-settings-changed")(setting);
 		})
-		// recordList.update(currentPatientId, offset, itemsPerPage, function(err){
-		// 	if( err ){
-		// 		alert(err);
-		// 		return;
-		// 	}
-		// })
 	});
 
-	$("body").on("visit-deleted", function(event, visitId){
+	$("body").on("record-list-changed", function(event, list){
+		$("body").find(".rx-record-list-changed").each(function(){
+			$(this).data("rx-record-list-changed")(list);
+		})
+	});
+
+
+	$("body").on("goto-page", function(event, page){
+		if( currentPatientId <= 0 ){
+			$("body").trigger("record-list-changed", [[]]);
+			return;
+		}
+		currentPage = adjustPage(page, totalPages);
+		$("body").trigger("page-settings-changed", [{
+			totalPages: totalPages,
+			currentPage: currentPage
+		}]);
+		var offset = itemsPerPage * (currentPage-1);
+		service.listFullVisits(currentPatientId, offset, itemsPerPage, function(err, result){
+			if( err ){
+				alert(err);
+				return;
+			}
+			$("body").trigger("record-list-changed", [result]);
+		});
+	});
+
+	$("body").on("patient-changed", function(event, data){
+		$(".rx-patient-changed").each(function(){
+			$(this).data("rx-patient-changed")(data);
+		})	
+	});
+
+
+
+
+	/*$("body").on("visit-deleted", function(event, visitId){
 		if( currentVisitId === visitId ){
 			currentVisitId = 0;
 		} else if( tempVisitId === visitId ){
@@ -289,11 +338,18 @@
 		});
 	});
 
-	$("body").on("patient-changed", function(event, data){
-		$(".rx-patient-changed").each(function(){
-			$(this).data("rx-patient-changed")(data);
-		})	
+	coop.publish($("body"), "page-settings-changed");
+
+	coop.trigger($("body"), "page-settings-changed", {
+		totalPages: 3,
+		currentPage: 2
 	});
+
+
+
+
+
+
 
 	$("body").trigger("patient-changed", [null]);
 
@@ -322,7 +378,7 @@
 		$(".rx-set-temp-visit-id").each(function(){
 			$(this).data("rx-set-temp-visit-id")(visitId);
 		})
-	});
+	});*/
 
 /***/ },
 /* 1 */
@@ -11773,6 +11829,7 @@
 	var hogan = __webpack_require__(5);
 	var service = __webpack_require__(3);
 	var mUtil = __webpack_require__(15);
+	var registry = __webpack_require__(176);
 	var Title = __webpack_require__(121);
 	var Text = __webpack_require__(123);
 	var Hoken = __webpack_require__(125);
@@ -11788,47 +11845,16 @@
 	var recordTmpl = hogan.compile(recordTmplSrc);
 
 	exports.setup = function(dom){
-		dom.addClass("rx-visit-changed");
-		dom.data("rx-visit-changed", function(patientId, visitId){
-			dom.data("current-patient-id", patientId);
-			dom.data("current-visit-id", visitId);
-			dom.data("temp-visit-id", 0);
-			if( patientId === 0 ){
-				dom.html("");
-			}
-		})
-		dom.addClass("rx-goto-page");
-		dom.data("rx-goto-page", function(page, itemsPerPage){
-			var patientId = dom.data("current-patient-id");
-			if( page <= 0 || patientId === 0 ){
-				dom.html("");
-			} else {
-				render(dom, page, itemsPerPage);
-			}
-		})
-		dom.addClass("rx-set-temp-visit-id");
-		dom.data("rx-set-temp-visit-id", function(newTempVisitId){
-			dom.data("temp-visit-id", newTempVisitId);
-		})
-	}
-
-	function render(dom, page, itemsPerPage){
-		var patientId = dom.data("current-patient-id");
-		var currentVisitId = dom.data("current-visit-id");
-		var tempVisitId = dom.data("temp-visit-id");
-		var offset = itemsPerPage * (page - 1);
-		dom.html("");
-		service.listFullVisits(patientId, offset, itemsPerPage, function(err, result){
-			if( err ){
-				alert(err);
-				return;
-			}
-			result.forEach(function(data){
+		dom.addClass("rx-record-list-changed");
+		dom.data("rx-record-list-changed", function(records){
+			var currentVisitId = registry.get("getCurrentVisitId")();
+			var tempVisitId = registry.get("getTempVisitId")();
+			dom.html("");
+			records.forEach(function(data){
 				dom.append(makeRecord(data, currentVisitId, tempVisitId));
 			})
-		})
-
-	}
+		});
+	};
 
 	function makeRecord(visit, currentVisitId, tempVisitId){
 		var e = $(recordTmpl.render(visit));
@@ -11871,37 +11897,6 @@
 		return e;
 	}
 
-	function RecordList(dom){
-		this.dom = dom;
-	}
-
-	RecordList.prototype.render = function(){
-		return this;
-	};
-
-	RecordList.prototype.update = function(patientId, offset, n, done){
-		if( patientId === 0 ){
-			this.dom.html("");
-			done();
-			return;
-		}
-		var wrapper = $("<div></div>");
-		this.dom.html("").append(wrapper);
-		var main = this.main;
-		service.listFullVisits(patientId, offset, n, function(err, result){
-			if( err ){
-				done(err);
-				return;
-			}
-			result.forEach(function(data){
-				var e = makeRecord(data, main);
-				wrapper.append(e);
-			});
-			done();
-		})
-	};
-
-	//module.exports = RecordList;
 
 
 /***/ },
@@ -27682,66 +27677,27 @@
 	var tmplSrc = __webpack_require__(173);
 	var tmpl = hogan.compile(tmplSrc);
 
-	exports.setup = function(dom, itemsPerPage, isMain){
-		dom.data("number-of-pages", 0);
-		dom.data("page", 0);
-		dom.data("is-main", isMain);
-		dom.addClass("rx-total-visits-changed");
-		dom.data("rx-total-visits-changed", function(count, pageLoad){
-			dom.data("total-items", count);
-			var numPages = calcNumberOfPages(count, itemsPerPage);
-			dom.data("number-of-pages", numPages);
-			var page = dom.data("page");
-			page = adjustPage(page, numPages);
-			dom.data("page", page);
-			render(dom);
-			if( pageLoad && dom.data("is-main") ){
-				dom.trigger("goto-page", [page]);
+	exports.setup = function(dom){
+		dom.addClass("rx-page-settings-changed");
+		dom.data("rx-page-settings-changed", function(value){
+			var totalPages = value.totalPages;
+			var currentPage = value.currentPage;
+			dom.data("number-of-pages", totalPages);
+			dom.data("page", currentPage);
+			if( totalPages <= 1 ){
+				dom.html("");
+			} else {
+				dom.html(tmpl.render({
+					page: currentPage,
+					total: totalPages
+				}));
 			}
-		});
-		dom.addClass("rx-goto-page");
-		dom.data("rx-goto-page", function(page){
-			var numPages = dom.data("number-of-pages");
-			page = adjustPage(page, numPages);
-			dom.data("page", page);
-			render(dom);
 		});
 		bindGotoFirst(dom);
 		bindGotoPrev(dom);
 		bindGotoNext(dom);
 		bindGotoLast(dom);
-	}
-
-	function adjustPage(page, numPages){
-		if( numPages <= 0 ){
-			page = 0;
-		} else {
-			if( page <= 0 ){
-				page = 1;
-			} else if( page > numPages ){
-				page = numPages;
-			}
-		}
-		return page;
-	}
-
-	function render(dom){
-		var numPages = dom.data("number-of-pages");
-		var page = dom.data("page");
-		if( numPages <= 1 ){
-			dom.html("");
-		} else {
-			var data = {
-				page: page,
-				total: numPages
-			};
-			dom.html(tmpl.render(data));
-		}
-	}
-
-	function calcNumberOfPages(totalItems, itemsPerPage){
-		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
-	}
+	};
 
 	function bindGotoFirst(dom){
 		dom.on("click", "[mc-name=gotoFirst]", function(event){
@@ -27751,7 +27707,7 @@
 			if( page <= 1 ){
 				return;
 			}
-			$("body").trigger("goto-page", [1]);
+			dom.trigger("goto-page", [1]);
 		});
 	};
 
@@ -27763,7 +27719,7 @@
 			if( page <= 1 ){
 				return;
 			}
-			$("body").trigger("goto-page", [page - 1]);
+			dom.trigger("goto-page", [page - 1]);
 		});
 	};
 
@@ -27775,7 +27731,7 @@
 			if( page >= numPages ){
 				return;
 			}
-			$("body").trigger("goto-page", [page + 1]);
+			dom.trigger("goto-page", [page + 1]);
 		});
 	};
 
@@ -27787,7 +27743,7 @@
 			if( page >= numPages ){
 				return;
 			}
-			$("body").trigger("goto-page", [numPages]);
+			dom.trigger("goto-page", [numPages]);
 		});
 	};
 
@@ -27804,6 +27760,23 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
+
+/***/ },
+/* 175 */,
+/* 176 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var store = {};
+
+	exports.set = function(key, value){
+		store[key] = value;
+	};
+
+	exports.get = function(key){
+		return store[key];
+	};
 
 /***/ }
 /******/ ]);

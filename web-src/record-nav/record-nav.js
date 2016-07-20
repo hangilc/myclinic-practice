@@ -6,66 +6,27 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./record-nav.html");
 var tmpl = hogan.compile(tmplSrc);
 
-exports.setup = function(dom, itemsPerPage, isMain){
-	dom.data("number-of-pages", 0);
-	dom.data("page", 0);
-	dom.data("is-main", isMain);
-	dom.addClass("rx-total-visits-changed");
-	dom.data("rx-total-visits-changed", function(count, pageLoad){
-		dom.data("total-items", count);
-		var numPages = calcNumberOfPages(count, itemsPerPage);
-		dom.data("number-of-pages", numPages);
-		var page = dom.data("page");
-		page = adjustPage(page, numPages);
-		dom.data("page", page);
-		render(dom);
-		if( pageLoad && dom.data("is-main") ){
-			dom.trigger("goto-page", [page]);
+exports.setup = function(dom){
+	dom.addClass("rx-page-settings-changed");
+	dom.data("rx-page-settings-changed", function(value){
+		var totalPages = value.totalPages;
+		var currentPage = value.currentPage;
+		dom.data("number-of-pages", totalPages);
+		dom.data("page", currentPage);
+		if( totalPages <= 1 ){
+			dom.html("");
+		} else {
+			dom.html(tmpl.render({
+				page: currentPage,
+				total: totalPages
+			}));
 		}
-	});
-	dom.addClass("rx-goto-page");
-	dom.data("rx-goto-page", function(page){
-		var numPages = dom.data("number-of-pages");
-		page = adjustPage(page, numPages);
-		dom.data("page", page);
-		render(dom);
 	});
 	bindGotoFirst(dom);
 	bindGotoPrev(dom);
 	bindGotoNext(dom);
 	bindGotoLast(dom);
-}
-
-function adjustPage(page, numPages){
-	if( numPages <= 0 ){
-		page = 0;
-	} else {
-		if( page <= 0 ){
-			page = 1;
-		} else if( page > numPages ){
-			page = numPages;
-		}
-	}
-	return page;
-}
-
-function render(dom){
-	var numPages = dom.data("number-of-pages");
-	var page = dom.data("page");
-	if( numPages <= 1 ){
-		dom.html("");
-	} else {
-		var data = {
-			page: page,
-			total: numPages
-		};
-		dom.html(tmpl.render(data));
-	}
-}
-
-function calcNumberOfPages(totalItems, itemsPerPage){
-	return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
-}
+};
 
 function bindGotoFirst(dom){
 	dom.on("click", "[mc-name=gotoFirst]", function(event){
@@ -75,7 +36,7 @@ function bindGotoFirst(dom){
 		if( page <= 1 ){
 			return;
 		}
-		$("body").trigger("goto-page", [1]);
+		dom.trigger("goto-page", [1]);
 	});
 };
 
@@ -87,7 +48,7 @@ function bindGotoPrev(dom){
 		if( page <= 1 ){
 			return;
 		}
-		$("body").trigger("goto-page", [page - 1]);
+		dom.trigger("goto-page", [page - 1]);
 	});
 };
 
@@ -99,7 +60,7 @@ function bindGotoNext(dom){
 		if( page >= numPages ){
 			return;
 		}
-		$("body").trigger("goto-page", [page + 1]);
+		dom.trigger("goto-page", [page + 1]);
 	});
 };
 
@@ -111,7 +72,7 @@ function bindGotoLast(dom){
 		if( page >= numPages ){
 			return;
 		}
-		$("body").trigger("goto-page", [numPages]);
+		dom.trigger("goto-page", [numPages]);
 	});
 };
 

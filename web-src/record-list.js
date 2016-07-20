@@ -4,6 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var service = require("./service");
 var mUtil = require("../myclinic-util");
+var registry = require("../hc-registry");
 var Title = require("./record/title");
 var Text = require("./record/text");
 var Hoken = require("./record/hoken");
@@ -19,47 +20,16 @@ var recordTmplSrc = require("raw!./record/record.html");
 var recordTmpl = hogan.compile(recordTmplSrc);
 
 exports.setup = function(dom){
-	dom.addClass("rx-visit-changed");
-	dom.data("rx-visit-changed", function(patientId, visitId){
-		dom.data("current-patient-id", patientId);
-		dom.data("current-visit-id", visitId);
-		dom.data("temp-visit-id", 0);
-		if( patientId === 0 ){
-			dom.html("");
-		}
-	})
-	dom.addClass("rx-goto-page");
-	dom.data("rx-goto-page", function(page, itemsPerPage){
-		var patientId = dom.data("current-patient-id");
-		if( page <= 0 || patientId === 0 ){
-			dom.html("");
-		} else {
-			render(dom, page, itemsPerPage);
-		}
-	})
-	dom.addClass("rx-set-temp-visit-id");
-	dom.data("rx-set-temp-visit-id", function(newTempVisitId){
-		dom.data("temp-visit-id", newTempVisitId);
-	})
-}
-
-function render(dom, page, itemsPerPage){
-	var patientId = dom.data("current-patient-id");
-	var currentVisitId = dom.data("current-visit-id");
-	var tempVisitId = dom.data("temp-visit-id");
-	var offset = itemsPerPage * (page - 1);
-	dom.html("");
-	service.listFullVisits(patientId, offset, itemsPerPage, function(err, result){
-		if( err ){
-			alert(err);
-			return;
-		}
-		result.forEach(function(data){
+	dom.addClass("rx-record-list-changed");
+	dom.data("rx-record-list-changed", function(records){
+		var currentVisitId = registry.get("getCurrentVisitId")();
+		var tempVisitId = registry.get("getTempVisitId")();
+		dom.html("");
+		records.forEach(function(data){
 			dom.append(makeRecord(data, currentVisitId, tempVisitId));
 		})
-	})
-
-}
+	});
+};
 
 function makeRecord(visit, currentVisitId, tempVisitId){
 	var e = $(recordTmpl.render(visit));
@@ -102,34 +72,3 @@ function makeRecordOrig(visit){
 	return e;
 }
 
-function RecordList(dom){
-	this.dom = dom;
-}
-
-RecordList.prototype.render = function(){
-	return this;
-};
-
-RecordList.prototype.update = function(patientId, offset, n, done){
-	if( patientId === 0 ){
-		this.dom.html("");
-		done();
-		return;
-	}
-	var wrapper = $("<div></div>");
-	this.dom.html("").append(wrapper);
-	var main = this.main;
-	service.listFullVisits(patientId, offset, n, function(err, result){
-		if( err ){
-			done(err);
-			return;
-		}
-		result.forEach(function(data){
-			var e = makeRecord(data, main);
-			wrapper.append(e);
-		});
-		done();
-	})
-};
-
-//module.exports = RecordList;
