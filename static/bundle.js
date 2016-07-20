@@ -51,7 +51,7 @@
 	var service = __webpack_require__(3);
 	var PatientInfo = __webpack_require__(4);
 	var CurrentManip = __webpack_require__(170);
-	var RecordNav = __webpack_require__(12);
+	var RecordNav = __webpack_require__(172);
 	var RecordList = __webpack_require__(14);
 	var Disease = __webpack_require__(146);
 	var SelectPatient = __webpack_require__(152);
@@ -71,9 +71,9 @@
 
 	CurrentManip.setup($("#current-manip-pane"));
 
-	var recordNavs = $(".record-nav-wrapper").map(function(index, e){
-		return new RecordNav($(e), itemsPerPage).render();
-	}).get();
+	$(".record-nav-wrapper").each(function(){
+		RecordNav.setup($(this), itemsPerPage);
+	});
 
 	var recordList = new RecordList($("#record-list")).render();
 
@@ -105,11 +105,12 @@
 		//patientInfo.update(null);
 		$("body").trigger("patient-changed", [null]);
 		$("body").trigger("visit-changed", [0, 0]);
+		$("body").trigger("total-visits-changed", [0]);
 		//currentManip.update(0, 0);
-		recordNavs.forEach(function(nav){
-			nav.setTotalItems(0);
-			nav.update(0);
-		});
+		// recordNavs.forEach(function(nav){
+		// 	nav.setTotalItems(0);
+		// 	nav.update(0);
+		// });
 		recordList.update(0, 0, 0, function(){});
 		disease.update(null);
 	}
@@ -136,9 +137,10 @@
 						done(err);
 						return;
 					}
-					recordNavs.forEach(function(nav){
-						nav.setTotalItems(count);
-					});
+					$("body").trigger("total-visits-changed", [count]);
+					// recordNavs.forEach(function(nav){
+					// 	nav.setTotalItems(count);
+					// });
 					$("body").trigger("goto-page", 1);
 					done();
 				})
@@ -229,10 +231,13 @@
 			page = 1;
 		}
 		var offset = itemsPerPage * (page-1);
-		recordNavs.forEach(function(nav){
+		$(".rx-goto-page").each(function(){
+			$(this).data("rx-goto-page")(page);
+		})
+	/*	recordNavs.forEach(function(nav){
 			nav.update(page);
 		})
-		recordList.update(currentPatientId, offset, itemsPerPage, function(err){
+	*/	recordList.update(currentPatientId, offset, itemsPerPage, function(err){
 			if( err ){
 				alert(err);
 				return;
@@ -307,6 +312,14 @@
 	});
 
 	$("body").trigger("visit-changed", [0, 0]);
+
+	$("body").on("total-visits-changed", function(event, count){
+		$(".rx-total-visits-changed").each(function(){
+			$(this).data("rx-total-visits-changed")(count);
+		})	
+	});
+
+	$("body").trigger("total-visits-changed", [0]);
 
 
 
@@ -11748,125 +11761,8 @@
 /***/ },
 /* 10 */,
 /* 11 */,
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-
-	var tmplSrc = __webpack_require__(13);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function calcNumberOfPages(totalItems, itemsPerPage){
-		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
-	}
-
-	function RecordNav(dom, itemsPerPage){
-		this.dom = dom;
-		this.itemsPerPage = itemsPerPage;
-		this.totalItems = 0;
-		this.numberOfPages = 0;
-		this.currentPage = 0;
-	}
-
-	RecordNav.prototype.render = function(){
-		this.bindGotoFirst();
-		this.bindGotoPrev();
-		this.bindGotoNext();
-		this.bindGotoLast();
-		return this;
-	};
-
-	RecordNav.prototype.bindGotoFirst = function(){
-		var self = this;
-		if( this.numberOfPages < 1 ){
-			return;
-		}
-		this.dom.on("click", "[mc-name=gotoFirst]", function(event){
-			event.preventDefault();
-			if( self.currentPage === 1 ){
-				return;
-			}
-			$("body").trigger("goto-page", [1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoPrev = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=gotoPrev]", function(event){
-			event.preventDefault();
-			if( self.currentPage <= 1 ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.currentPage - 1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoNext = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=gotoNext]", function(event){
-			event.preventDefault();
-			if( self.currentPage >= self.numberOfPages ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.currentPage + 1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoLast = function(){
-		var self = this;
-		if( this.numberOfPages < 1 ){
-			return;
-		}
-		this.dom.on("click", "[mc-name=gotoLast]", function(event){
-			event.preventDefault();
-			if( self.currentPage === self.numberOfPages ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.numberOfPages]);
-		});
-	};
-
-	RecordNav.prototype.setTotalItems = function(n){
-		this.totalItems = +n;
-		this.numberOfPages = calcNumberOfPages(n, this.itemsPerPage);
-		return this;
-	};
-
-	RecordNav.prototype.update = function(page){
-		if( this.numberOfPages <= 0 ){
-			this.currentPage = 0;
-			this.dom.html("");
-		}
-		if( this.numberOfPages === 1 ){
-			this.currentPage = 1;
-			this.dom.html("");
-		} else {
-			if( page < 1 ){
-				page = 1;
-			} else if( page > this.numberOfPages ){
-				page = this.numberOfPages;
-			}
-			var data = {
-				page: page,
-				total: this.numberOfPages
-			};
-			this.currentPage = +page;
-			this.dom.html(tmpl.render(data));
-		}
-	}
-
-	module.exports = RecordNav;
-
-/***/ },
-/* 13 */
-/***/ function(module, exports) {
-
-	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
-
-/***/ },
+/* 12 */,
+/* 13 */,
 /* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -27696,6 +27592,132 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+
+/***/ },
+/* 172 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(5);
+
+	var tmplSrc = __webpack_require__(173);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom, itemsPerPage){
+		dom.data("number-of-pages", 0);
+		dom.data("page", 0);
+		dom.addClass("rx-total-visits-changed");
+		dom.data("rx-total-visits-changed", function(count){
+			dom.data("total-items", count);
+			var numPages = calcNumberOfPages(count, itemsPerPage);
+			dom.data("number-of-pages", numPages);
+			var page = dom.data("page");
+			page = adjustPage(page, numPages);
+			dom.data("page", page);
+			render(dom);
+		});
+		dom.addClass("rx-goto-page");
+		dom.data("rx-goto-page", function(page){
+			var numPages = dom.data("number-of-pages");
+			page = adjustPage(page, numPages);
+			dom.data("page", page);
+			render(dom);
+		});
+		bindGotoFirst(dom);
+		bindGotoPrev(dom);
+		bindGotoNext(dom);
+		bindGotoLast(dom);
+	}
+
+	function adjustPage(page, numPages){
+		if( numPages <= 0 ){
+			page = 0;
+		} else {
+			if( page <= 0 ){
+				page = 1;
+			} else if( page > numPages ){
+				page = numPages;
+			}
+		}
+		return page;
+	}
+
+	function render(dom){
+		var numPages = dom.data("number-of-pages");
+		var page = dom.data("page");
+		if( numPages <= 1 ){
+			dom.html("");
+		} else {
+			var data = {
+				page: page,
+				total: numPages
+			};
+			dom.html(tmpl.render(data));
+		}
+	}
+
+	function calcNumberOfPages(totalItems, itemsPerPage){
+		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
+	}
+
+	function bindGotoFirst(dom){
+		dom.on("click", "[mc-name=gotoFirst]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page <= 1 ){
+				return;
+			}
+			$("body").trigger("goto-page", [1]);
+		});
+	};
+
+	function bindGotoPrev(dom){
+		dom.on("click", "[mc-name=gotoPrev]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page <= 1 ){
+				return;
+			}
+			$("body").trigger("goto-page", [page - 1]);
+		});
+	};
+
+	function bindGotoNext(dom){
+		dom.on("click", "[mc-name=gotoNext]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			console.log("goto-page", page, numPages);
+			if( page >= numPages ){
+				return;
+			}
+			$("body").trigger("goto-page", [page + 1]);
+		});
+	};
+
+	function bindGotoLast(dom){
+		dom.on("click", "[mc-name=gotoLast]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page >= numPages ){
+				return;
+			}
+			$("body").trigger("goto-page", [numPages]);
+		});
+	};
+
+
+
+/***/ },
+/* 173 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
 
 /***/ }
 /******/ ]);

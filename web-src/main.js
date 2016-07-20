@@ -5,7 +5,7 @@ var conti = require("conti");
 var service = require("./service");
 var PatientInfo = require("./patient-info/patient-info");
 var CurrentManip = require("./current-manip/current-manip");
-var RecordNav = require("./record-nav");
+var RecordNav = require("./record-nav/record-nav");
 var RecordList = require("./record-list");
 var Disease = require("./disease");
 var SelectPatient = require("./select-patient");
@@ -25,9 +25,9 @@ PatientInfo.setup($("#patient-info-wrapper"));
 
 CurrentManip.setup($("#current-manip-pane"));
 
-var recordNavs = $(".record-nav-wrapper").map(function(index, e){
-	return new RecordNav($(e), itemsPerPage).render();
-}).get();
+$(".record-nav-wrapper").each(function(){
+	RecordNav.setup($(this), itemsPerPage);
+});
 
 var recordList = new RecordList($("#record-list")).render();
 
@@ -59,11 +59,12 @@ function clearComponents(){
 	//patientInfo.update(null);
 	$("body").trigger("patient-changed", [null]);
 	$("body").trigger("visit-changed", [0, 0]);
+	$("body").trigger("total-visits-changed", [0]);
 	//currentManip.update(0, 0);
-	recordNavs.forEach(function(nav){
-		nav.setTotalItems(0);
-		nav.update(0);
-	});
+	// recordNavs.forEach(function(nav){
+	// 	nav.setTotalItems(0);
+	// 	nav.update(0);
+	// });
 	recordList.update(0, 0, 0, function(){});
 	disease.update(null);
 }
@@ -90,9 +91,10 @@ function updateComponents(){
 					done(err);
 					return;
 				}
-				recordNavs.forEach(function(nav){
-					nav.setTotalItems(count);
-				});
+				$("body").trigger("total-visits-changed", [count]);
+				// recordNavs.forEach(function(nav){
+				// 	nav.setTotalItems(count);
+				// });
 				$("body").trigger("goto-page", 1);
 				done();
 			})
@@ -183,10 +185,13 @@ $("body").on("goto-page", function(event, page){
 		page = 1;
 	}
 	var offset = itemsPerPage * (page-1);
-	recordNavs.forEach(function(nav){
+	$(".rx-goto-page").each(function(){
+		$(this).data("rx-goto-page")(page);
+	})
+/*	recordNavs.forEach(function(nav){
 		nav.update(page);
 	})
-	recordList.update(currentPatientId, offset, itemsPerPage, function(err){
+*/	recordList.update(currentPatientId, offset, itemsPerPage, function(err){
 		if( err ){
 			alert(err);
 			return;
@@ -261,4 +266,12 @@ $("body").on("visit-changed", function(event, patientId, visitId){
 });
 
 $("body").trigger("visit-changed", [0, 0]);
+
+$("body").on("total-visits-changed", function(event, count){
+	$(".rx-total-visits-changed").each(function(){
+		$(this).data("rx-total-visits-changed")(count);
+	})	
+});
+
+$("body").trigger("total-visits-changed", [0]);
 
