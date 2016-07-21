@@ -4,6 +4,8 @@ var hogan = require("hogan");
 var mUtil = require("../../myclinic-util");
 var service = require("../service");
 var $ = require("jquery");
+require("../../jquery-broadcast");
+var task = require("../task")
 
 var tmplHtml = require("raw!./recent-visits.html");
 var optionTmpl = hogan.compile(require("raw!./recent-visits-option.html"));
@@ -12,6 +14,10 @@ exports.setup = function(dom){
 	dom.html(tmplHtml);
 	bindButton(dom);
 	bindOption(dom);
+	dom.listen("rx-page-start", function(pageData){
+		console.log(pageData.currentPatient);
+		getSelectDom(dom).hide().html("");
+	})
 };
 
 function getSelectDom(dom){
@@ -24,7 +30,9 @@ function bindButton(dom){
 		if( select.is(":visible") ){
 			select.hide().html("");
 		} else {
-			service.recentVisits(function(err, list){
+			task.run(function(cb){
+				service.recentVisits(cb);
+			}, function(err, list){
 				if( err ){
 					alert(err);
 					return;
@@ -40,7 +48,6 @@ function bindOption(dom){
 	dom.on("dblclick", "option", function(){
 		var patientId = $(this).val();
 		dom.trigger("start-patient", [patientId]);
-		getSelectDom(dom).hide().html("");
 	});
 }
 
