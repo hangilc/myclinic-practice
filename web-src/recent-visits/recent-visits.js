@@ -15,7 +15,7 @@ exports.setup = function(dom){
 	bindButton(dom);
 	bindOption(dom);
 	dom.listen("rx-page-start", function(pageData){
-		console.log(pageData.currentPatient);
+		console.log(pageData);
 		getSelectDom(dom).hide().html("");
 	})
 };
@@ -47,7 +47,7 @@ function bindButton(dom){
 function bindOption(dom){
 	dom.on("dblclick", "option", function(){
 		var patientId = $(this).val();
-		dom.trigger("start-patient", [patientId]);
+		dom.trigger("start-patient", [+patientId]);
 	});
 }
 

@@ -5,6 +5,7 @@ var conti = require("conti");
 var mUtil = require("../myclinic-util");
 var task = require("./task");
 var service = require("./service");
+var appData = require("./app-data");
 
 var RecentVisits = require("./recent-visits/recent-visits");
 
@@ -15,44 +16,32 @@ var pageData = {
 	currentVisitId: 0,
 	tempVisitId: 0,
 	currentPage: 0,
-	totalPages: 0
+	totalPages: 0,
+	itemsPerPage: 10,
 };
 
-var itemsPerPage = 10;
+window.getCurrentPatientId = function(){
+	return pageData.currentPatientId;
+};
 
-function loadPageData(cb){
-	var ret = mUtil.assign({}, pageData);
-	conti.exec([
-		function(done){
-			if( ret.currentPatientId > 0 ){
-				service.getPatient(ret.currentPatientId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					ret.currentPatient = result;
-					done();
-				})
-			} else {
-				ret.currentPatient = null;
-				done();
-			}
-		}
-	], function(err){
-		if( err ){
-			cb(err);
-			return;
-		}
-		cb(undefined, ret);
-	})
-}
+window.getCurrentVisitId = function(){
+	return pageData.currentVisitId;
+};
+
+window.getTempVisitId = function(){
+	return pageData.tempVisitId;
+};
 
 $("body").on("start-patient", function(event, patientId){
-	task.run(loadPageData, function(err, pageData){
+	pageData.currentPatientId = patientId;
+	pageData.currentVisitId = 0;
+	pageData.tempVisitId = 0;
+	task.run(appData.makeLoader(pageData), function(err){
 		if( err ){
 			alert(err);
 			return;
 		}
-		$("body").broadcast("rx-page-start", pageData);
+		var data = mUtil.assign({}, pageData);
+		$("body").broadcast("rx-page-start", data);
 	});
 });
