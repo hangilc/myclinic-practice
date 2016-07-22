@@ -14,8 +14,7 @@ exports.setup = function(dom){
 	dom.html(tmplHtml);
 	bindButton(dom);
 	bindOption(dom);
-	dom.listen("rx-page-start", function(pageData){
-		console.log(pageData);
+	dom.listen("rx-start-page", function(pageData){
 		getSelectDom(dom).hide().html("");
 	})
 };

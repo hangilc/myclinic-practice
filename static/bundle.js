@@ -51,20 +51,27 @@
 	var mUtil = __webpack_require__(3);
 	var task = __webpack_require__(109);
 	var service = __webpack_require__(111);
-	var appData = __webpack_require__(112);
+	var AppData = __webpack_require__(112);
 
-	var RecentVisits = __webpack_require__(113);
+	var PatientInfo = __webpack_require__(121);
+	var CurrentManip = __webpack_require__(124);
+	var RecordNav = __webpack_require__(126);
+	var RecordList = __webpack_require__(128);
+	var Disease = __webpack_require__(155);
+	var SelectPatient = __webpack_require__(161);
+	var SearchPatient = __webpack_require__(165);
+	var RecentVisits = __webpack_require__(114);
+	var TodaysVisits = __webpack_require__(168);
+	var Reception = __webpack_require__(171);
 
+	PatientInfo.setup($("#patient-info-wrapper"));
+	CurrentManip.setup($("#current-manip-pane"));
+	$(".record-nav-wrapper").each(function(i){
+		RecordNav.setup($(this), i);
+	});
 	RecentVisits.setup($("#recent-visits-wrapper"));
 
-	var pageData = {
-		currentPatientId: 0,
-		currentVisitId: 0,
-		tempVisitId: 0,
-		currentPage: 0,
-		totalPages: 0,
-		itemsPerPage: 10,
-	};
+	var appData = new AppData();
 
 	window.getCurrentPatientId = function(){
 		return pageData.currentPatientId;
@@ -78,18 +85,23 @@
 		return pageData.tempVisitId;
 	};
 
-	$("body").on("start-patient", function(event, patientId){
-		pageData.currentPatientId = patientId;
-		pageData.currentVisitId = 0;
-		pageData.tempVisitId = 0;
-		task.run(appData.makeLoader(pageData), function(err){
+	function startPage(patientId, visitId){
+		appData.startPage(patientId, visitId, function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
-			var data = mUtil.assign({}, pageData);
-			$("body").broadcast("rx-page-start", data);
+			var data = mUtil.assign({}, appData);
+			$("body").broadcast("rx-start-page", data);
 		});
+	}
+
+	$("body").on("start-patient", function(event, patientId){
+		startPage(patientId, 0);
+	});
+
+	$("body").on("end-patient", function(event){
+		startPage(0, 0);
 	});
 
 /***/ },
@@ -24724,7 +24736,7 @@
 	var task = __webpack_require__(109);
 	var service = __webpack_require__(111);
 	var conti = __webpack_require__(2);
-	var contiPara = __webpack_require__(120);
+	var contiPara = __webpack_require__(113);
 	conti.para = contiPara.para;
 
 	function calcNumberOfPages(totalItems, itemsPerPage){
@@ -24803,38 +24815,144 @@
 		}
 	}
 
-	exports.makeLoader = function(pageData){
+	function makeDiseasesLoader(pageData){
+		var patientId = pageData.currentPatientId;
+		return function(done){
+			if( patientId > 0 ){
+				service.listCurrentFullDiseases(patientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					pageData.diseases = result;
+					done();
+				})
+			} else {
+				pageData.diseases = [];
+				done();
+			}
+		}
+	}
+
+	function makeLoader(appData){
 		return function(done){
 			conti.exec([
-				makePatientLoader(pageData),
-				makeCalcVisitsLoader(pageData),
-				makeFullVisitsLoader(pageData)
+				makePatientLoader(appData),
+				makeCalcVisitsLoader(appData),
+				makeFullVisitsLoader(appData),
+				makeDiseasesLoader(appData)
 			], done);
 		}
 	}
 
+	function taskClearPage(appData){
+		return function(done){
+			conti.exec([
+				function(done){
+					if( appData.currentVisitId > 0 ){
+						service.suspendExam(appData.currentVisitId, done)
+					} else {
+						done();
+					}
+				}
+			], function(err){
+				if( err ){
+					done(err);
+					return;
+				}
+				appData.clear();
+				done();
+			})
+		}
+	}
+
+	function AppData(){
+		this.clear();
+	}
+
+	AppData.prototype.clear = function(){
+		this.currentPatientId = 0;
+		this.currentVisitId = 0;
+		this.tempVisitId = 0;
+		this.currentPatient = null;
+		this.itemsPerPage = 10;
+		this.totalPages = 0;
+		this.currentPage = 0;
+		this.record_list = [];
+		this.diseases = [];
+	};
+
+	AppData.prototype.startPage = function(patientId, visitId, done){
+		var self = this;
+		task.run(function(done){
+			conti.exec([
+				taskClearPage(self),
+				function(done){
+					self.currentPatientId = patientId;
+					self.currentVisitId = visitId;
+					done();
+				},
+				makeLoader(self)
+			], done);
+		}, done);
+	};
+
+	module.exports = AppData;
+
 /***/ },
 /* 113 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	exports.para = function(funs, done){
+		var funs = funs.slice();
+		var n = funs.length;
+		var no_more = false;
+		funs.forEach(function(f){
+			if( no_more ){
+				return;
+			}
+			f(function(err){
+				if( no_more ){
+					return;
+				}
+				if( err ){
+					no_more = true;
+					done(err);
+					return;
+				}
+				n -= 1;
+				if( n === 0 ){
+					done();
+				}
+			})
+		})
+	};
+
+
+
+/***/ },
+/* 114 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var hogan = __webpack_require__(114);
+	var hogan = __webpack_require__(115);
 	var mUtil = __webpack_require__(3);
 	var service = __webpack_require__(111);
 	var $ = __webpack_require__(1);
-	__webpack_require__(117);
+	__webpack_require__(118);
 	var task = __webpack_require__(109)
 
-	var tmplHtml = __webpack_require__(118);
-	var optionTmpl = hogan.compile(__webpack_require__(119));
+	var tmplHtml = __webpack_require__(119);
+	var optionTmpl = hogan.compile(__webpack_require__(120));
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
 		bindButton(dom);
 		bindOption(dom);
-		dom.listen("rx-page-start", function(pageData){
-			console.log(pageData);
+		dom.listen("rx-start-page", function(pageData){
 			getSelectDom(dom).hide().html("");
 		})
 	};
@@ -24881,7 +24999,7 @@
 
 
 /***/ },
-/* 114 */
+/* 115 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -24901,14 +25019,14 @@
 
 	// This file is for use with Node.js. See dist/ for browser files.
 
-	var Hogan = __webpack_require__(115);
-	Hogan.Template = __webpack_require__(116).Template;
+	var Hogan = __webpack_require__(116);
+	Hogan.Template = __webpack_require__(117).Template;
 	Hogan.template = Hogan.Template;
 	module.exports = Hogan;
 
 
 /***/ },
-/* 115 */
+/* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -25337,7 +25455,7 @@
 
 
 /***/ },
-/* 116 */
+/* 117 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -25684,7 +25802,7 @@
 
 
 /***/ },
-/* 117 */
+/* 118 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -25712,49 +25830,1954 @@
 	};
 
 /***/ },
-/* 118 */
+/* 119 */
 /***/ function(module, exports) {
 
 	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 119 */
+/* 120 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ },
-/* 120 */
-/***/ function(module, exports) {
+/* 121 */
+/***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	exports.para = function(funs, done){
-		var funs = funs.slice();
-		var n = funs.length;
-		var no_more = false;
-		funs.forEach(function(f){
-			if( no_more ){
-				return;
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(123);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom){
+		dom.listen("rx-start-page", function(appData){
+			if( appData.currentPatientId > 0 ){
+				var data = appData.currentPatient;
+				var data = mUtil.assign({}, data, {
+					sex_as_kanji: mUtil.sexToKanji(data.sex)
+				});
+				if( data.birth_day !== "0000-00-00" ){
+					data.birthday_part = kanjidate.format("{G}{N}年{M}月{D}日生", data.birth_day);
+					data.age_part = mUtil.calcAge(data.birth_day) + "才";
+				}
+				dom.html(tmpl.render(data));
+			} else {
+				dom.html("");
 			}
-			f(function(err){
-				if( no_more ){
-					return;
+		})
+		dom.on("click", "[mc-name=detailLink]", function(event){
+			event.preventDefault();
+			dom.find("[mc-name=patientInfoDetail]").toggle();
+		});
+	};
+
+
+/***/ },
+/* 122 */
+/***/ function(module, exports, __webpack_require__) {
+
+	(function(exports){
+
+	"use strict";
+
+	var trunc = Math.trunc || function(x){
+		if( x >= 0 ){
+			return Math.floor(x);
+		} else {
+			return Math.ceil(x);
+		}
+	};
+
+	function ge(year1, month1, day1, year2, month2, day2){
+		if( year1 > year2 ){
+			return true;
+		}
+		if( year1 < year2 ){
+			return false;
+		}
+		if( month1 > month2 ){
+			return true;
+		}
+		if( month1 < month2 ){
+			return false;
+		}
+		return day1 >= day2;
+	}
+
+	function gengouToAlpha(gengou){
+		switch(gengou){
+			case "平成": return "Heisei";
+			case "昭和": return "Shouwa";
+			case "大正": return "Taishou";
+			case "明治": return "Meiji";
+			default: throw new Error("unknown gengou: " + gengou);
+		}
+	}
+
+	function padLeft(str, n, ch){
+		var m = n - str.length;
+		var pad = "";
+		while( m-- > 0 ){
+			pad += ch;
+		}
+		return pad + str;
+	}
+
+	var zenkakuDigits = ["０", "１", "２", "３", "４", "５", "６", "７", "８", "９"];
+	var alphaDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
+	function isZenkakuDigit(ch){
+		return zenkakuDigits.indexOf(ch) >= 0;
+	}
+
+	function isAlphaDigit(ch){
+		return alphaDigits.indexOf(ch) >= 0;
+	}
+
+	function alphaDigitToZenkaku(ch){
+		var i = alphaDigits.indexOf(ch);
+		return i >= 0 ? zenkakuDigits[i] : ch;
+	}
+
+	function isDateObject(obj){
+		return obj instanceof Date;
+	}
+
+	function removeOpt(opts, what){
+		var result = [];
+		for(var i=0;i<opts.length;i++){
+			var opt = opts[i];
+			if( opt === what ){
+				continue;
+			} else {
+				result.push(opt);
+			}
+		}
+		return result;
+	}
+
+	function toGengou(year, month, day){
+		if( ge(year, month, day, 1989, 1, 8) ){
+			return { gengou:"平成", nen:year - 1988 };
+		}
+		if( ge(year, month, day, 1926, 12, 25) ){
+			return { gengou:"昭和", nen:year - 1925 };
+		}
+		if( ge(year, month, day, 1912, 7, 30) ){
+			return { gengou:"大正", nen:year - 1911 };
+		}
+		if( ge(year, month, day, 1873, 1, 1) ){
+			return { gengou: "明治", nen: year - 1867 };
+		}
+		return { gengou: "西暦", nen: year };
+	}
+
+	exports.toGengou = toGengou;
+
+	function fromGengou(gengou, nen){
+	    nen = Math.floor(+nen);
+	    if( nen < 0 ){
+	    	throw new Error("invalid nen: " + nen);
+	    }
+	    switch (gengou) {
+	        case "平成":
+	            return 1988 + nen;
+	        case "昭和":
+	            return 1925 + nen;
+	        case "大正":
+	            return 1911 + nen;
+	        case "明治":
+	            return 1867 + nen;
+	        case "西暦":
+	            return nen;
+	        default:
+	            throw new Error("invalid gengou: " + gengou);
+	    }
+	}
+
+	exports.fromGengou = fromGengou;
+
+	var youbi = ["日", "月", "火", "水", "木", "金", "土"];
+
+	function toYoubi(dayOfWeek){
+		return youbi[dayOfWeek];
+	}
+
+	exports.toYoubi = toYoubi;
+
+	function KanjiDate(date){
+		this.year = date.getFullYear();
+		this.month = date.getMonth()+1;
+		this.day = date.getDate();
+		this.hour = date.getHours();
+		this.minute = date.getMinutes();
+		this.second = date.getSeconds();
+		this.msec = date.getMilliseconds();
+		this.dayOfWeek = date.getDay();
+		var g = toGengou(this.year, this.month, this.day);
+		this.gengou = g.gengou;
+		this.nen = g.nen;
+		this.youbi = youbi[this.dayOfWeek];
+	}
+
+	function KanjiDateExplicit(year, month, day, hour, minute, second, millisecond){
+		if( hour === undefined ) hour = 0;
+		if( minute === undefined ) minute = 0;
+		if( second === undefined ) second = 0;
+		if( millisecond === undefined ) millisecond = 0;
+		var date = new Date(year, month-1, day, hour, minute, second, millisecond);
+		return new KanjiDate(date);
+	}
+
+	function KanjiDateFromString(str){
+		var m;
+		m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+		if( m ){
+			return KanjiDateExplicit(+m[1], +m[2], +m[3]);
+		}
+		m = str.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+		if( m ){
+			return KanjiDateExplicit(+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]);
+		}
+		throw new Error("cannot convert to KanjiDate");
+	}
+
+	function parseFormatString(fmtStr){
+		var result = [];
+		var parts = fmtStr.split(/(\{[^}]+)\}/);
+		parts.forEach(function(part){
+			if( part === "" ) return;
+			if( part[0] === "{" ){
+				part = part.substring(1);
+				var token = {opts: []};
+				var colon = part.indexOf(":");
+				if( part.indexOf(":") >= 0 ){
+					token.part = part.substring(0, colon);
+					var optStr = part.substring(colon+1).trim();
+					if( optStr !== "" ){
+						if( optStr.indexOf(",") >= 0 ){
+							token.opts = optStr.split(/\s*,\s*/);
+						} else {
+							token.opts = [optStr];
+						}
+					}
+				} else {
+					token.part = part;
 				}
-				if( err ){
-					no_more = true;
-					done(err);
-					return;
+				result.push(token);
+			} else {
+				result.push(part);
+			}
+		});
+		return result;
+	}
+
+	var format1 = "{G}{N}年{M}月{D}日（{W}）";
+	var format2 = "{G}{N}年{M}月{D}日";
+	var format3 = "{G:a}{N}.{M}.{D}";
+	var format4 = "{G}{N:2}年{M:2}月{D:2}日（{W}）";
+	var format5 = "{G}{N:2}年{M:2}月{D:2}日";
+	var format6 = "{G:a}{N:2}.{M:2}.{D:2}";
+	var format7 = "{G}{N}年{M}月{D}日（{W}） {a}{h:12}時{m}分{s}秒";
+	var format8 = "{G}{N:2}年{M:2}月{D:2}日（{W}） {a}{h:12,2}時{m:2}分{s:2}秒";
+	var format9 = "{G}{N}年{M}月{D}日（{W}） {a}{h:12}時{m}分";
+	var format10 = "{G}{N:2}年{M:2}月{D:2}日（{W}） {a}{h:12,2}時{m:2}分";
+	var format11 = "{G}{N:z}年{M:z}月{D:z}日";
+	var format12 = "{G}{N:z,2}年{M:z,2}月{D:z,2}日";
+	var format13 = "{Y}-{M:2}-{D:2}";
+	var format14 = "{Y}-{M:2}-{D:2} {h:2}:{m:2}:{s:2}";
+
+	exports.f1 = format1;
+	exports.f2 = format2;
+	exports.f3 = format3;
+	exports.f4 = format4;
+	exports.f5 = format5;
+	exports.f6 = format6;
+	exports.f7 = format7;
+	exports.f8 = format8;
+	exports.f9 = format9;
+	exports.f10 = format10;
+	exports.f11 = format11;
+	exports.f12 = format12;
+	exports.f13 = format13;
+	exports.f14 = format14;
+	exports.fSqlDate = format13;
+	exports.fSqlDateTime = format14;
+
+	function gengouPart(kdate, opts){
+		var style = "2";
+		opts.forEach(function(opt){
+			if( ["2", "1", "a", "alpha"].indexOf(opt) >= 0 ){
+				style = opt;
+			}
+		})
+		switch(style){
+			case "2": return kdate.gengou;
+			case "1": return kdate.gengou[0]; 
+			case "a": return gengouToAlpha(kdate.gengou)[0]; 
+			case "alpha": return gengouToAlpha(kdate.gengou);
+			default: return kdate.gengou;
+		}
+	}
+
+	function numberPart(num, opts){
+		var zenkaku = false;
+		var width = 1;
+		opts.forEach(function(opt){
+			switch(opt){
+				case "1": width = 1; break;
+				case "2": width = 2; break;
+				case "z": zenkaku = true; break;
+			}
+		});
+		var result = num.toString();
+		if( zenkaku ){
+			result = result.split("").map(alphaDigitToZenkaku).join("");
+		}
+		if( width > 1 && num < 10 ){
+			result = (zenkaku ? "０" : "0") + result;
+		}
+		return result;
+	}
+
+	function nenPart(kdate, opts){
+		if( kdate.nen === 1 && opts.indexOf("g") >= 0 ){
+			return "元";
+		} else {
+			return numberPart(kdate.nen, opts);
+		}
+	}
+
+	function youbiPart(kdate, opts){
+		var style;
+		opts.forEach(function(opt){
+			if( ["1", "2", "3", "alpha"].indexOf(opt) >= 0 ){
+				style = opt;
+			}
+		})
+		switch(style){
+			case "1": return kdate.youbi;
+			case "2": return kdate.youbi + "曜";
+			case "3": return kdate.youbi + "曜日";
+			case "alpha": return dayOfWeek[kdate.dayOfWeek];
+			default: return kdate.youbi;
+		}
+	}
+
+	function hourPart(hour, opts){
+		var ampm = false;
+		if( opts.indexOf("12") >= 0 ){
+			ampm = true;
+			opts = removeOpt(opts, "12");
+		}
+		if( ampm ){
+			hour = hour % 12;
+		}
+		return numberPart(hour, opts);
+	}
+
+	function ampmPart(kdate, opts){
+		var style = "kanji";
+		opts.forEach(function(opt){
+			switch(opt){
+				case "am/pm": style = "am/pm"; break;
+				case "AM/PM": style = "AM/PM"; break;
+			}
+		});
+		var am = kdate.hour < 12;
+		switch(style){
+			case "kanji": return am ? "午前" : "午後";
+			case "am/pm": return am ? "am" : "pm";
+			case "AM/PM": return am ? "AM" : "PM";
+			default : throw new Error("unknown style for AM/PM");
+		}
+	}
+
+	function yearPart(year, opts){
+		return year.toString();
+	}
+
+	function format(formatStr, kdate){
+		var output = [];
+		var tokens = parseFormatString(formatStr);
+		tokens.forEach(function(token){
+			if( typeof token === "string" ){
+				output.push(token);
+			} else {
+				switch(token.part){
+					case "G": output.push(gengouPart(kdate, token.opts)); break;
+					case "N": output.push(nenPart(kdate, token.opts)); break;
+					case "M": output.push(numberPart(kdate.month, token.opts)); break;
+					case "D": output.push(numberPart(kdate.day, token.opts)); break;
+					case "W": output.push(youbiPart(kdate, token.opts)); break;
+					case "h": output.push(hourPart(kdate.hour, token.opts)); break;
+					case "m": output.push(numberPart(kdate.minute, token.opts)); break;
+					case "s": output.push(numberPart(kdate.second, token.opts)); break;
+					case "a": output.push(ampmPart(kdate, token.opts)); break;
+					case "Y": output.push(yearPart(kdate.year, token.opts)); break;
 				}
-				n -= 1;
-				if( n === 0 ){
-					done();
-				}
-			})
+			}
+		})
+		return output.join("");
+	}
+
+	exports.format = function(){
+		var narg = arguments.length;
+		var formatStr, args, i;
+		if( narg === 0 ){
+			return format(format1, new KanjiDate(new Date()));
+		} else if( narg === 1 ){
+			return format(format1, cvt(arguments[0]));
+		} else {
+			formatStr = arguments[0];
+			if( formatStr == null ){
+				formatStr = format1;
+			}
+			args = [];
+			for(i=1;i<arguments.length;i++){
+				args.push(arguments[i]);
+			}
+			if( args.length === 1 ){
+				return format(formatStr, cvt(args[0]));
+			} else {
+				return format(formatStr, KanjiDateExplicit.apply(null, args));
+			}
+		}
+		throw new Error("invalid format call");
+
+		function cvt(x){
+			if( isDateObject(x) ){
+				return new KanjiDate(x);
+			} else if( typeof x === "string" ){
+				return KanjiDateFromString(x);
+			}
+			throw new Error("cannot convert to KanjiDate");
+		}
+	}
+
+	})( false ? (window.kanjidate = {}) : exports);
+
+/***/ },
+/* 123 */
+/***/ function(module, exports) {
+
+	module.exports = "[{{patient_id}}]\r\n{{last_name}} {{first_name}}\r\n（{{last_name_yomi}} {{first_name_yomi}}）\r\n{{birthday_part}}\r\n{{age_part}}\r\n{{sex_as_kanji}}性\r\n<a href=\"javascript:void(0)\" mc-name=\"detailLink\" class=\"cmd-link\" style=\"font-size:13px\">詳細</a>\r\n\r\n<div style=\"display:none; margin:4px; padding:2px 0 0 0; border: 1px solid #ccc\" mc-name=\"patientInfoDetail\">\r\n\t<div style=\"margin:6px;\">電話番号： {{phone}}</div>\r\n\t<div style=\"margin:6px;\">住所： {{address}}</div>\r\n</div>\r\n"
+
+/***/ },
+/* 124 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+
+	var tmplHtml = __webpack_require__(125);
+
+	exports.setup = function(dom){
+		dom.listen("rx-start-page", function(appData){
+			if( appData.currentPatientId > 0 ){
+				dom.html(tmplHtml);
+			} else {
+				dom.html("");
+			}
+		})
+		dom.on("click", "[mc-name=endPatientButton]", function(event){
+			event.preventDefault();
+			dom.trigger("end-patient");
 		})
 	};
 
 
+/***/ },
+/* 125 */
+/***/ function(module, exports) {
+
+	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+
+/***/ },
+/* 126 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplSrc = __webpack_require__(127);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom){
+		dom.addClass("rx-page-settings-changed");
+		dom.data("rx-page-settings-changed", function(value){
+			var totalPages = value.totalPages;
+			var currentPage = value.currentPage;
+			dom.data("number-of-pages", totalPages);
+			dom.data("page", currentPage);
+			if( totalPages <= 1 ){
+				dom.html("");
+			} else {
+				dom.html(tmpl.render({
+					page: currentPage,
+					total: totalPages
+				}));
+			}
+		});
+		bindGotoFirst(dom);
+		bindGotoPrev(dom);
+		bindGotoNext(dom);
+		bindGotoLast(dom);
+	};
+
+	function bindGotoFirst(dom){
+		dom.on("click", "[mc-name=gotoFirst]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page <= 1 ){
+				return;
+			}
+			dom.trigger("goto-page", [1]);
+		});
+	};
+
+	function bindGotoPrev(dom){
+		dom.on("click", "[mc-name=gotoPrev]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page <= 1 ){
+				return;
+			}
+			dom.trigger("goto-page", [page - 1]);
+		});
+	};
+
+	function bindGotoNext(dom){
+		dom.on("click", "[mc-name=gotoNext]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page >= numPages ){
+				return;
+			}
+			dom.trigger("goto-page", [page + 1]);
+		});
+	};
+
+	function bindGotoLast(dom){
+		dom.on("click", "[mc-name=gotoLast]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page >= numPages ){
+				return;
+			}
+			dom.trigger("goto-page", [numPages]);
+		});
+	};
+
+
+
+/***/ },
+/* 127 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
+
+/***/ },
+/* 128 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
+	var registry = __webpack_require__(129);
+	var Title = __webpack_require__(130);
+	var Text = __webpack_require__(132);
+	var Hoken = __webpack_require__(134);
+	var DrugMenu = __webpack_require__(136);
+	var Drug = __webpack_require__(138);
+	var ShinryouMenu = __webpack_require__(140);
+	var Shinryou = __webpack_require__(142);
+	var ConductMenu = __webpack_require__(144);
+	var ConductList = __webpack_require__(146);
+	var Charge = __webpack_require__(152);
+
+	var recordTmplSrc = __webpack_require__(154);
+	var recordTmpl = hogan.compile(recordTmplSrc);
+
+	exports.setup = function(dom){
+		dom.addClass("rx-record-list-changed");
+		dom.data("rx-record-list-changed", function(records){
+			var currentVisitId = registry.get("getCurrentVisitId")();
+			var tempVisitId = registry.get("getTempVisitId")();
+			dom.html("");
+			records.forEach(function(data){
+				dom.append(makeRecord(data, currentVisitId, tempVisitId));
+			})
+		});
+	};
+
+	function makeRecord(visit, currentVisitId, tempVisitId){
+		var e = $(recordTmpl.render(visit));
+		Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
+		var textWrapper = e.find("[mc-name=texts]");
+		visit.texts.forEach(function(text){
+			var te = Text.create(text);
+			textWrapper.append(te);
+		});
+		return e;
+	}
+
+	function makeRecordOrig(visit){
+		new Title(e.find("[mc-name=title]")).update(visit.v_datetime, visit.visit_id);
+		var textWrapper = e.find("[mc-name=texts]");
+		visit.texts.forEach(function(text){
+			var te = $("<div></div>");
+			new Text(te).render().update(text.content);
+			textWrapper.append(te);
+		});
+		new Hoken(e.find("[mc-name=hoken]")).render().update(mUtil.hokenRep(visit));
+		new DrugMenu(e.find("[mc-name=drugMenu]")).render().update();
+		var drugWrapper = e.find("[mc-name=drugs]");
+		var drugIndex = 1;
+		visit.drugs.forEach(function(drug){
+			var de = $("<div></div>");
+			new Drug(de).render().update(drugIndex++, mUtil.drugRep(drug));
+			drugWrapper.append(de);
+		});
+		new ShinryouMenu(e.find("[mc-name=shinryouMenu]")).render().update();
+		var shinryouWrapper = e.find("[mc-name=shinryouList]");
+		visit.shinryou_list.forEach(function(shinryou){
+			var se = $("<div></div>");
+			new Shinryou(se).render().update(shinryou.name);
+			shinryouWrapper.append(se);
+		});
+		new ConductMenu(e.find("[mc-name=conductMenu]")).render().update();
+		new ConductList(e.find("[mc-name=conducts]")).render().update(visit.conducts);
+		new Charge(e.find("[mc-name=charge]")).render().update(visit.charge);
+		return e;
+	}
+
+
+
+/***/ },
+/* 129 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var store = {};
+
+	exports.set = function(key, value){
+		store[key] = value;
+	};
+
+	exports.get = function(key){
+		return store[key];
+	};
+
+/***/ },
+/* 130 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var kanjidate = __webpack_require__(122);
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+
+	var tmplSrc = __webpack_require__(131);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom, visit, currentVisitId, tempVisitId){
+		var label = kanjidate.format("{G}{N:2}年{M:2}月{D:2}日（{W}） {h:2}時{m:2}分", visit.v_datetime);
+		dom.data("label", label);
+		dom.data("visit-id", visit.visit_id);
+		dom.data("current-visit-id", currentVisitId);
+		dom.data("temp-visit-id", tempVisitId);
+		render(dom);
+		bindClick(dom);
+		bindDelete(dom);
+		bindSetTemp(dom);
+		bindUnsetTemp(dom);
+		dom.addClass("rx-set-temp-visit-id");
+		dom.data("rx-set-temp-visit-id", function(newTempVisitId){
+			dom.data("temp-visit-id", newTempVisitId);
+			renderClass(dom);
+		});
+	};
+
+	function renderClass(dom){
+		var dateDom = dom.find(".visit-date");
+		dateDom.removeClass("current currentTmp");
+		if( dom.data("visit-id") === dom.data("current-visit-id") ){
+			dateDom.addClass("current");
+		} else if( dom.data("visit-id") === dom.data("temp-visit-id") ){
+			dateDom.addClass("currentTmp");
+		}
+	}
+
+	function render(dom){
+		var html = tmpl.render({
+			label: dom.data("label")
+		});
+		dom.html(html);
+		renderClass(dom);
+	}
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=workarea]")
+	};
+
+	function bindClick(dom){
+		dom.on("click", "[mc-name=titleBox] a", function(event){
+			event.preventDefault();
+			var ws = getWorkspaceDom(dom);
+			if( ws.is(":visible") ){
+				ws.hide();
+			} else {
+				ws.show();
+			}
+		});
+	}
+
+	function bindDelete(dom){
+		dom.on("click", "a[mc-name=deleteVisitLink]", function(event){
+			event.preventDefault();
+			var visitId = dom.data("visit-id");
+			if( !(visitId > 0) ){
+				alert("invalid visit_id");
+				return;
+			}
+			service.deleteVisit(visitId, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("visit-deleted", [visitId]);
+			})
+		});
+	}
+
+	function bindSetTemp(dom){
+		dom.on("click", "a[mc-name=setCurrentTmpVisitId]", function(event){
+			event.preventDefault();
+			dom.trigger("set-temp-visit-id", [dom.data("visit-id")]);
+			getWorkspaceDom(dom).hide();
+		})
+	}
+
+	function bindUnsetTemp(dom){
+		dom.on("click", "a[mc-name=unsetCurrentTmpVisitId]", function(event){
+			event.preventDefault();
+			if( dom.data("visit-id") !== dom.data("temp-visit-id") ){
+				return;
+			}
+			dom.trigger("set-temp-visit-id", [0]);
+			getWorkspaceDom(dom).hide();
+		})
+	}
+
+
+
+/***/ },
+/* 131 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"titleBox\" class=\"visit-date\">\r\n    <a href=\"javascript:void(0)\" class=\"record-title\">\r\n    \t<span mc-name=\"label\">{{label}}</span>\r\n    </a>\r\n</div>\r\n<div mc-name=\"workarea\" class=\"record-title-workarea\" style=\"display:none\">\r\n    <a mc-name=\"deleteVisitLink\" class=\"cmd-link\" href=\"javascript:void(0)\">この診察を削除</a> |\r\n    <a mc-name=\"setCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察設定</a> |\r\n    <a mc-name=\"unsetCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察解除</a>\r\n</div>\r\n"
+
+/***/ },
+/* 132 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplSrc = __webpack_require__(133);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(text){
+		var content = text.content.replace(/\n/g, "<br />\n");
+		return tmpl.render({content: content});
+	}
+
+
+
+/***/ },
+/* 133 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"content\" class=\"record-text cursor-pointer\">{{& content}}</div>\r\n"
+
+/***/ },
+/* 134 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var myclinicUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(135);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function RecordHoken(dom){
+		this.dom = dom;
+	}
+
+	RecordHoken.prototype.render = function(){
+		return this;
+	};
+
+	RecordHoken.prototype.update = function(label){
+		var html = tmpl.render({
+			label: label
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = RecordHoken;
+
+
+
+/***/ },
+/* 135 */
+/***/ function(module, exports) {
+
+	module.exports = "<span mc-name=\"label\" class=\"cursor-pointer\">{{label}}</span>\r\n"
+
+/***/ },
+/* 136 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var myclinicUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(137);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function DrugMenu(dom){
+		this.dom = dom;
+	}
+
+	DrugMenu.prototype.render = function(){
+		return this;
+	};
+
+	DrugMenu.prototype.update = function(){
+		var html = tmpl.render({
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = DrugMenu;
+
+
+
+/***/ },
+/* 137 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n"
+
+/***/ },
+/* 138 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var myclinicUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(139);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function RecordDrug(dom){
+		this.dom = dom;
+	}
+
+	RecordDrug.prototype.render = function(){
+		return this;
+	};
+
+	RecordDrug.prototype.update = function(index, label){
+		var html = tmpl.render({
+			index: index,
+			label: label
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = RecordDrug;
+
+
+
+/***/ },
+/* 139 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"wrapper\"><span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span></div>\r\n"
+
+/***/ },
+/* 140 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var myclinicUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(141);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function ShinryouMenu(dom){
+		this.dom = dom;
+	}
+
+	ShinryouMenu.prototype.render = function(){
+		return this;
+	};
+
+	ShinryouMenu.prototype.update = function(){
+		var html = tmpl.render({
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = ShinryouMenu;
+
+
+
+/***/ },
+/* 141 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n"
+
+/***/ },
+/* 142 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var myclinicUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(143);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function RecordShinryou(dom){
+		this.dom = dom;
+	}
+
+	RecordShinryou.prototype.render = function(){
+		return this;
+	};
+
+	RecordShinryou.prototype.update = function(label){
+		var html = tmpl.render({
+			label: label
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = RecordShinryou;
+
+
+
+/***/ },
+/* 143 */
+/***/ function(module, exports) {
+
+	module.exports = "{{label}}"
+
+/***/ },
+/* 144 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var myclinicUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(145);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function ConductMenu(dom){
+		this.dom = dom;
+	}
+
+	ConductMenu.prototype.render = function(){
+		return this;
+	};
+
+	ConductMenu.prototype.update = function(){
+		var html = tmpl.render({
+		});
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = ConductMenu;
+
+
+
+/***/ },
+/* 145 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n"
+
+/***/ },
+/* 146 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var Conduct = __webpack_require__(147);
+
+	function ConductList(dom){
+		this.dom = dom;
+	}
+
+	ConductList.prototype.render = function(){
+		return this;
+	};
+
+	ConductList.prototype.update = function(conducts){
+		var wrapper = this.dom.html("");
+		conducts.forEach(function(data){
+			var ce = $("<div></div>");
+			new Conduct(ce).render().update(data);
+			wrapper.append(ce);
+		})
+	};
+
+	module.exports = ConductList;
+
+
+
+/***/ },
+/* 147 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var mUtil = __webpack_require__(3);
+	var ConductShinryouList = __webpack_require__(148);
+	var ConductDrugList = __webpack_require__(149);
+	var ConductKizaiList = __webpack_require__(150);
+
+	var tmplSrc = __webpack_require__(151);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function RecordConduct(dom){
+		this.dom = dom;
+	}
+
+	RecordConduct.prototype.render = function(){
+		return this;
+	};
+
+	RecordConduct.prototype.update = function(conduct){
+		var data = mUtil.assign({}, conduct, {
+			kind_label: mUtil.conductKindToKanji(conduct.kind)
+		})
+		var html = tmpl.render(data);
+		this.dom.html(html);
+		new ConductShinryouList(this.dom.find("[mc-name=shinryouList]")).render().update(conduct.shinryou_list);
+		new ConductDrugList(this.dom.find("[mc-name=drugs]")).render().update(conduct.drugs);
+		new ConductKizaiList(this.dom.find("[mc-name=kizaiList]")).render().update(conduct.kizai_list);
+		return this;
+	};
+
+	module.exports = RecordConduct;
+
+
+
+/***/ },
+/* 148 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+
+	function ConductShinryouList(dom){
+		this.dom = dom;
+	}
+
+	ConductShinryouList.prototype.render = function(){
+		return this;
+	};
+
+	ConductShinryouList.prototype.update = function(list){
+		var wrapper = this.dom.html("");
+		list.forEach(function(data){
+			var e = $("<div></div>");
+			e.text(data.name);
+			wrapper.append(e);
+		});
+	};
+
+	module.exports = ConductShinryouList;
+
+/***/ },
+/* 149 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var mUtil = __webpack_require__(3);
+
+	function ConductDrugList(dom){
+		this.dom = dom;
+	}
+
+	ConductDrugList.prototype.render = function(){
+		return this;
+	};
+
+	ConductDrugList.prototype.update = function(list){
+		var wrapper = this.dom.html("");
+		list.forEach(function(data){
+			var e = $("<div></div>");
+			e.text(mUtil.conductDrugRep(data));
+			wrapper.append(e);
+		});
+	};
+
+	module.exports = ConductDrugList;
+
+/***/ },
+/* 150 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var mUtil = __webpack_require__(3);
+
+	function ConductKizaiList(dom){
+		this.dom = dom;
+	}
+
+	ConductKizaiList.prototype.render = function(){
+		return this;
+	};
+
+	ConductKizaiList.prototype.update = function(list){
+		var wrapper = this.dom.html("");
+		list.forEach(function(data){
+			var e = $("<div></div>");
+			e.text(mUtil.conductKizaiRep(data));
+			wrapper.append(e);
+		});
+	};
+
+	module.exports = ConductKizaiList;
+
+/***/ },
+/* 151 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n\r\n"
+
+/***/ },
+/* 152 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(153);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function Charge(dom){
+		this.dom = dom;
+	}
+
+	Charge.prototype.render = function(){
+		return this;
+	};
+
+	Charge.prototype.update = function(data){
+		if( data ){
+			data = mUtil.assign({}, data, {
+				has_charge: true,
+				charge_rep: mUtil.formatNumber(data.charge)
+			})
+		} else {
+			data = { has_charge: false };
+		}
+		var html = tmpl.render(data);
+		this.dom.html(html);
+		return this;
+	};
+
+	module.exports = Charge;
+
+
+
+/***/ },
+/* 153 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
+
+/***/ },
+/* 154 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
+
+/***/ },
+/* 155 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplSrc = __webpack_require__(156);
+	var tmpl = hogan.compile(tmplSrc);
+
+	var ListPane = __webpack_require__(157)
+
+	function Disease(dom){
+		this.dom = dom;
+		this.mode = "list";
+	}
+
+	Disease.prototype.render = function(){
+		return this;
+	};
+
+	Disease.prototype.update = function(diseaseList){
+		if( diseaseList === null || diseaseList === undefined ){
+			this.dom.html("");
+			return;
+		}
+		this.dom.hide();
+		this.dom.html(tmpl.render({}));
+		var wrapper = this.dom.find("[mc-name=workarea]");
+		switch(this.mode){
+			case "list": 
+				new ListPane(wrapper).render().update(diseaseList); break;
+			default: wrapper.text(this.mode); break;
+		}
+		this.dom.show();
+	};
+
+	module.exports = Disease;
+
+
+
+/***/ },
+/* 156 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
+
+/***/ },
+/* 157 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplSrc = __webpack_require__(158);
+	var tmpl = hogan.compile(tmplSrc);
+
+	var DiseaseListItem = __webpack_require__(159);
+
+	function DiseaseListPane(dom){
+		this.dom = dom;
+	}
+
+	DiseaseListPane.prototype.render = function(){
+		return this;
+	};
+
+	DiseaseListPane.prototype.update = function(diseaseList){
+		var e = $("<div></div>");
+		e.html(tmpl.render({}));
+		var wrapper = e.find("[mc-name=list]");
+		diseaseList.forEach(function(disease){
+			var tr = $("<tr></tr>");
+			new DiseaseListItem(tr).update(disease);
+			wrapper.append(tr);
+		});
+		this.dom.html("").append(e);
+		return this;
+	};
+
+	module.exports = DiseaseListPane;
+
+/***/ },
+/* 158 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
+
+/***/ },
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(160);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function DiseaseListItem(dom){
+		this.dom = dom;
+	}
+
+	DiseaseListItem.prototype.update = function(data){
+		data = mUtil.assign({}, data, {
+			label: mUtil.diseaseFullName(data),
+			start_date_label: kanjidate.format("{G:a}{N}.{M}.{D}.", data.start_date)
+		});
+		this.dom.html(tmpl.render(data));
+		return this;
+	};
+
+	module.exports = DiseaseListItem;
+
+/***/ },
+/* 160 */
+/***/ function(module, exports) {
+
+	module.exports = "<td>\r\n\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t{{label}}\r\n\t</a>\r\n\t<span style=\"color:#999\">\r\n\t\t({{start_date_label}})\r\n\t</span>\r\n</td>\r\n"
+
+/***/ },
+/* 161 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var SelectPatientItem = __webpack_require__(162);
+
+	var tmplSrc = __webpack_require__(164);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function SelectPatient(dom){
+		this.dom = dom;
+		this.bindButton();
+		this.bindOption();
+	}
+
+	SelectPatient.prototype.bindButton = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=button]", function(event){
+			event.preventDefault();
+			var ws = self.getWorkspaceDom();
+			if( ws.is(":visible") ){
+				self.getSelectDom().html("");
+				ws.hide();
+			} else {
+				service.listFullWqueueForExam(function(err, result){
+					if( err ){
+						alert(err);
+						return;
+					}
+					var select = self.getSelectDom().html("");
+					result.forEach(function(wq){
+						var e = $("<option></option>").val(wq.visit_id);
+						new SelectPatientItem(e).update(wq);
+						select.append(e);
+					});
+					ws.show();
+				});
+			}
+		});
+	};
+
+	SelectPatient.prototype.bindOption = function(){
+		var self = this;
+		this.dom.on("dblclick", "option", function(event){
+			var opt = $(this);
+			var visit_id = opt.val();
+			opt.trigger("start-exam", [visit_id]);
+			self.getSelectDom().html("");
+			self.getWorkspaceDom().hide();
+		})
+	};
+
+	SelectPatient.prototype.getWorkspaceDom = function(){
+		return this.dom.find("[mc-name=selectWrapper]");
+	};
+
+	SelectPatient.prototype.getSelectDom = function(){
+		return this.dom.find("[mc-name=selectWrapper] select");
+	}
+
+	SelectPatient.prototype.update = function(){
+		this.dom.html(tmpl.render({}));
+		return this;
+	};
+
+	module.exports = SelectPatient;
+
+
+/***/ },
+/* 162 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(163);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function SelectPatientItem(dom){
+		this.dom = dom;
+	}
+
+	SelectPatientItem.prototype.update = function(data){
+		data = mUtil.assign({}, data, {
+			state_label: mUtil.wqueueStateToKanji(data.wait_state)
+		});
+		this.dom.html(tmpl.render(data));
+	};
+
+	module.exports = SelectPatientItem;
+
+/***/ },
+/* 163 */
+/***/ function(module, exports) {
+
+	module.exports = "[{{state_label}}] {{last_name}} {{first_name}}"
+
+/***/ },
+/* 164 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
+
+/***/ },
+/* 165 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(166);
+	var tmpl = hogan.compile(tmplSrc);
+
+	var itemTmplSrc = __webpack_require__(167);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+
+	function SearchPatient(dom){
+		this.dom = dom;
+		this.bindButton();
+		this.bindForm();
+		this.bindOption();
+	}
+
+	SearchPatient.prototype.bindButton = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=button]", function(){
+			var ws = self.getWorkspaceDom();
+			if( ws.is(":visible") ){
+				self.hideWorkspace();
+			} else {
+				ws.show();
+				self.getInputDom().focus();
+			}
+		});
+	};
+
+	SearchPatient.prototype.bindForm = function(){
+		var self = this;
+		this.dom.on("submit", "form", function(){
+			var text = self.getInputDom().val();
+			if( text === "" ){
+				return;
+			}
+			service.searchPatient(text, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = self.getSelectDom().html("");
+				result.forEach(function(patient){
+					var data = mUtil.assign({}, patient, {
+						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
+					});
+					var opt = itemTmpl.render(data);
+					select.append(opt);
+				});
+			})
+		});
+	};
+
+	SearchPatient.prototype.bindOption = function(){
+		var self = this;
+		this.dom.on("dblclick", "option", function(){
+			var opt = $(this);
+			var patientId = +opt.val();
+			opt.trigger("start-patient", [patientId]);
+			self.hideWorkspace();
+		})
+	};
+
+	SearchPatient.prototype.hideWorkspace = function(){
+		this.getWorkspaceDom().hide();
+		this.getInputDom().val("");
+		this.getSelectDom().html("");
+	};
+
+	SearchPatient.prototype.getWorkspaceDom = function(){
+		return this.dom.find("[mc-name=workspace]");
+	};
+
+	SearchPatient.prototype.getInputDom = function(){
+		return this.dom.find("[mc-name=searchForm] input.search-patient-input");
+	};
+
+	SearchPatient.prototype.getSelectDom = function(){
+		return this.dom.find("select");
+	};
+
+	SearchPatient.prototype.update = function(){
+		this.dom.html(tmpl.render({}));
+		return this;
+	};
+
+	module.exports = SearchPatient;
+
+/***/ },
+/* 166 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
+
+/***/ },
+/* 167 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 168 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(169);
+	var tmpl = hogan.compile(tmplSrc);
+	var itemTmplSrc = __webpack_require__(170);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+
+	function makeOption(data){
+		data = mUtil.assign({}, data, {
+			patient_id_label: mUtil.padNumber(+data.patient_id, 4)
+		});
+		return $(itemTmpl.render(data)).val(data.patient_id);
+	}
+
+	function TodaysVisits(dom){
+		this.dom = dom;
+		this.bindButton();
+		this.bindOption();
+	}
+
+	TodaysVisits.prototype.bindButton = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=button]", function(){
+			var ws = self.getWorkspaceDom();
+			if( ws.is(":visible") ){
+				ws.hide();
+				self.getSelectDom().html("");
+			} else {
+				service.listTodaysVisits(function(err, result){
+					if( err ){
+						alert(err);
+						return;
+					}
+					var select = self.getSelectDom().html("");
+					result.forEach(function(data){
+						var opt = makeOption(data);
+						select.append(opt);
+					})
+					ws.show();
+				})
+			}
+		})
+	};
+
+	TodaysVisits.prototype.bindOption = function(){
+		this.dom.on("dblclick", "option", function(){
+			var opt = $(this);
+			var patientId = opt.val();
+			opt.trigger("start-patient", [patientId]);
+		});
+	};
+
+	TodaysVisits.prototype.getWorkspaceDom = function(){
+		return this.dom.find("[mc-name=selectWrapper]");
+	};
+
+	TodaysVisits.prototype.getSelectDom = function(){
+		return this.dom.find("select");
+	};
+
+	TodaysVisits.prototype.update = function(){
+		this.dom.html(tmpl.render({}));
+		return this;
+	};
+
+	module.exports = TodaysVisits;
+
+/***/ },
+/* 169 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
+
+/***/ },
+/* 170 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>\r\n"
+
+/***/ },
+/* 171 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var modal = __webpack_require__(172);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(122);
+
+	var mainTmpl = hogan.compile(__webpack_require__(173));
+	var optionTmpl = hogan.compile(__webpack_require__(174));
+	var dispTmpl = hogan.compile(__webpack_require__(175));
+
+	function getSearchTextDom(dom){
+		return dom.find("input[mc-name=searchText]");
+	}
+
+	function getDispDom(dom){
+		return dom.find("[mc-name=disp]");
+	}
+
+	function bindSelect(dom){
+		dom.on("click", "select[mc-name=searchResult] option", function(){
+			var opt = $(this);
+			var patientId = opt.val();
+			opt.trigger("patient-selected", [patientId]);
+		});
+	}
+
+	function bindPatientSelected(dom){
+		dom.on("patient-selected", function(event, patientId){
+			event.stopPropagation();
+			service.getPatient(patientId, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var data = makePatientData(result);
+				updateDisp(dom, data);
+			})
+		});
+	}
+
+	function bindSearchForm(dom){
+		dom.find("form[mc-name=searchForm]").submit(function(event){
+			event.preventDefault();
+			var text = getSearchTextDom(dom).val();
+			if( text === "" ){
+				return;
+			}
+			service.searchPatient(text, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = dom.find("select[mc-name=searchResult]").html("");
+				result.forEach(function(item){
+					var data = mUtil.assign({}, item, {
+						patient_id_part: mUtil.padNumber(item.patient_id, 4)
+					});
+					var opt = optionTmpl.render(data);
+					select.append(opt);
+				});
+			})
+		});
+	}
+
+	function bindEnter(dom){
+		dom.find("[mc-name=enterLink]").click(function(event){
+			var patientId = dom.data("patient_id");
+			if( !(patientId > 0) ){
+				alert("患者番号が不適切です。");
+				return;
+			}
+			service.startVisit(patientId, mUtil.nowAsSqlDatetime(), function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				modal.close();
+			})
+		})
+	}
+
+	function makeBirthdayLabel(birthday){
+		if( birthday && birthday !== "0000-00-00" ){
+			return kanjidate.format("{G}{N}年{M}月{D}日", birthday) + 
+				"（" + mUtil.calcAge(birthday) + "才）";
+		} else {
+			return "";
+		}
+	}
+
+	function makePatientData(patient){
+		return mUtil.assign({}, patient, {
+			birthday_label: makeBirthdayLabel(patient.birth_day),
+			sex_label: mUtil.sexToKanji(patient.sex)
+		});
+	}
+
+	function updateDisp(dom, data){
+		getDispDom(dom).html(dispTmpl.render(data));
+		dom.data("patient_id", data.patient_id);
+	}
+
+	exports.open = function(){
+		modal.open("受付", function(dom){
+			dom.width("260px");
+			dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+			bindSearchForm(dom);
+			bindSelect(dom);
+			bindPatientSelected(dom);
+			bindEnter(dom);
+			getSearchTextDom(dom).focus();
+		});
+	}
+
+/***/ },
+/* 172 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var $ = __webpack_require__(1);
+
+	var screen = $('<div></div>').css({
+	    position:"fixed",
+	    backgroundColor:"#999",
+	    width:"100%",
+	    height:"100%",
+	    left:0,
+	    top:0,
+	    opacity:0.5,
+	    filter:"alpha(opacity=50)",
+	    zIndex:10,
+	    display:"none"
+	});
+
+	var dialog = $('<div id="modal-dialog-outer-pane"></div>').css({
+	    position:"absolute",
+	    left:"100px",
+	    top:"50px",
+	    padding:"10px",
+	    border:"2px solid gray",
+	    backgroundColor:"white",
+	    opacity:1.0,
+	    filter:"alpha(opacity=100)",
+	    zIndex:20,
+	    overflow: "auto"
+	});
+	var header = $("<table width='100%' cellpadding='0' cellspacing='0'><tr>" +
+	    "<td width='*'></td><td width='auto'></td></tr></table>").css({
+	        margin:0,
+	        padding:0
+	    });
+	dialog.append(header);
+	var handle = $('<div></div>');
+	var title = $("<div></div>").css({
+	    cursor:"move",
+	    backgroundColor:"#ccc",
+	    fontWeight:"bold",
+	    padding:"6px 4px 4px 4px"
+	});
+	handle.append(title);
+	$(header.find("td")[0]).append(handle);
+	var closeBox = $("<a href='javascript:void(0)'>×</a>").css({
+	    fontSize:"13px",
+	    fontWeight:"bold",
+	    margin:"4px 0 4px 4px",
+	    padding:0,
+	    textDecoration:"none",
+	    color:"#333"
+	});
+	$(header.find("td")[1]).css({
+	    width:"16px",
+	    verticalAlign:"middle"
+	}).append(closeBox);
+	var content = $("<div></div>").css({
+	    marginTop:"10px"
+	});
+	dialog.append(content);
+
+	$("body").append(screen);
+
+	handle.on("mousedown", function(event){
+	    event.preventDefault();
+	    var offset = dialog.offset();
+	    var origEvent = event.originalEvent;
+	    var innerX = origEvent.pageX - offset.left;
+	    var innerY = origEvent.pageY - offset.top;
+	    dialog.data({innerX: innerX, innerY: innerY, width: dialog.outerWidth(), height: dialog.outerHeight()});
+	    handle.on("mousemove", function(event){
+	        event.preventDefault();
+	        var origEvent = event.originalEvent;
+	        var newLeft = origEvent.pageX - dialog.data("innerX");
+	        if( newLeft < 0 ){
+	            return;
+	        }
+	        var newTop = origEvent.pageY - dialog.data("innerY");
+	        if( newTop < 0 ){
+	            return;
+	        }
+	        var newRight = newLeft + dialog.data("width");
+	        if( newRight > screen.innerWidth() ){
+	            return;
+	        }
+	        var newBottom = newTop + dialog.data("height");
+	        if( newBottom > screen.innerHeight() ){
+	            return;
+	        }
+	        dialog.css({left: newLeft, top: newTop})
+	    })
+	    handle[0].setCapture();
+	})
+
+	handle.on("mouseup", function(event){
+	    handle.off("mousemove");
+	})
+
+	function reposition() {
+	    var screen_width = $(window).width();
+	    var screen_height = $(window).height();
+	    var dialog_width = dialog.outerWidth();
+	    dialog.css("left", (screen_width - dialog_width) / 2 + "px");
+	    dialog.css("max-height", (screen_height - 100) + "px");
+	}
+
+	exports.open = function(title_str, onOpen, onClose){
+	    var dom = $("<div></div>");
+	    title.text(title_str);
+	    content.html("").append(dom);
+	    screen.show();
+	    $("body").append(dialog);
+	    onOpen(dom);
+	    reposition();
+	    closeBox.on("click", function(event){
+	        if( onClose ){
+	            if( onClose() === false ){
+	                return;
+	            }
+	        }
+	        exports.close();
+	    });
+	};
+
+	exports.close = function(){
+	    closeBox.off("click");
+	    dialog.detach();
+	    screen.hide();
+	    content.html("");
+	};
+
+
+
+/***/ },
+/* 173 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
+
+/***/ },
+/* 174 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 175 */
+/***/ function(module, exports) {
+
+	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
 
 /***/ }
 /******/ ]);

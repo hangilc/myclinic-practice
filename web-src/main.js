@@ -5,20 +5,27 @@ var conti = require("conti");
 var mUtil = require("../myclinic-util");
 var task = require("./task");
 var service = require("./service");
-var appData = require("./app-data");
+var AppData = require("./app-data");
 
+var PatientInfo = require("./patient-info/patient-info");
+var CurrentManip = require("./current-manip/current-manip");
+var RecordNav = require("./record-nav/record-nav");
+var RecordList = require("./record-list");
+var Disease = require("./disease");
+var SelectPatient = require("./select-patient");
+var SearchPatient = require("./search-patient");
 var RecentVisits = require("./recent-visits/recent-visits");
+var TodaysVisits = require("./todays-visits");
+var Reception = require("./reception");
 
+PatientInfo.setup($("#patient-info-wrapper"));
+CurrentManip.setup($("#current-manip-pane"));
+$(".record-nav-wrapper").each(function(i){
+	RecordNav.setup($(this), i);
+});
 RecentVisits.setup($("#recent-visits-wrapper"));
 
-var pageData = {
-	currentPatientId: 0,
-	currentVisitId: 0,
-	tempVisitId: 0,
-	currentPage: 0,
-	totalPages: 0,
-	itemsPerPage: 10,
-};
+var appData = new AppData();
 
 window.getCurrentPatientId = function(){
 	return pageData.currentPatientId;
@@ -32,16 +39,21 @@ window.getTempVisitId = function(){
 	return pageData.tempVisitId;
 };
 
-$("body").on("start-patient", function(event, patientId){
-	pageData.currentPatientId = patientId;
-	pageData.currentVisitId = 0;
-	pageData.tempVisitId = 0;
-	task.run(appData.makeLoader(pageData), function(err){
+function startPage(patientId, visitId){
+	appData.startPage(patientId, visitId, function(err){
 		if( err ){
 			alert(err);
 			return;
 		}
-		var data = mUtil.assign({}, pageData);
-		$("body").broadcast("rx-page-start", data);
+		var data = mUtil.assign({}, appData);
+		$("body").broadcast("rx-start-page", data);
 	});
+}
+
+$("body").on("start-patient", function(event, patientId){
+	startPage(patientId, 0);
+});
+
+$("body").on("end-patient", function(event){
+	startPage(0, 0);
 });

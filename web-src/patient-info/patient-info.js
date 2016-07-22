@@ -9,12 +9,10 @@ var tmplSrc = require("raw!./patient-info.html");
 var tmpl = hogan.compile(tmplSrc);
 
 exports.setup = function(dom){
-	dom.addClass("rx-patient-changed");
-	dom.data("rx-patient-changed", function(data){
-		if( data === null ){
-			dom.html("");
-		} else {
-			data = mUtil.assign({}, data, {
+	dom.listen("rx-start-page", function(appData){
+		if( appData.currentPatientId > 0 ){
+			var data = appData.currentPatient;
+			var data = mUtil.assign({}, data, {
 				sex_as_kanji: mUtil.sexToKanji(data.sex)
 			});
 			if( data.birth_day !== "0000-00-00" ){
@@ -22,8 +20,10 @@ exports.setup = function(dom){
 				data.age_part = mUtil.calcAge(data.birth_day) + "才";
 			}
 			dom.html(tmpl.render(data));
+		} else {
+			dom.html("");
 		}
-	});
+	})
 	dom.on("click", "[mc-name=detailLink]", function(event){
 		event.preventDefault();
 		dom.find("[mc-name=patientInfoDetail]").toggle();
