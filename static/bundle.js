@@ -27445,13 +27445,13 @@
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var modal = __webpack_require__(172);
+	var modal = __webpack_require__(173);
 	var service = __webpack_require__(111);
 	var mUtil = __webpack_require__(3);
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 
-	var mainTmpl = hogan.compile(__webpack_require__(173));
+	var mainTmpl = hogan.compile(__webpack_require__(172));
 	var optionTmpl = hogan.compile(__webpack_require__(174));
 	var dispTmpl = hogan.compile(__webpack_require__(175));
 
@@ -27561,6 +27561,12 @@
 
 /***/ },
 /* 172 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
+
+/***/ },
+/* 173 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var $ = __webpack_require__(1);
@@ -27693,12 +27699,6 @@
 	};
 
 
-
-/***/ },
-/* 173 */
-/***/ function(module, exports) {
-
-	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
 
 /***/ },
 /* 174 */

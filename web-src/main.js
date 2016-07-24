@@ -16,7 +16,7 @@ var SelectPatient = require("./select-patient/select-patient");
 var SearchPatient = require("./search-patient/search-patient");
 var RecentVisits = require("./recent-visits/recent-visits");
 var TodaysVisits = require("./todays-visits/todays-visits");
-var Reception = require("./reception");
+var Reception = require("./reception/reception");
 
 PatientInfo.setup($("#patient-info-wrapper"));
 CurrentManip.setup($("#current-manip-pane"));

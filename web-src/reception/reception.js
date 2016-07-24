@@ -1,15 +1,15 @@
 "use strict";
 
 var $ = require("jquery");
-var modal = require("../hc-modal");
-var service = require("./service");
-var mUtil = require("../myclinic-util");
+var modal = require("../../hc-modal");
+var service = require("../service");
+var mUtil = require("../../myclinic-util");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");
 
 var mainTmpl = hogan.compile(require("raw!./reception.html"));
-var optionTmpl = hogan.compile(require("raw!./reception/option.html"));
-var dispTmpl = hogan.compile(require("raw!./reception/disp.html"));
+var optionTmpl = hogan.compile(require("raw!./option.html"));
+var dispTmpl = hogan.compile(require("raw!./disp.html"));
 
 function getSearchTextDom(dom){
 	return dom.find("input[mc-name=searchText]");
