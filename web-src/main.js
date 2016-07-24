@@ -29,6 +29,10 @@ SelectPatient.setup($("#select-patient-wrapper"));
 SearchPatient.setup($("#search-patient-wrapper"));
 RecentVisits.setup($("#recent-visits-wrapper"));
 TodaysVisits.setup($("#todays-visits-wrapper"));
+$("#reception-link").click(function(event){
+	event.preventDefault();
+	Reception.open();
+});
 
 var appData = new AppData();
 
