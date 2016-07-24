@@ -48,17 +48,17 @@
 
 	var $ = __webpack_require__(1);
 	var conti = __webpack_require__(2);
-	var service = __webpack_require__(3);
-	var PatientInfo = __webpack_require__(4);
-	var CurrentManip = __webpack_require__(116);
-	var RecordNav = __webpack_require__(118);
-	var RecordList = __webpack_require__(120);
-	var Disease = __webpack_require__(146);
-	var SelectPatient = __webpack_require__(152);
-	var SearchPatient = __webpack_require__(156);
-	var RecentVisits = __webpack_require__(159);
-	var TodaysVisits = __webpack_require__(162);
-	var Reception = __webpack_require__(165);
+	var service = __webpack_require__(111);
+	var PatientInfo = __webpack_require__(188);
+	var CurrentManip = __webpack_require__(190);
+	var RecordNav = __webpack_require__(192);
+	var RecordList = __webpack_require__(124);
+	var Disease = __webpack_require__(151);
+	var SelectPatient = __webpack_require__(157);
+	var SearchPatient = __webpack_require__(161);
+	var RecentVisits = __webpack_require__(195);
+	var TodaysVisits = __webpack_require__(168);
+	var Reception = __webpack_require__(171);
 
 	var currentPatientId = 0;
 	var currentPatient = null;
@@ -10421,1324 +10421,8 @@
 
 	"use strict";
 
-	var $ = __webpack_require__(1);
-
-	function request(service, data, method, cb){
-		data = data || {};
-		method = method || "GET";
-		var config = {
-			url: "./service?_q=" + service,
-	        type: method,
-			data: data,
-			dataType: "json",
-			success: function(list){
-				cb(undefined, list);
-			},
-			error: function(xhr){
-				cb(xhr.responseText);
-			}
-		};
-		$.ajax(config);
-	}
-
-	exports.recentVisits = function(cb){
-		request("recent_visits", "", "GET", cb);
-	};
-
-	exports.getPatient = function(patientId, cb){
-		request("get_patient", {patient_id: patientId}, "GET", cb);
-	};
-
-	exports.calcVisits = function(patientId, cb){
-		request("calc_visits", {patient_id: patientId}, "GET", cb);
-	};
-
-	exports.listFullVisits = function(patientId, offset, n, cb){
-		request("list_full_visits", {patient_id: patientId, offset: offset, n: n}, "GET", cb);
-	};
-
-	exports.startExam = function(visitId, done){
-		request("start_exam", {visit_id: visitId}, "POST", done);
-	};
-
-	exports.suspendExam = function(visitId, done){
-		request("suspend_exam", {visit_id: visitId}, "POST", done);
-	};
-
-	exports.listCurrentFullDiseases = function(patientId, cb){
-		request("list_current_full_diseases", {patient_id: patientId}, "GET", cb);
-	};
-
-	exports.listFullWqueueForExam = function(cb){
-		request("list_full_wqueue_for_exam", {}, "GET", cb);
-	};
-
-	exports.getVisit = function(visitId, cb){
-		request("get_visit", {visit_id: +visitId}, "GET", cb);
-	};
-
-	exports.searchPatient = function(text, cb){
-		request("search_patient", {text: text}, "GET", cb);
-	};
-
-	exports.listTodaysVisits = function(cb){
-		request("list_todays_visits", {}, "GET", cb);
-	};
-
-	exports.startVisit = function(patientId, at, done){
-		request("start_visit", {patient_id: patientId, at: at}, "POST", done);
-	};
-
-	exports.deleteVisit = function(visitId, done){
-		request("delete_visit", {visit_id: visitId}, "POST", done);
-	};
-
-
-/***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var myclinicUtil = __webpack_require__(9);
-
-	var tmplSrc = __webpack_require__(115);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function PatientInfo(dom){
-		this.dom = dom;
-	}
-
-	PatientInfo.prototype.render = function(data){
-		this.bindDetail();
-		return this;
-	};
-
-	PatientInfo.prototype.bindDetail = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=detailLink]", function(event){
-			event.preventDefault();
-			self.dom.find("[mc-name=patientInfoDetail]").toggle();
-		});
-	};
-
-	PatientInfo.prototype.update = function(data){
-		if( !data ){
-			this.dom.html("");
-		} else {
-			data = myclinicUtil.assign({}, data, {
-				sex_as_kanji: myclinicUtil.sexToKanji(data.sex)
-			});
-			if( data.birth_day !== "0000-00-00" ){
-				data.birthday_part = kanjidate.format("{G}{N}年{M}月{D}日生", data.birth_day);
-				data.age_part = myclinicUtil.calcAge(data.birth_day) + "才";
-			}
-			this.dom.html(tmpl.render(data));
-		}
-	};
-
-	module.exports = PatientInfo;
-
-
-/***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-	 *  Copyright 2011 Twitter, Inc.
-	 *  Licensed under the Apache License, Version 2.0 (the "License");
-	 *  you may not use this file except in compliance with the License.
-	 *  You may obtain a copy of the License at
-	 *
-	 *  http://www.apache.org/licenses/LICENSE-2.0
-	 *
-	 *  Unless required by applicable law or agreed to in writing, software
-	 *  distributed under the License is distributed on an "AS IS" BASIS,
-	 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	 *  See the License for the specific language governing permissions and
-	 *  limitations under the License.
-	 */
-
-	// This file is for use with Node.js. See dist/ for browser files.
-
-	var Hogan = __webpack_require__(6);
-	Hogan.Template = __webpack_require__(7).Template;
-	Hogan.template = Hogan.Template;
-	module.exports = Hogan;
-
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-	 *  Copyright 2011 Twitter, Inc.
-	 *  Licensed under the Apache License, Version 2.0 (the "License");
-	 *  you may not use this file except in compliance with the License.
-	 *  You may obtain a copy of the License at
-	 *
-	 *  http://www.apache.org/licenses/LICENSE-2.0
-	 *
-	 *  Unless required by applicable law or agreed to in writing, software
-	 *  distributed under the License is distributed on an "AS IS" BASIS,
-	 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	 *  See the License for the specific language governing permissions and
-	 *  limitations under the License.
-	 */
-
-	(function (Hogan) {
-	  // Setup regex  assignments
-	  // remove whitespace according to Mustache spec
-	  var rIsWhitespace = /\S/,
-	      rQuot = /\"/g,
-	      rNewline =  /\n/g,
-	      rCr = /\r/g,
-	      rSlash = /\\/g,
-	      rLineSep = /\u2028/,
-	      rParagraphSep = /\u2029/;
-
-	  Hogan.tags = {
-	    '#': 1, '^': 2, '<': 3, '$': 4,
-	    '/': 5, '!': 6, '>': 7, '=': 8, '_v': 9,
-	    '{': 10, '&': 11, '_t': 12
-	  };
-
-	  Hogan.scan = function scan(text, delimiters) {
-	    var len = text.length,
-	        IN_TEXT = 0,
-	        IN_TAG_TYPE = 1,
-	        IN_TAG = 2,
-	        state = IN_TEXT,
-	        tagType = null,
-	        tag = null,
-	        buf = '',
-	        tokens = [],
-	        seenTag = false,
-	        i = 0,
-	        lineStart = 0,
-	        otag = '{{',
-	        ctag = '}}';
-
-	    function addBuf() {
-	      if (buf.length > 0) {
-	        tokens.push({tag: '_t', text: new String(buf)});
-	        buf = '';
-	      }
-	    }
-
-	    function lineIsWhitespace() {
-	      var isAllWhitespace = true;
-	      for (var j = lineStart; j < tokens.length; j++) {
-	        isAllWhitespace =
-	          (Hogan.tags[tokens[j].tag] < Hogan.tags['_v']) ||
-	          (tokens[j].tag == '_t' && tokens[j].text.match(rIsWhitespace) === null);
-	        if (!isAllWhitespace) {
-	          return false;
-	        }
-	      }
-
-	      return isAllWhitespace;
-	    }
-
-	    function filterLine(haveSeenTag, noNewLine) {
-	      addBuf();
-
-	      if (haveSeenTag && lineIsWhitespace()) {
-	        for (var j = lineStart, next; j < tokens.length; j++) {
-	          if (tokens[j].text) {
-	            if ((next = tokens[j+1]) && next.tag == '>') {
-	              // set indent to token value
-	              next.indent = tokens[j].text.toString()
-	            }
-	            tokens.splice(j, 1);
-	          }
-	        }
-	      } else if (!noNewLine) {
-	        tokens.push({tag:'\n'});
-	      }
-
-	      seenTag = false;
-	      lineStart = tokens.length;
-	    }
-
-	    function changeDelimiters(text, index) {
-	      var close = '=' + ctag,
-	          closeIndex = text.indexOf(close, index),
-	          delimiters = trim(
-	            text.substring(text.indexOf('=', index) + 1, closeIndex)
-	          ).split(' ');
-
-	      otag = delimiters[0];
-	      ctag = delimiters[delimiters.length - 1];
-
-	      return closeIndex + close.length - 1;
-	    }
-
-	    if (delimiters) {
-	      delimiters = delimiters.split(' ');
-	      otag = delimiters[0];
-	      ctag = delimiters[1];
-	    }
-
-	    for (i = 0; i < len; i++) {
-	      if (state == IN_TEXT) {
-	        if (tagChange(otag, text, i)) {
-	          --i;
-	          addBuf();
-	          state = IN_TAG_TYPE;
-	        } else {
-	          if (text.charAt(i) == '\n') {
-	            filterLine(seenTag);
-	          } else {
-	            buf += text.charAt(i);
-	          }
-	        }
-	      } else if (state == IN_TAG_TYPE) {
-	        i += otag.length - 1;
-	        tag = Hogan.tags[text.charAt(i + 1)];
-	        tagType = tag ? text.charAt(i + 1) : '_v';
-	        if (tagType == '=') {
-	          i = changeDelimiters(text, i);
-	          state = IN_TEXT;
-	        } else {
-	          if (tag) {
-	            i++;
-	          }
-	          state = IN_TAG;
-	        }
-	        seenTag = i;
-	      } else {
-	        if (tagChange(ctag, text, i)) {
-	          tokens.push({tag: tagType, n: trim(buf), otag: otag, ctag: ctag,
-	                       i: (tagType == '/') ? seenTag - otag.length : i + ctag.length});
-	          buf = '';
-	          i += ctag.length - 1;
-	          state = IN_TEXT;
-	          if (tagType == '{') {
-	            if (ctag == '}}') {
-	              i++;
-	            } else {
-	              cleanTripleStache(tokens[tokens.length - 1]);
-	            }
-	          }
-	        } else {
-	          buf += text.charAt(i);
-	        }
-	      }
-	    }
-
-	    filterLine(seenTag, true);
-
-	    return tokens;
-	  }
-
-	  function cleanTripleStache(token) {
-	    if (token.n.substr(token.n.length - 1) === '}') {
-	      token.n = token.n.substring(0, token.n.length - 1);
-	    }
-	  }
-
-	  function trim(s) {
-	    if (s.trim) {
-	      return s.trim();
-	    }
-
-	    return s.replace(/^\s*|\s*$/g, '');
-	  }
-
-	  function tagChange(tag, text, index) {
-	    if (text.charAt(index) != tag.charAt(0)) {
-	      return false;
-	    }
-
-	    for (var i = 1, l = tag.length; i < l; i++) {
-	      if (text.charAt(index + i) != tag.charAt(i)) {
-	        return false;
-	      }
-	    }
-
-	    return true;
-	  }
-
-	  // the tags allowed inside super templates
-	  var allowedInSuper = {'_t': true, '\n': true, '$': true, '/': true};
-
-	  function buildTree(tokens, kind, stack, customTags) {
-	    var instructions = [],
-	        opener = null,
-	        tail = null,
-	        token = null;
-
-	    tail = stack[stack.length - 1];
-
-	    while (tokens.length > 0) {
-	      token = tokens.shift();
-
-	      if (tail && tail.tag == '<' && !(token.tag in allowedInSuper)) {
-	        throw new Error('Illegal content in < super tag.');
-	      }
-
-	      if (Hogan.tags[token.tag] <= Hogan.tags['$'] || isOpener(token, customTags)) {
-	        stack.push(token);
-	        token.nodes = buildTree(tokens, token.tag, stack, customTags);
-	      } else if (token.tag == '/') {
-	        if (stack.length === 0) {
-	          throw new Error('Closing tag without opener: /' + token.n);
-	        }
-	        opener = stack.pop();
-	        if (token.n != opener.n && !isCloser(token.n, opener.n, customTags)) {
-	          throw new Error('Nesting error: ' + opener.n + ' vs. ' + token.n);
-	        }
-	        opener.end = token.i;
-	        return instructions;
-	      } else if (token.tag == '\n') {
-	        token.last = (tokens.length == 0) || (tokens[0].tag == '\n');
-	      }
-
-	      instructions.push(token);
-	    }
-
-	    if (stack.length > 0) {
-	      throw new Error('missing closing tag: ' + stack.pop().n);
-	    }
-
-	    return instructions;
-	  }
-
-	  function isOpener(token, tags) {
-	    for (var i = 0, l = tags.length; i < l; i++) {
-	      if (tags[i].o == token.n) {
-	        token.tag = '#';
-	        return true;
-	      }
-	    }
-	  }
-
-	  function isCloser(close, open, tags) {
-	    for (var i = 0, l = tags.length; i < l; i++) {
-	      if (tags[i].c == close && tags[i].o == open) {
-	        return true;
-	      }
-	    }
-	  }
-
-	  function stringifySubstitutions(obj) {
-	    var items = [];
-	    for (var key in obj) {
-	      items.push('"' + esc(key) + '": function(c,p,t,i) {' + obj[key] + '}');
-	    }
-	    return "{ " + items.join(",") + " }";
-	  }
-
-	  function stringifyPartials(codeObj) {
-	    var partials = [];
-	    for (var key in codeObj.partials) {
-	      partials.push('"' + esc(key) + '":{name:"' + esc(codeObj.partials[key].name) + '", ' + stringifyPartials(codeObj.partials[key]) + "}");
-	    }
-	    return "partials: {" + partials.join(",") + "}, subs: " + stringifySubstitutions(codeObj.subs);
-	  }
-
-	  Hogan.stringify = function(codeObj, text, options) {
-	    return "{code: function (c,p,i) { " + Hogan.wrapMain(codeObj.code) + " }," + stringifyPartials(codeObj) +  "}";
-	  }
-
-	  var serialNo = 0;
-	  Hogan.generate = function(tree, text, options) {
-	    serialNo = 0;
-	    var context = { code: '', subs: {}, partials: {} };
-	    Hogan.walk(tree, context);
-
-	    if (options.asString) {
-	      return this.stringify(context, text, options);
-	    }
-
-	    return this.makeTemplate(context, text, options);
-	  }
-
-	  Hogan.wrapMain = function(code) {
-	    return 'var t=this;t.b(i=i||"");' + code + 'return t.fl();';
-	  }
-
-	  Hogan.template = Hogan.Template;
-
-	  Hogan.makeTemplate = function(codeObj, text, options) {
-	    var template = this.makePartials(codeObj);
-	    template.code = new Function('c', 'p', 'i', this.wrapMain(codeObj.code));
-	    return new this.template(template, text, this, options);
-	  }
-
-	  Hogan.makePartials = function(codeObj) {
-	    var key, template = {subs: {}, partials: codeObj.partials, name: codeObj.name};
-	    for (key in template.partials) {
-	      template.partials[key] = this.makePartials(template.partials[key]);
-	    }
-	    for (key in codeObj.subs) {
-	      template.subs[key] = new Function('c', 'p', 't', 'i', codeObj.subs[key]);
-	    }
-	    return template;
-	  }
-
-	  function esc(s) {
-	    return s.replace(rSlash, '\\\\')
-	            .replace(rQuot, '\\\"')
-	            .replace(rNewline, '\\n')
-	            .replace(rCr, '\\r')
-	            .replace(rLineSep, '\\u2028')
-	            .replace(rParagraphSep, '\\u2029');
-	  }
-
-	  function chooseMethod(s) {
-	    return (~s.indexOf('.')) ? 'd' : 'f';
-	  }
-
-	  function createPartial(node, context) {
-	    var prefix = "<" + (context.prefix || "");
-	    var sym = prefix + node.n + serialNo++;
-	    context.partials[sym] = {name: node.n, partials: {}};
-	    context.code += 't.b(t.rp("' +  esc(sym) + '",c,p,"' + (node.indent || '') + '"));';
-	    return sym;
-	  }
-
-	  Hogan.codegen = {
-	    '#': function(node, context) {
-	      context.code += 'if(t.s(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,1),' +
-	                      'c,p,0,' + node.i + ',' + node.end + ',"' + node.otag + " " + node.ctag + '")){' +
-	                      't.rs(c,p,' + 'function(c,p,t){';
-	      Hogan.walk(node.nodes, context);
-	      context.code += '});c.pop();}';
-	    },
-
-	    '^': function(node, context) {
-	      context.code += 'if(!t.s(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,1),c,p,1,0,0,"")){';
-	      Hogan.walk(node.nodes, context);
-	      context.code += '};';
-	    },
-
-	    '>': createPartial,
-	    '<': function(node, context) {
-	      var ctx = {partials: {}, code: '', subs: {}, inPartial: true};
-	      Hogan.walk(node.nodes, ctx);
-	      var template = context.partials[createPartial(node, context)];
-	      template.subs = ctx.subs;
-	      template.partials = ctx.partials;
-	    },
-
-	    '$': function(node, context) {
-	      var ctx = {subs: {}, code: '', partials: context.partials, prefix: node.n};
-	      Hogan.walk(node.nodes, ctx);
-	      context.subs[node.n] = ctx.code;
-	      if (!context.inPartial) {
-	        context.code += 't.sub("' + esc(node.n) + '",c,p,i);';
-	      }
-	    },
-
-	    '\n': function(node, context) {
-	      context.code += write('"\\n"' + (node.last ? '' : ' + i'));
-	    },
-
-	    '_v': function(node, context) {
-	      context.code += 't.b(t.v(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,0)));';
-	    },
-
-	    '_t': function(node, context) {
-	      context.code += write('"' + esc(node.text) + '"');
-	    },
-
-	    '{': tripleStache,
-
-	    '&': tripleStache
-	  }
-
-	  function tripleStache(node, context) {
-	    context.code += 't.b(t.t(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,0)));';
-	  }
-
-	  function write(s) {
-	    return 't.b(' + s + ');';
-	  }
-
-	  Hogan.walk = function(nodelist, context) {
-	    var func;
-	    for (var i = 0, l = nodelist.length; i < l; i++) {
-	      func = Hogan.codegen[nodelist[i].tag];
-	      func && func(nodelist[i], context);
-	    }
-	    return context;
-	  }
-
-	  Hogan.parse = function(tokens, text, options) {
-	    options = options || {};
-	    return buildTree(tokens, '', [], options.sectionTags || []);
-	  }
-
-	  Hogan.cache = {};
-
-	  Hogan.cacheKey = function(text, options) {
-	    return [text, !!options.asString, !!options.disableLambda, options.delimiters, !!options.modelGet].join('||');
-	  }
-
-	  Hogan.compile = function(text, options) {
-	    options = options || {};
-	    var key = Hogan.cacheKey(text, options);
-	    var template = this.cache[key];
-
-	    if (template) {
-	      var partials = template.partials;
-	      for (var name in partials) {
-	        delete partials[name].instance;
-	      }
-	      return template;
-	    }
-
-	    template = this.generate(this.parse(this.scan(text, options.delimiters), text, options), text, options);
-	    return this.cache[key] = template;
-	  }
-	})( true ? exports : Hogan);
-
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-	 *  Copyright 2011 Twitter, Inc.
-	 *  Licensed under the Apache License, Version 2.0 (the "License");
-	 *  you may not use this file except in compliance with the License.
-	 *  You may obtain a copy of the License at
-	 *
-	 *  http://www.apache.org/licenses/LICENSE-2.0
-	 *
-	 *  Unless required by applicable law or agreed to in writing, software
-	 *  distributed under the License is distributed on an "AS IS" BASIS,
-	 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	 *  See the License for the specific language governing permissions and
-	 *  limitations under the License.
-	 */
-
-	var Hogan = {};
-
-	(function (Hogan) {
-	  Hogan.Template = function (codeObj, text, compiler, options) {
-	    codeObj = codeObj || {};
-	    this.r = codeObj.code || this.r;
-	    this.c = compiler;
-	    this.options = options || {};
-	    this.text = text || '';
-	    this.partials = codeObj.partials || {};
-	    this.subs = codeObj.subs || {};
-	    this.buf = '';
-	  }
-
-	  Hogan.Template.prototype = {
-	    // render: replaced by generated code.
-	    r: function (context, partials, indent) { return ''; },
-
-	    // variable escaping
-	    v: hoganEscape,
-
-	    // triple stache
-	    t: coerceToString,
-
-	    render: function render(context, partials, indent) {
-	      return this.ri([context], partials || {}, indent);
-	    },
-
-	    // render internal -- a hook for overrides that catches partials too
-	    ri: function (context, partials, indent) {
-	      return this.r(context, partials, indent);
-	    },
-
-	    // ensurePartial
-	    ep: function(symbol, partials) {
-	      var partial = this.partials[symbol];
-
-	      // check to see that if we've instantiated this partial before
-	      var template = partials[partial.name];
-	      if (partial.instance && partial.base == template) {
-	        return partial.instance;
-	      }
-
-	      if (typeof template == 'string') {
-	        if (!this.c) {
-	          throw new Error("No compiler available.");
-	        }
-	        template = this.c.compile(template, this.options);
-	      }
-
-	      if (!template) {
-	        return null;
-	      }
-
-	      // We use this to check whether the partials dictionary has changed
-	      this.partials[symbol].base = template;
-
-	      if (partial.subs) {
-	        // Make sure we consider parent template now
-	        if (!partials.stackText) partials.stackText = {};
-	        for (key in partial.subs) {
-	          if (!partials.stackText[key]) {
-	            partials.stackText[key] = (this.activeSub !== undefined && partials.stackText[this.activeSub]) ? partials.stackText[this.activeSub] : this.text;
-	          }
-	        }
-	        template = createSpecializedPartial(template, partial.subs, partial.partials,
-	          this.stackSubs, this.stackPartials, partials.stackText);
-	      }
-	      this.partials[symbol].instance = template;
-
-	      return template;
-	    },
-
-	    // tries to find a partial in the current scope and render it
-	    rp: function(symbol, context, partials, indent) {
-	      var partial = this.ep(symbol, partials);
-	      if (!partial) {
-	        return '';
-	      }
-
-	      return partial.ri(context, partials, indent);
-	    },
-
-	    // render a section
-	    rs: function(context, partials, section) {
-	      var tail = context[context.length - 1];
-
-	      if (!isArray(tail)) {
-	        section(context, partials, this);
-	        return;
-	      }
-
-	      for (var i = 0; i < tail.length; i++) {
-	        context.push(tail[i]);
-	        section(context, partials, this);
-	        context.pop();
-	      }
-	    },
-
-	    // maybe start a section
-	    s: function(val, ctx, partials, inverted, start, end, tags) {
-	      var pass;
-
-	      if (isArray(val) && val.length === 0) {
-	        return false;
-	      }
-
-	      if (typeof val == 'function') {
-	        val = this.ms(val, ctx, partials, inverted, start, end, tags);
-	      }
-
-	      pass = !!val;
-
-	      if (!inverted && pass && ctx) {
-	        ctx.push((typeof val == 'object') ? val : ctx[ctx.length - 1]);
-	      }
-
-	      return pass;
-	    },
-
-	    // find values with dotted names
-	    d: function(key, ctx, partials, returnFound) {
-	      var found,
-	          names = key.split('.'),
-	          val = this.f(names[0], ctx, partials, returnFound),
-	          doModelGet = this.options.modelGet,
-	          cx = null;
-
-	      if (key === '.' && isArray(ctx[ctx.length - 2])) {
-	        val = ctx[ctx.length - 1];
-	      } else {
-	        for (var i = 1; i < names.length; i++) {
-	          found = findInScope(names[i], val, doModelGet);
-	          if (found !== undefined) {
-	            cx = val;
-	            val = found;
-	          } else {
-	            val = '';
-	          }
-	        }
-	      }
-
-	      if (returnFound && !val) {
-	        return false;
-	      }
-
-	      if (!returnFound && typeof val == 'function') {
-	        ctx.push(cx);
-	        val = this.mv(val, ctx, partials);
-	        ctx.pop();
-	      }
-
-	      return val;
-	    },
-
-	    // find values with normal names
-	    f: function(key, ctx, partials, returnFound) {
-	      var val = false,
-	          v = null,
-	          found = false,
-	          doModelGet = this.options.modelGet;
-
-	      for (var i = ctx.length - 1; i >= 0; i--) {
-	        v = ctx[i];
-	        val = findInScope(key, v, doModelGet);
-	        if (val !== undefined) {
-	          found = true;
-	          break;
-	        }
-	      }
-
-	      if (!found) {
-	        return (returnFound) ? false : "";
-	      }
-
-	      if (!returnFound && typeof val == 'function') {
-	        val = this.mv(val, ctx, partials);
-	      }
-
-	      return val;
-	    },
-
-	    // higher order templates
-	    ls: function(func, cx, partials, text, tags) {
-	      var oldTags = this.options.delimiters;
-
-	      this.options.delimiters = tags;
-	      this.b(this.ct(coerceToString(func.call(cx, text)), cx, partials));
-	      this.options.delimiters = oldTags;
-
-	      return false;
-	    },
-
-	    // compile text
-	    ct: function(text, cx, partials) {
-	      if (this.options.disableLambda) {
-	        throw new Error('Lambda features disabled.');
-	      }
-	      return this.c.compile(text, this.options).render(cx, partials);
-	    },
-
-	    // template result buffering
-	    b: function(s) { this.buf += s; },
-
-	    fl: function() { var r = this.buf; this.buf = ''; return r; },
-
-	    // method replace section
-	    ms: function(func, ctx, partials, inverted, start, end, tags) {
-	      var textSource,
-	          cx = ctx[ctx.length - 1],
-	          result = func.call(cx);
-
-	      if (typeof result == 'function') {
-	        if (inverted) {
-	          return true;
-	        } else {
-	          textSource = (this.activeSub && this.subsText && this.subsText[this.activeSub]) ? this.subsText[this.activeSub] : this.text;
-	          return this.ls(result, cx, partials, textSource.substring(start, end), tags);
-	        }
-	      }
-
-	      return result;
-	    },
-
-	    // method replace variable
-	    mv: function(func, ctx, partials) {
-	      var cx = ctx[ctx.length - 1];
-	      var result = func.call(cx);
-
-	      if (typeof result == 'function') {
-	        return this.ct(coerceToString(result.call(cx)), cx, partials);
-	      }
-
-	      return result;
-	    },
-
-	    sub: function(name, context, partials, indent) {
-	      var f = this.subs[name];
-	      if (f) {
-	        this.activeSub = name;
-	        f(context, partials, this, indent);
-	        this.activeSub = false;
-	      }
-	    }
-
-	  };
-
-	  //Find a key in an object
-	  function findInScope(key, scope, doModelGet) {
-	    var val;
-
-	    if (scope && typeof scope == 'object') {
-
-	      if (scope[key] !== undefined) {
-	        val = scope[key];
-
-	      // try lookup with get for backbone or similar model data
-	      } else if (doModelGet && scope.get && typeof scope.get == 'function') {
-	        val = scope.get(key);
-	      }
-	    }
-
-	    return val;
-	  }
-
-	  function createSpecializedPartial(instance, subs, partials, stackSubs, stackPartials, stackText) {
-	    function PartialTemplate() {};
-	    PartialTemplate.prototype = instance;
-	    function Substitutions() {};
-	    Substitutions.prototype = instance.subs;
-	    var key;
-	    var partial = new PartialTemplate();
-	    partial.subs = new Substitutions();
-	    partial.subsText = {};  //hehe. substext.
-	    partial.buf = '';
-
-	    stackSubs = stackSubs || {};
-	    partial.stackSubs = stackSubs;
-	    partial.subsText = stackText;
-	    for (key in subs) {
-	      if (!stackSubs[key]) stackSubs[key] = subs[key];
-	    }
-	    for (key in stackSubs) {
-	      partial.subs[key] = stackSubs[key];
-	    }
-
-	    stackPartials = stackPartials || {};
-	    partial.stackPartials = stackPartials;
-	    for (key in partials) {
-	      if (!stackPartials[key]) stackPartials[key] = partials[key];
-	    }
-	    for (key in stackPartials) {
-	      partial.partials[key] = stackPartials[key];
-	    }
-
-	    return partial;
-	  }
-
-	  var rAmp = /&/g,
-	      rLt = /</g,
-	      rGt = />/g,
-	      rApos = /\'/g,
-	      rQuot = /\"/g,
-	      hChars = /[&<>\"\']/;
-
-	  function coerceToString(val) {
-	    return String((val === null || val === undefined) ? '' : val);
-	  }
-
-	  function hoganEscape(str) {
-	    str = coerceToString(str);
-	    return hChars.test(str) ?
-	      str
-	        .replace(rAmp, '&amp;')
-	        .replace(rLt, '&lt;')
-	        .replace(rGt, '&gt;')
-	        .replace(rApos, '&#39;')
-	        .replace(rQuot, '&quot;') :
-	      str;
-	  }
-
-	  var isArray = Array.isArray || function(a) {
-	    return Object.prototype.toString.call(a) === '[object Array]';
-	  };
-
-	})( true ? exports : Hogan);
-
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	(function(exports){
-
-	"use strict";
-
-	var trunc = Math.trunc || function(x){
-		if( x >= 0 ){
-			return Math.floor(x);
-		} else {
-			return Math.ceil(x);
-		}
-	};
-
-	function ge(year1, month1, day1, year2, month2, day2){
-		if( year1 > year2 ){
-			return true;
-		}
-		if( year1 < year2 ){
-			return false;
-		}
-		if( month1 > month2 ){
-			return true;
-		}
-		if( month1 < month2 ){
-			return false;
-		}
-		return day1 >= day2;
-	}
-
-	function gengouToAlpha(gengou){
-		switch(gengou){
-			case "平成": return "Heisei";
-			case "昭和": return "Shouwa";
-			case "大正": return "Taishou";
-			case "明治": return "Meiji";
-			default: throw new Error("unknown gengou: " + gengou);
-		}
-	}
-
-	function padLeft(str, n, ch){
-		var m = n - str.length;
-		var pad = "";
-		while( m-- > 0 ){
-			pad += ch;
-		}
-		return pad + str;
-	}
-
-	var zenkakuDigits = ["０", "１", "２", "３", "４", "５", "６", "７", "８", "９"];
-	var alphaDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-
-	function isZenkakuDigit(ch){
-		return zenkakuDigits.indexOf(ch) >= 0;
-	}
-
-	function isAlphaDigit(ch){
-		return alphaDigits.indexOf(ch) >= 0;
-	}
-
-	function alphaDigitToZenkaku(ch){
-		var i = alphaDigits.indexOf(ch);
-		return i >= 0 ? zenkakuDigits[i] : ch;
-	}
-
-	function isDateObject(obj){
-		return obj instanceof Date;
-	}
-
-	function removeOpt(opts, what){
-		var result = [];
-		for(var i=0;i<opts.length;i++){
-			var opt = opts[i];
-			if( opt === what ){
-				continue;
-			} else {
-				result.push(opt);
-			}
-		}
-		return result;
-	}
-
-	function toGengou(year, month, day){
-		if( ge(year, month, day, 1989, 1, 8) ){
-			return { gengou:"平成", nen:year - 1988 };
-		}
-		if( ge(year, month, day, 1926, 12, 25) ){
-			return { gengou:"昭和", nen:year - 1925 };
-		}
-		if( ge(year, month, day, 1912, 7, 30) ){
-			return { gengou:"大正", nen:year - 1911 };
-		}
-		if( ge(year, month, day, 1873, 1, 1) ){
-			return { gengou: "明治", nen: year - 1867 };
-		}
-		return { gengou: "西暦", nen: year };
-	}
-
-	exports.toGengou = toGengou;
-
-	function fromGengou(gengou, nen){
-	    nen = Math.floor(+nen);
-	    if( nen < 0 ){
-	    	throw new Error("invalid nen: " + nen);
-	    }
-	    switch (gengou) {
-	        case "平成":
-	            return 1988 + nen;
-	        case "昭和":
-	            return 1925 + nen;
-	        case "大正":
-	            return 1911 + nen;
-	        case "明治":
-	            return 1867 + nen;
-	        case "西暦":
-	            return nen;
-	        default:
-	            throw new Error("invalid gengou: " + gengou);
-	    }
-	}
-
-	exports.fromGengou = fromGengou;
-
-	var youbi = ["日", "月", "火", "水", "木", "金", "土"];
-
-	function toYoubi(dayOfWeek){
-		return youbi[dayOfWeek];
-	}
-
-	exports.toYoubi = toYoubi;
-
-	function KanjiDate(date){
-		this.year = date.getFullYear();
-		this.month = date.getMonth()+1;
-		this.day = date.getDate();
-		this.hour = date.getHours();
-		this.minute = date.getMinutes();
-		this.second = date.getSeconds();
-		this.msec = date.getMilliseconds();
-		this.dayOfWeek = date.getDay();
-		var g = toGengou(this.year, this.month, this.day);
-		this.gengou = g.gengou;
-		this.nen = g.nen;
-		this.youbi = youbi[this.dayOfWeek];
-	}
-
-	function KanjiDateExplicit(year, month, day, hour, minute, second, millisecond){
-		if( hour === undefined ) hour = 0;
-		if( minute === undefined ) minute = 0;
-		if( second === undefined ) second = 0;
-		if( millisecond === undefined ) millisecond = 0;
-		var date = new Date(year, month-1, day, hour, minute, second, millisecond);
-		return new KanjiDate(date);
-	}
-
-	function KanjiDateFromString(str){
-		var m;
-		m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-		if( m ){
-			return KanjiDateExplicit(+m[1], +m[2], +m[3]);
-		}
-		m = str.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
-		if( m ){
-			return KanjiDateExplicit(+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]);
-		}
-		throw new Error("cannot convert to KanjiDate");
-	}
-
-	function parseFormatString(fmtStr){
-		var result = [];
-		var parts = fmtStr.split(/(\{[^}]+)\}/);
-		parts.forEach(function(part){
-			if( part === "" ) return;
-			if( part[0] === "{" ){
-				part = part.substring(1);
-				var token = {opts: []};
-				var colon = part.indexOf(":");
-				if( part.indexOf(":") >= 0 ){
-					token.part = part.substring(0, colon);
-					var optStr = part.substring(colon+1).trim();
-					if( optStr !== "" ){
-						if( optStr.indexOf(",") >= 0 ){
-							token.opts = optStr.split(/\s*,\s*/);
-						} else {
-							token.opts = [optStr];
-						}
-					}
-				} else {
-					token.part = part;
-				}
-				result.push(token);
-			} else {
-				result.push(part);
-			}
-		});
-		return result;
-	}
-
-	var format1 = "{G}{N}年{M}月{D}日（{W}）";
-	var format2 = "{G}{N}年{M}月{D}日";
-	var format3 = "{G:a}{N}.{M}.{D}";
-	var format4 = "{G}{N:2}年{M:2}月{D:2}日（{W}）";
-	var format5 = "{G}{N:2}年{M:2}月{D:2}日";
-	var format6 = "{G:a}{N:2}.{M:2}.{D:2}";
-	var format7 = "{G}{N}年{M}月{D}日（{W}） {a}{h:12}時{m}分{s}秒";
-	var format8 = "{G}{N:2}年{M:2}月{D:2}日（{W}） {a}{h:12,2}時{m:2}分{s:2}秒";
-	var format9 = "{G}{N}年{M}月{D}日（{W}） {a}{h:12}時{m}分";
-	var format10 = "{G}{N:2}年{M:2}月{D:2}日（{W}） {a}{h:12,2}時{m:2}分";
-	var format11 = "{G}{N:z}年{M:z}月{D:z}日";
-	var format12 = "{G}{N:z,2}年{M:z,2}月{D:z,2}日";
-	var format13 = "{Y}-{M:2}-{D:2}";
-	var format14 = "{Y}-{M:2}-{D:2} {h:2}:{m:2}:{s:2}";
-
-	exports.f1 = format1;
-	exports.f2 = format2;
-	exports.f3 = format3;
-	exports.f4 = format4;
-	exports.f5 = format5;
-	exports.f6 = format6;
-	exports.f7 = format7;
-	exports.f8 = format8;
-	exports.f9 = format9;
-	exports.f10 = format10;
-	exports.f11 = format11;
-	exports.f12 = format12;
-	exports.f13 = format13;
-	exports.f14 = format14;
-	exports.fSqlDate = format13;
-	exports.fSqlDateTime = format14;
-
-	function gengouPart(kdate, opts){
-		var style = "2";
-		opts.forEach(function(opt){
-			if( ["2", "1", "a", "alpha"].indexOf(opt) >= 0 ){
-				style = opt;
-			}
-		})
-		switch(style){
-			case "2": return kdate.gengou;
-			case "1": return kdate.gengou[0]; 
-			case "a": return gengouToAlpha(kdate.gengou)[0]; 
-			case "alpha": return gengouToAlpha(kdate.gengou);
-			default: return kdate.gengou;
-		}
-	}
-
-	function numberPart(num, opts){
-		var zenkaku = false;
-		var width = 1;
-		opts.forEach(function(opt){
-			switch(opt){
-				case "1": width = 1; break;
-				case "2": width = 2; break;
-				case "z": zenkaku = true; break;
-			}
-		});
-		var result = num.toString();
-		if( zenkaku ){
-			result = result.split("").map(alphaDigitToZenkaku).join("");
-		}
-		if( width > 1 && num < 10 ){
-			result = (zenkaku ? "０" : "0") + result;
-		}
-		return result;
-	}
-
-	function nenPart(kdate, opts){
-		if( kdate.nen === 1 && opts.indexOf("g") >= 0 ){
-			return "元";
-		} else {
-			return numberPart(kdate.nen, opts);
-		}
-	}
-
-	function youbiPart(kdate, opts){
-		var style;
-		opts.forEach(function(opt){
-			if( ["1", "2", "3", "alpha"].indexOf(opt) >= 0 ){
-				style = opt;
-			}
-		})
-		switch(style){
-			case "1": return kdate.youbi;
-			case "2": return kdate.youbi + "曜";
-			case "3": return kdate.youbi + "曜日";
-			case "alpha": return dayOfWeek[kdate.dayOfWeek];
-			default: return kdate.youbi;
-		}
-	}
-
-	function hourPart(hour, opts){
-		var ampm = false;
-		if( opts.indexOf("12") >= 0 ){
-			ampm = true;
-			opts = removeOpt(opts, "12");
-		}
-		if( ampm ){
-			hour = hour % 12;
-		}
-		return numberPart(hour, opts);
-	}
-
-	function ampmPart(kdate, opts){
-		var style = "kanji";
-		opts.forEach(function(opt){
-			switch(opt){
-				case "am/pm": style = "am/pm"; break;
-				case "AM/PM": style = "AM/PM"; break;
-			}
-		});
-		var am = kdate.hour < 12;
-		switch(style){
-			case "kanji": return am ? "午前" : "午後";
-			case "am/pm": return am ? "am" : "pm";
-			case "AM/PM": return am ? "AM" : "PM";
-			default : throw new Error("unknown style for AM/PM");
-		}
-	}
-
-	function yearPart(year, opts){
-		return year.toString();
-	}
-
-	function format(formatStr, kdate){
-		var output = [];
-		var tokens = parseFormatString(formatStr);
-		tokens.forEach(function(token){
-			if( typeof token === "string" ){
-				output.push(token);
-			} else {
-				switch(token.part){
-					case "G": output.push(gengouPart(kdate, token.opts)); break;
-					case "N": output.push(nenPart(kdate, token.opts)); break;
-					case "M": output.push(numberPart(kdate.month, token.opts)); break;
-					case "D": output.push(numberPart(kdate.day, token.opts)); break;
-					case "W": output.push(youbiPart(kdate, token.opts)); break;
-					case "h": output.push(hourPart(kdate.hour, token.opts)); break;
-					case "m": output.push(numberPart(kdate.minute, token.opts)); break;
-					case "s": output.push(numberPart(kdate.second, token.opts)); break;
-					case "a": output.push(ampmPart(kdate, token.opts)); break;
-					case "Y": output.push(yearPart(kdate.year, token.opts)); break;
-				}
-			}
-		})
-		return output.join("");
-	}
-
-	exports.format = function(){
-		var narg = arguments.length;
-		var formatStr, args, i;
-		if( narg === 0 ){
-			return format(format1, new KanjiDate(new Date()));
-		} else if( narg === 1 ){
-			return format(format1, cvt(arguments[0]));
-		} else {
-			formatStr = arguments[0];
-			if( formatStr == null ){
-				formatStr = format1;
-			}
-			args = [];
-			for(i=1;i<arguments.length;i++){
-				args.push(arguments[i]);
-			}
-			if( args.length === 1 ){
-				return format(formatStr, cvt(args[0]));
-			} else {
-				return format(formatStr, KanjiDateExplicit.apply(null, args));
-			}
-		}
-		throw new Error("invalid format call");
-
-		function cvt(x){
-			if( isDateObject(x) ){
-				return new KanjiDate(x);
-			} else if( typeof x === "string" ){
-				return KanjiDateFromString(x);
-			}
-			throw new Error("cannot convert to KanjiDate");
-		}
-	}
-
-	})( false ? (window.kanjidate = {}) : exports);
-
-/***/ },
-/* 9 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var moment = __webpack_require__(10);
-	var mConsts = __webpack_require__(114);
+	var moment = __webpack_require__(4);
+	var mConsts = __webpack_require__(108);
 
 	function repeat(ch, n){
 	    var parts = [], i;
@@ -11976,7 +10660,7 @@
 
 
 /***/ },
-/* 10 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {//! moment.js
@@ -13742,7 +12426,7 @@
 	                module && module.exports) {
 	            try {
 	                oldLocale = globalLocale._abbr;
-	                __webpack_require__(12)("./" + name);
+	                __webpack_require__(6)("./" + name);
 	                // because defineLocale currently also sets the global locale, we
 	                // want to undo that for lazy loaded locales
 	                locale_locales__getSetGlobalLocale(oldLocale);
@@ -16174,10 +14858,10 @@
 	    return _moment;
 
 	}));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)(module)))
 
 /***/ },
-/* 11 */
+/* 5 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -16193,212 +14877,212 @@
 
 
 /***/ },
-/* 12 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./af": 13,
-		"./af.js": 13,
-		"./ar": 14,
-		"./ar-ma": 15,
-		"./ar-ma.js": 15,
-		"./ar-sa": 16,
-		"./ar-sa.js": 16,
-		"./ar-tn": 17,
-		"./ar-tn.js": 17,
-		"./ar.js": 14,
-		"./az": 18,
-		"./az.js": 18,
-		"./be": 19,
-		"./be.js": 19,
-		"./bg": 20,
-		"./bg.js": 20,
-		"./bn": 21,
-		"./bn.js": 21,
-		"./bo": 22,
-		"./bo.js": 22,
-		"./br": 23,
-		"./br.js": 23,
-		"./bs": 24,
-		"./bs.js": 24,
-		"./ca": 25,
-		"./ca.js": 25,
-		"./cs": 26,
-		"./cs.js": 26,
-		"./cv": 27,
-		"./cv.js": 27,
-		"./cy": 28,
-		"./cy.js": 28,
-		"./da": 29,
-		"./da.js": 29,
-		"./de": 30,
-		"./de-at": 31,
-		"./de-at.js": 31,
-		"./de.js": 30,
-		"./dv": 32,
-		"./dv.js": 32,
-		"./el": 33,
-		"./el.js": 33,
-		"./en-au": 34,
-		"./en-au.js": 34,
-		"./en-ca": 35,
-		"./en-ca.js": 35,
-		"./en-gb": 36,
-		"./en-gb.js": 36,
-		"./en-ie": 37,
-		"./en-ie.js": 37,
-		"./en-nz": 38,
-		"./en-nz.js": 38,
-		"./eo": 39,
-		"./eo.js": 39,
-		"./es": 40,
-		"./es-do": 41,
-		"./es-do.js": 41,
-		"./es.js": 40,
-		"./et": 42,
-		"./et.js": 42,
-		"./eu": 43,
-		"./eu.js": 43,
-		"./fa": 44,
-		"./fa.js": 44,
-		"./fi": 45,
-		"./fi.js": 45,
-		"./fo": 46,
-		"./fo.js": 46,
-		"./fr": 47,
-		"./fr-ca": 48,
-		"./fr-ca.js": 48,
-		"./fr-ch": 49,
-		"./fr-ch.js": 49,
-		"./fr.js": 47,
-		"./fy": 50,
-		"./fy.js": 50,
-		"./gd": 51,
-		"./gd.js": 51,
-		"./gl": 52,
-		"./gl.js": 52,
-		"./he": 53,
-		"./he.js": 53,
-		"./hi": 54,
-		"./hi.js": 54,
-		"./hr": 55,
-		"./hr.js": 55,
-		"./hu": 56,
-		"./hu.js": 56,
-		"./hy-am": 57,
-		"./hy-am.js": 57,
-		"./id": 58,
-		"./id.js": 58,
-		"./is": 59,
-		"./is.js": 59,
-		"./it": 60,
-		"./it.js": 60,
-		"./ja": 61,
-		"./ja.js": 61,
-		"./jv": 62,
-		"./jv.js": 62,
-		"./ka": 63,
-		"./ka.js": 63,
-		"./kk": 64,
-		"./kk.js": 64,
-		"./km": 65,
-		"./km.js": 65,
-		"./ko": 66,
-		"./ko.js": 66,
-		"./ky": 67,
-		"./ky.js": 67,
-		"./lb": 68,
-		"./lb.js": 68,
-		"./lo": 69,
-		"./lo.js": 69,
-		"./lt": 70,
-		"./lt.js": 70,
-		"./lv": 71,
-		"./lv.js": 71,
-		"./me": 72,
-		"./me.js": 72,
-		"./mk": 73,
-		"./mk.js": 73,
-		"./ml": 74,
-		"./ml.js": 74,
-		"./mr": 75,
-		"./mr.js": 75,
-		"./ms": 76,
-		"./ms-my": 77,
-		"./ms-my.js": 77,
-		"./ms.js": 76,
-		"./my": 78,
-		"./my.js": 78,
-		"./nb": 79,
-		"./nb.js": 79,
-		"./ne": 80,
-		"./ne.js": 80,
-		"./nl": 81,
-		"./nl.js": 81,
-		"./nn": 82,
-		"./nn.js": 82,
-		"./pa-in": 83,
-		"./pa-in.js": 83,
-		"./pl": 84,
-		"./pl.js": 84,
-		"./pt": 85,
-		"./pt-br": 86,
-		"./pt-br.js": 86,
-		"./pt.js": 85,
-		"./ro": 87,
-		"./ro.js": 87,
-		"./ru": 88,
-		"./ru.js": 88,
-		"./se": 89,
-		"./se.js": 89,
-		"./si": 90,
-		"./si.js": 90,
-		"./sk": 91,
-		"./sk.js": 91,
-		"./sl": 92,
-		"./sl.js": 92,
-		"./sq": 93,
-		"./sq.js": 93,
-		"./sr": 94,
-		"./sr-cyrl": 95,
-		"./sr-cyrl.js": 95,
-		"./sr.js": 94,
-		"./ss": 96,
-		"./ss.js": 96,
-		"./sv": 97,
-		"./sv.js": 97,
-		"./sw": 98,
-		"./sw.js": 98,
-		"./ta": 99,
-		"./ta.js": 99,
-		"./te": 100,
-		"./te.js": 100,
-		"./th": 101,
-		"./th.js": 101,
-		"./tl-ph": 102,
-		"./tl-ph.js": 102,
-		"./tlh": 103,
-		"./tlh.js": 103,
-		"./tr": 104,
-		"./tr.js": 104,
-		"./tzl": 105,
-		"./tzl.js": 105,
-		"./tzm": 106,
-		"./tzm-latn": 107,
-		"./tzm-latn.js": 107,
-		"./tzm.js": 106,
-		"./uk": 108,
-		"./uk.js": 108,
-		"./uz": 109,
-		"./uz.js": 109,
-		"./vi": 110,
-		"./vi.js": 110,
-		"./x-pseudo": 111,
-		"./x-pseudo.js": 111,
-		"./zh-cn": 112,
-		"./zh-cn.js": 112,
-		"./zh-tw": 113,
-		"./zh-tw.js": 113
+		"./af": 7,
+		"./af.js": 7,
+		"./ar": 8,
+		"./ar-ma": 9,
+		"./ar-ma.js": 9,
+		"./ar-sa": 10,
+		"./ar-sa.js": 10,
+		"./ar-tn": 11,
+		"./ar-tn.js": 11,
+		"./ar.js": 8,
+		"./az": 12,
+		"./az.js": 12,
+		"./be": 13,
+		"./be.js": 13,
+		"./bg": 14,
+		"./bg.js": 14,
+		"./bn": 15,
+		"./bn.js": 15,
+		"./bo": 16,
+		"./bo.js": 16,
+		"./br": 17,
+		"./br.js": 17,
+		"./bs": 18,
+		"./bs.js": 18,
+		"./ca": 19,
+		"./ca.js": 19,
+		"./cs": 20,
+		"./cs.js": 20,
+		"./cv": 21,
+		"./cv.js": 21,
+		"./cy": 22,
+		"./cy.js": 22,
+		"./da": 23,
+		"./da.js": 23,
+		"./de": 24,
+		"./de-at": 25,
+		"./de-at.js": 25,
+		"./de.js": 24,
+		"./dv": 26,
+		"./dv.js": 26,
+		"./el": 27,
+		"./el.js": 27,
+		"./en-au": 28,
+		"./en-au.js": 28,
+		"./en-ca": 29,
+		"./en-ca.js": 29,
+		"./en-gb": 30,
+		"./en-gb.js": 30,
+		"./en-ie": 31,
+		"./en-ie.js": 31,
+		"./en-nz": 32,
+		"./en-nz.js": 32,
+		"./eo": 33,
+		"./eo.js": 33,
+		"./es": 34,
+		"./es-do": 35,
+		"./es-do.js": 35,
+		"./es.js": 34,
+		"./et": 36,
+		"./et.js": 36,
+		"./eu": 37,
+		"./eu.js": 37,
+		"./fa": 38,
+		"./fa.js": 38,
+		"./fi": 39,
+		"./fi.js": 39,
+		"./fo": 40,
+		"./fo.js": 40,
+		"./fr": 41,
+		"./fr-ca": 42,
+		"./fr-ca.js": 42,
+		"./fr-ch": 43,
+		"./fr-ch.js": 43,
+		"./fr.js": 41,
+		"./fy": 44,
+		"./fy.js": 44,
+		"./gd": 45,
+		"./gd.js": 45,
+		"./gl": 46,
+		"./gl.js": 46,
+		"./he": 47,
+		"./he.js": 47,
+		"./hi": 48,
+		"./hi.js": 48,
+		"./hr": 49,
+		"./hr.js": 49,
+		"./hu": 50,
+		"./hu.js": 50,
+		"./hy-am": 51,
+		"./hy-am.js": 51,
+		"./id": 52,
+		"./id.js": 52,
+		"./is": 53,
+		"./is.js": 53,
+		"./it": 54,
+		"./it.js": 54,
+		"./ja": 55,
+		"./ja.js": 55,
+		"./jv": 56,
+		"./jv.js": 56,
+		"./ka": 57,
+		"./ka.js": 57,
+		"./kk": 58,
+		"./kk.js": 58,
+		"./km": 59,
+		"./km.js": 59,
+		"./ko": 60,
+		"./ko.js": 60,
+		"./ky": 61,
+		"./ky.js": 61,
+		"./lb": 62,
+		"./lb.js": 62,
+		"./lo": 63,
+		"./lo.js": 63,
+		"./lt": 64,
+		"./lt.js": 64,
+		"./lv": 65,
+		"./lv.js": 65,
+		"./me": 66,
+		"./me.js": 66,
+		"./mk": 67,
+		"./mk.js": 67,
+		"./ml": 68,
+		"./ml.js": 68,
+		"./mr": 69,
+		"./mr.js": 69,
+		"./ms": 70,
+		"./ms-my": 71,
+		"./ms-my.js": 71,
+		"./ms.js": 70,
+		"./my": 72,
+		"./my.js": 72,
+		"./nb": 73,
+		"./nb.js": 73,
+		"./ne": 74,
+		"./ne.js": 74,
+		"./nl": 75,
+		"./nl.js": 75,
+		"./nn": 76,
+		"./nn.js": 76,
+		"./pa-in": 77,
+		"./pa-in.js": 77,
+		"./pl": 78,
+		"./pl.js": 78,
+		"./pt": 79,
+		"./pt-br": 80,
+		"./pt-br.js": 80,
+		"./pt.js": 79,
+		"./ro": 81,
+		"./ro.js": 81,
+		"./ru": 82,
+		"./ru.js": 82,
+		"./se": 83,
+		"./se.js": 83,
+		"./si": 84,
+		"./si.js": 84,
+		"./sk": 85,
+		"./sk.js": 85,
+		"./sl": 86,
+		"./sl.js": 86,
+		"./sq": 87,
+		"./sq.js": 87,
+		"./sr": 88,
+		"./sr-cyrl": 89,
+		"./sr-cyrl.js": 89,
+		"./sr.js": 88,
+		"./ss": 90,
+		"./ss.js": 90,
+		"./sv": 91,
+		"./sv.js": 91,
+		"./sw": 92,
+		"./sw.js": 92,
+		"./ta": 93,
+		"./ta.js": 93,
+		"./te": 94,
+		"./te.js": 94,
+		"./th": 95,
+		"./th.js": 95,
+		"./tl-ph": 96,
+		"./tl-ph.js": 96,
+		"./tlh": 97,
+		"./tlh.js": 97,
+		"./tr": 98,
+		"./tr.js": 98,
+		"./tzl": 99,
+		"./tzl.js": 99,
+		"./tzm": 100,
+		"./tzm-latn": 101,
+		"./tzm-latn.js": 101,
+		"./tzm.js": 100,
+		"./uk": 102,
+		"./uk.js": 102,
+		"./uz": 103,
+		"./uz.js": 103,
+		"./vi": 104,
+		"./vi.js": 104,
+		"./x-pseudo": 105,
+		"./x-pseudo.js": 105,
+		"./zh-cn": 106,
+		"./zh-cn.js": 106,
+		"./zh-tw": 107,
+		"./zh-tw.js": 107
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -16411,11 +15095,11 @@
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 12;
+	webpackContext.id = 6;
 
 
 /***/ },
-/* 13 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -16423,7 +15107,7 @@
 	//! author : Werner Mollentze : https://github.com/wernerm
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -16492,7 +15176,7 @@
 	}));
 
 /***/ },
-/* 14 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -16502,7 +15186,7 @@
 	//! Native plural forms: forabi https://github.com/forabi
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -16633,7 +15317,7 @@
 	}));
 
 /***/ },
-/* 15 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -16642,7 +15326,7 @@
 	//! author : Abdel Said : https://github.com/abdelsaid
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -16697,7 +15381,7 @@
 	}));
 
 /***/ },
-/* 16 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -16705,7 +15389,7 @@
 	//! author : Suhail Alkowaileet : https://github.com/xsoh
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -16805,14 +15489,14 @@
 	}));
 
 /***/ },
-/* 17 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
 	//! locale  :  Arabic (Tunisia) [ar-tn]
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -16867,7 +15551,7 @@
 	}));
 
 /***/ },
-/* 18 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -16875,7 +15559,7 @@
 	//! author : topchiyev : https://github.com/topchiyev
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -16976,7 +15660,7 @@
 	}));
 
 /***/ },
-/* 19 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -16986,7 +15670,7 @@
 	//! Author : Menelion Elensúle : https://github.com/Oire
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17114,7 +15798,7 @@
 	}));
 
 /***/ },
-/* 20 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17122,7 +15806,7 @@
 	//! author : Krasen Borisov : https://github.com/kraz
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17208,7 +15892,7 @@
 	}));
 
 /***/ },
-/* 21 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17216,7 +15900,7 @@
 	//! author : Kaushik Gandhi : https://github.com/kaushikgandhi
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17331,7 +16015,7 @@
 	}));
 
 /***/ },
-/* 22 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17339,7 +16023,7 @@
 	//! author : Thupten N. Chakrishar : https://github.com/vajradog
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17454,7 +16138,7 @@
 	}));
 
 /***/ },
-/* 23 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17462,7 +16146,7 @@
 	//! author : Jean-Baptiste Le Duigou : https://github.com/jbleduigou
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17566,7 +16250,7 @@
 	}));
 
 /***/ },
-/* 24 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17575,7 +16259,7 @@
 	//! based on (hr) translation by Bojan Marković
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17713,7 +16397,7 @@
 	}));
 
 /***/ },
-/* 25 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17721,7 +16405,7 @@
 	//! author : Juan G. Hurtado : https://github.com/juanghurtado
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17798,7 +16482,7 @@
 	}));
 
 /***/ },
-/* 26 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17806,7 +16490,7 @@
 	//! author : petrbela : https://github.com/petrbela
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -17974,7 +16658,7 @@
 	}));
 
 /***/ },
-/* 27 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -17982,7 +16666,7 @@
 	//! author : Anatoly Mironov : https://github.com/mirontoli
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18041,7 +16725,7 @@
 	}));
 
 /***/ },
-/* 28 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18049,7 +16733,7 @@
 	//! author : Robert Allen
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18125,7 +16809,7 @@
 	}));
 
 /***/ },
-/* 29 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18133,7 +16817,7 @@
 	//! author : Ulrik Nielsen : https://github.com/mrbase
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18189,7 +16873,7 @@
 	}));
 
 /***/ },
-/* 30 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18199,7 +16883,7 @@
 	//! author : Mikolaj Dadela : https://github.com/mik01aj
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18271,7 +16955,7 @@
 	}));
 
 /***/ },
-/* 31 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18282,7 +16966,7 @@
 	//! author : Mikolaj Dadela : https://github.com/mik01aj
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18354,7 +17038,7 @@
 	}));
 
 /***/ },
-/* 32 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18362,7 +17046,7 @@
 	//! author : Jawish Hameed : https://github.com/jawish
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18457,7 +17141,7 @@
 	}));
 
 /***/ },
-/* 33 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18465,7 +17149,7 @@
 	//! author : Aggelos Karalias : https://github.com/mehiel
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18559,14 +17243,14 @@
 	}));
 
 /***/ },
-/* 34 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
 	//! locale : English (Australia) [en-au]
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18629,7 +17313,7 @@
 	}));
 
 /***/ },
-/* 35 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18637,7 +17321,7 @@
 	//! author : Jonathan Abourbih : https://github.com/jonbca
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18696,7 +17380,7 @@
 	}));
 
 /***/ },
-/* 36 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18704,7 +17388,7 @@
 	//! author : Chris Gedrim : https://github.com/chrisgedrim
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18767,7 +17451,7 @@
 	}));
 
 /***/ },
-/* 37 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18775,7 +17459,7 @@
 	//! author : Chris Cartlidge : https://github.com/chriscartlidge
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18838,14 +17522,14 @@
 	}));
 
 /***/ },
-/* 38 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
 	//! locale : English (New Zealand) [en-nz]
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18908,7 +17592,7 @@
 	}));
 
 /***/ },
-/* 39 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18918,7 +17602,7 @@
 	//!          Se ne, bonvolu korekti kaj avizi min por ke mi povas lerni!
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -18985,7 +17669,7 @@
 	}));
 
 /***/ },
-/* 40 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -18993,7 +17677,7 @@
 	//! author : Julio Napurí : https://github.com/julionc
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19070,14 +17754,14 @@
 	}));
 
 /***/ },
-/* 41 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
 	//! locale : Spanish (Dominican Republic) [es-do]
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19154,7 +17838,7 @@
 	}));
 
 /***/ },
-/* 42 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19163,7 +17847,7 @@
 	//! improvements : Illimar Tambek : https://github.com/ragulka
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19238,7 +17922,7 @@
 	}));
 
 /***/ },
-/* 43 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19246,7 +17930,7 @@
 	//! author : Eneko Illarramendi : https://github.com/eillarra
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19308,7 +17992,7 @@
 	}));
 
 /***/ },
-/* 44 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19316,7 +18000,7 @@
 	//! author : Ebrahim Byagowi : https://github.com/ebraminio
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19418,7 +18102,7 @@
 	}));
 
 /***/ },
-/* 45 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19426,7 +18110,7 @@
 	//! author : Tarmo Aidantausta : https://github.com/bleadof
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19529,7 +18213,7 @@
 	}));
 
 /***/ },
-/* 46 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19537,7 +18221,7 @@
 	//! author : Ragnar Johannesen : https://github.com/ragnar123
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19593,7 +18277,7 @@
 	}));
 
 /***/ },
-/* 47 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19601,7 +18285,7 @@
 	//! author : John Fischer : https://github.com/jfroffice
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19661,7 +18345,7 @@
 	}));
 
 /***/ },
-/* 48 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19669,7 +18353,7 @@
 	//! author : Jonathan Abourbih : https://github.com/jonbca
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19725,7 +18409,7 @@
 	}));
 
 /***/ },
-/* 49 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19733,7 +18417,7 @@
 	//! author : Gaspard Bucher : https://github.com/gaspard
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19793,7 +18477,7 @@
 	}));
 
 /***/ },
-/* 50 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19801,7 +18485,7 @@
 	//! author : Robin van der Vliet : https://github.com/robin0van0der0v
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19870,7 +18554,7 @@
 	}));
 
 /***/ },
-/* 51 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19878,7 +18562,7 @@
 	//! author : Jon Ashdown : https://github.com/jonashdown
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -19950,7 +18634,7 @@
 	}));
 
 /***/ },
-/* 52 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -19958,7 +18642,7 @@
 	//! author : Juan G. Hurtado : https://github.com/juanghurtado
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20031,7 +18715,7 @@
 	}));
 
 /***/ },
-/* 53 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20041,7 +18725,7 @@
 	//! author : Tal Ater : https://github.com/TalAter
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20134,7 +18818,7 @@
 	}));
 
 /***/ },
-/* 54 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20142,7 +18826,7 @@
 	//! author : Mayank Singhal : https://github.com/mayanksinghal
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20262,7 +18946,7 @@
 	}));
 
 /***/ },
-/* 55 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20270,7 +18954,7 @@
 	//! author : Bojan Marković : https://github.com/bmarkovic
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20411,7 +19095,7 @@
 	}));
 
 /***/ },
-/* 56 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20419,7 +19103,7 @@
 	//! author : Adam Brunner : https://github.com/adambrunner
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20524,7 +19208,7 @@
 	}));
 
 /***/ },
-/* 57 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20532,7 +19216,7 @@
 	//! author : Armendarabyan : https://github.com/armendarabyan
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20623,7 +19307,7 @@
 	}));
 
 /***/ },
-/* 58 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20632,7 +19316,7 @@
 	//! reference: http://id.wikisource.org/wiki/Pedoman_Umum_Ejaan_Bahasa_Indonesia_yang_Disempurnakan
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20710,7 +19394,7 @@
 	}));
 
 /***/ },
-/* 59 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20718,7 +19402,7 @@
 	//! author : Hinrik Örn Sigurðsson : https://github.com/hinrik
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20841,7 +19525,7 @@
 	}));
 
 /***/ },
-/* 60 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20850,7 +19534,7 @@
 	//! author: Mattia Larentis: https://github.com/nostalgiaz
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20915,7 +19599,7 @@
 	}));
 
 /***/ },
-/* 61 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -20923,7 +19607,7 @@
 	//! author : LI Long : https://github.com/baryon
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -20995,7 +19679,7 @@
 	}));
 
 /***/ },
-/* 62 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21004,7 +19688,7 @@
 	//! reference: http://jv.wikipedia.org/wiki/Basa_Jawa
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21082,7 +19766,7 @@
 	}));
 
 /***/ },
-/* 63 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21090,7 +19774,7 @@
 	//! author : Irakli Janiashvili : https://github.com/irakli-janiashvili
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21175,7 +19859,7 @@
 	}));
 
 /***/ },
-/* 64 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21183,7 +19867,7 @@
 	//! authors : Nurlan Rakhimzhanov : https://github.com/nurlan
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21266,7 +19950,7 @@
 	}));
 
 /***/ },
-/* 65 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21274,7 +19958,7 @@
 	//! author : Kruy Vanna : https://github.com/kruyvanna
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21328,7 +20012,7 @@
 	}));
 
 /***/ },
-/* 66 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21340,7 +20024,7 @@
 	//! - Jeeeyul Lee <jeeeyul@gmail.com>
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21400,7 +20084,7 @@
 	}));
 
 /***/ },
-/* 67 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21408,7 +20092,7 @@
 	//! author : Chyngyz Arystan uulu : https://github.com/chyngyz
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21492,7 +20176,7 @@
 	}));
 
 /***/ },
-/* 68 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21500,7 +20184,7 @@
 	//! author : mweimerskirch : https://github.com/mweimerskirch, David Raison : https://github.com/kwisatz
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21632,7 +20316,7 @@
 	}));
 
 /***/ },
-/* 69 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21640,7 +20324,7 @@
 	//! author : Ryan Hart : https://github.com/ryanhart2
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21706,7 +20390,7 @@
 	}));
 
 /***/ },
-/* 70 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21714,7 +20398,7 @@
 	//! author : Mindaugas Mozūras : https://github.com/mmozuras
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21827,7 +20511,7 @@
 	}));
 
 /***/ },
-/* 71 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21836,7 +20520,7 @@
 	//! author : Jānis Elmeris : https://github.com/JanisE
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -21928,7 +20612,7 @@
 	}));
 
 /***/ },
-/* 72 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -21936,7 +20620,7 @@
 	//! author : Miodrag Nikač <miodrag@restartit.me> : https://github.com/miodragnikac
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22043,7 +20727,7 @@
 	}));
 
 /***/ },
-/* 73 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22051,7 +20735,7 @@
 	//! author : Borislav Mickov : https://github.com/B0k0
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22137,7 +20821,7 @@
 	}));
 
 /***/ },
-/* 74 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22145,7 +20829,7 @@
 	//! author : Floyd Pink : https://github.com/floydpink
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22222,7 +20906,7 @@
 	}));
 
 /***/ },
-/* 75 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22231,7 +20915,7 @@
 	//! author : Vivek Athalye : https://github.com/vnathalye
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22385,7 +21069,7 @@
 	}));
 
 /***/ },
-/* 76 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22393,7 +21077,7 @@
 	//! author : Weldan Jamili : https://github.com/weldan
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22471,7 +21155,7 @@
 	}));
 
 /***/ },
-/* 77 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22480,7 +21164,7 @@
 	//! author : Weldan Jamili : https://github.com/weldan
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22558,7 +21242,7 @@
 	}));
 
 /***/ },
-/* 78 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22566,7 +21250,7 @@
 	//! author : Squar team, mysquar.com
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22655,7 +21339,7 @@
 	}));
 
 /***/ },
-/* 79 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22664,7 +21348,7 @@
 	//!           Sigurd Gartmann : https://github.com/sigurdga
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22722,7 +21406,7 @@
 	}));
 
 /***/ },
-/* 80 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22730,7 +21414,7 @@
 	//! author : suvash : https://github.com/suvash
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22849,7 +21533,7 @@
 	}));
 
 /***/ },
-/* 81 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22857,7 +21541,7 @@
 	//! author : Joris Röling : https://github.com/jjupiter
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22926,7 +21610,7 @@
 	}));
 
 /***/ },
-/* 82 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22934,7 +21618,7 @@
 	//! author : https://github.com/mechuwind
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -22990,7 +21674,7 @@
 	}));
 
 /***/ },
-/* 83 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -22998,7 +21682,7 @@
 	//! author : Harpreet Singh : https://github.com/harpreetkhalsagtbit
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23118,7 +21802,7 @@
 	}));
 
 /***/ },
-/* 84 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23126,7 +21810,7 @@
 	//! author : Rafal Hirsz : https://github.com/evoL
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23227,7 +21911,7 @@
 	}));
 
 /***/ },
-/* 85 */
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23235,7 +21919,7 @@
 	//! author : Jefferson : https://github.com/jalex79
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23296,7 +21980,7 @@
 	}));
 
 /***/ },
-/* 86 */
+/* 80 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23304,7 +21988,7 @@
 	//! author : Caio Ribeiro Pereira : https://github.com/caio-ribeiro-pereira
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23361,7 +22045,7 @@
 	}));
 
 /***/ },
-/* 87 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23370,7 +22054,7 @@
 	//! author : Valentin Agachi : https://github.com/avaly
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23440,7 +22124,7 @@
 	}));
 
 /***/ },
-/* 88 */
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23450,7 +22134,7 @@
 	//! author : Коренберг Марк : https://github.com/socketpair
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23627,7 +22311,7 @@
 	}));
 
 /***/ },
-/* 89 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23635,7 +22319,7 @@
 	//! authors : Bård Rolstad Henriksen : https://github.com/karamell
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23692,7 +22376,7 @@
 	}));
 
 /***/ },
-/* 90 */
+/* 84 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23700,7 +22384,7 @@
 	//! author : Sampath Sitinamaluwa : https://github.com/sampathsris
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23767,7 +22451,7 @@
 	}));
 
 /***/ },
-/* 91 */
+/* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23776,7 +22460,7 @@
 	//! based on work of petrbela : https://github.com/petrbela
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -23921,7 +22605,7 @@
 	}));
 
 /***/ },
-/* 92 */
+/* 86 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -23929,7 +22613,7 @@
 	//! author : Robert Sedovšek : https://github.com/sedovsek
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24087,7 +22771,7 @@
 	}));
 
 /***/ },
-/* 93 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24097,7 +22781,7 @@
 	//! author : Oerd Cukalla : https://github.com/oerd (fixes)
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24161,7 +22845,7 @@
 	}));
 
 /***/ },
-/* 94 */
+/* 88 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24169,7 +22853,7 @@
 	//! author : Milan Janačković<milanjanackovic@gmail.com> : https://github.com/milan-j
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24275,7 +22959,7 @@
 	}));
 
 /***/ },
-/* 95 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24283,7 +22967,7 @@
 	//! author : Milan Janačković<milanjanackovic@gmail.com> : https://github.com/milan-j
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24389,7 +23073,7 @@
 	}));
 
 /***/ },
-/* 96 */
+/* 90 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24397,7 +23081,7 @@
 	//! author : Nicolai Davies<mail@nicolai.io> : https://github.com/nicolaidavies
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24482,7 +23166,7 @@
 	}));
 
 /***/ },
-/* 97 */
+/* 91 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24490,7 +23174,7 @@
 	//! author : Jens Alm : https://github.com/ulmus
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24555,7 +23239,7 @@
 	}));
 
 /***/ },
-/* 98 */
+/* 92 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24563,7 +23247,7 @@
 	//! author : Fahad Kassim : https://github.com/fadsel
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24618,7 +23302,7 @@
 	}));
 
 /***/ },
-/* 99 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24626,7 +23310,7 @@
 	//! author : Arjunkumar Krishnamoorthy : https://github.com/tk120404
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24751,7 +23435,7 @@
 	}));
 
 /***/ },
-/* 100 */
+/* 94 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24759,7 +23443,7 @@
 	//! author : Krishna Chaitanya Thota : https://github.com/kcthota
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24844,7 +23528,7 @@
 	}));
 
 /***/ },
-/* 101 */
+/* 95 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24852,7 +23536,7 @@
 	//! author : Kridsada Thanabulpong : https://github.com/sirn
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24915,7 +23599,7 @@
 	}));
 
 /***/ },
-/* 102 */
+/* 96 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24923,7 +23607,7 @@
 	//! author : Dan Hagman
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -24981,7 +23665,7 @@
 	}));
 
 /***/ },
-/* 103 */
+/* 97 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -24989,7 +23673,7 @@
 	//! author : Dominika Kruk : https://github.com/amaranthrose
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25105,7 +23789,7 @@
 	}));
 
 /***/ },
-/* 104 */
+/* 98 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25114,7 +23798,7 @@
 	//!           Burak Yiğit Kaya: https://github.com/BYK
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25199,7 +23883,7 @@
 	}));
 
 /***/ },
-/* 105 */
+/* 99 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25207,7 +23891,7 @@
 	//! author : Robin van der Vliet : https://github.com/robin0van0der0v with the help of Iustì Canun
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25294,7 +23978,7 @@
 	}));
 
 /***/ },
-/* 106 */
+/* 100 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25302,7 +23986,7 @@
 	//! author : Abdel Said : https://github.com/abdelsaid
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25356,7 +24040,7 @@
 	}));
 
 /***/ },
-/* 107 */
+/* 101 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25364,7 +24048,7 @@
 	//! author : Abdel Said : https://github.com/abdelsaid
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25418,7 +24102,7 @@
 	}));
 
 /***/ },
-/* 108 */
+/* 102 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25427,7 +24111,7 @@
 	//! Author : Menelion Elensúle : https://github.com/Oire
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25568,7 +24252,7 @@
 	}));
 
 /***/ },
-/* 109 */
+/* 103 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25576,7 +24260,7 @@
 	//! author : Sardor Muminov : https://github.com/muminoff
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25630,7 +24314,7 @@
 	}));
 
 /***/ },
-/* 110 */
+/* 104 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25638,7 +24322,7 @@
 	//! author : Bang Nguyen : https://github.com/bangnk
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25713,7 +24397,7 @@
 	}));
 
 /***/ },
-/* 111 */
+/* 105 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25721,7 +24405,7 @@
 	//! author : Andrew Hood : https://github.com/andrewhood125
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25785,7 +24469,7 @@
 	}));
 
 /***/ },
-/* 112 */
+/* 106 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25794,7 +24478,7 @@
 	//! author : Zeno Zeng : https://github.com/zenozeng
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -25916,7 +24600,7 @@
 	}));
 
 /***/ },
-/* 113 */
+/* 107 */
 /***/ function(module, exports, __webpack_require__) {
 
 	//! moment.js locale configuration
@@ -25925,7 +24609,7 @@
 	//! author : Chris Lam : https://github.com/hehachris
 
 	;(function (global, factory) {
-	    true ? factory(__webpack_require__(10)) :
+	    true ? factory(__webpack_require__(4)) :
 	   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
 	   factory(global.moment)
 	}(this, function (moment) { 'use strict';
@@ -26024,7 +24708,7 @@
 	}));
 
 /***/ },
-/* 114 */
+/* 108 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -26106,201 +24790,1304 @@
 
 
 /***/ },
-/* 115 */
-/***/ function(module, exports) {
+/* 109 */,
+/* 110 */,
+/* 111 */
+/***/ function(module, exports, __webpack_require__) {
 
-	module.exports = "[{{patient_id}}]\r\n{{last_name}} {{first_name}}\r\n（{{last_name_yomi}} {{first_name_yomi}}）\r\n{{birthday_part}}\r\n{{age_part}}\r\n{{sex_as_kanji}}性\r\n<a href=\"javascript:void(0)\" mc-name=\"detailLink\" class=\"cmd-link\" style=\"font-size:13px\">詳細</a>\r\n\r\n<div style=\"display:none; margin:4px; padding:2px 0 0 0; border: 1px solid #ccc\" mc-name=\"patientInfoDetail\">\r\n\t<div style=\"margin:6px;\">電話番号： {{phone}}</div>\r\n\t<div style=\"margin:6px;\">住所： {{address}}</div>\r\n</div>\r\n"
+	"use strict";
+
+	var $ = __webpack_require__(1);
+
+	function request(service, data, method, cb){
+		data = data || {};
+		method = method || "GET";
+		var config = {
+			url: "./service?_q=" + service,
+	        type: method,
+			data: data,
+			dataType: "json",
+			success: function(list){
+				cb(undefined, list);
+			},
+			error: function(xhr){
+				cb(xhr.responseText);
+			}
+		};
+		$.ajax(config);
+	}
+
+	exports.recentVisits = function(cb){
+		request("recent_visits", "", "GET", cb);
+	};
+
+	exports.getPatient = function(patientId, cb){
+		request("get_patient", {patient_id: patientId}, "GET", cb);
+	};
+
+	exports.calcVisits = function(patientId, cb){
+		request("calc_visits", {patient_id: patientId}, "GET", cb);
+	};
+
+	exports.listFullVisits = function(patientId, offset, n, cb){
+		request("list_full_visits", {patient_id: patientId, offset: offset, n: n}, "GET", cb);
+	};
+
+	exports.startExam = function(visitId, done){
+		request("start_exam", {visit_id: visitId}, "POST", done);
+	};
+
+	exports.suspendExam = function(visitId, done){
+		request("suspend_exam", {visit_id: visitId}, "POST", done);
+	};
+
+	exports.listCurrentFullDiseases = function(patientId, cb){
+		request("list_current_full_diseases", {patient_id: patientId}, "GET", cb);
+	};
+
+	exports.listFullWqueueForExam = function(cb){
+		request("list_full_wqueue_for_exam", {}, "GET", cb);
+	};
+
+	exports.getVisit = function(visitId, cb){
+		request("get_visit", {visit_id: +visitId}, "GET", cb);
+	};
+
+	exports.searchPatient = function(text, cb){
+		request("search_patient", {text: text}, "GET", cb);
+	};
+
+	exports.listTodaysVisits = function(cb){
+		request("list_todays_visits", {}, "GET", cb);
+	};
+
+	exports.startVisit = function(patientId, at, done){
+		request("start_visit", {patient_id: patientId, at: at}, "POST", done);
+	};
+
+	exports.deleteVisit = function(visitId, done){
+		request("delete_visit", {visit_id: visitId}, "POST", done);
+	};
+
+
+/***/ },
+/* 112 */,
+/* 113 */,
+/* 114 */,
+/* 115 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+	 *  Copyright 2011 Twitter, Inc.
+	 *  Licensed under the Apache License, Version 2.0 (the "License");
+	 *  you may not use this file except in compliance with the License.
+	 *  You may obtain a copy of the License at
+	 *
+	 *  http://www.apache.org/licenses/LICENSE-2.0
+	 *
+	 *  Unless required by applicable law or agreed to in writing, software
+	 *  distributed under the License is distributed on an "AS IS" BASIS,
+	 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	 *  See the License for the specific language governing permissions and
+	 *  limitations under the License.
+	 */
+
+	// This file is for use with Node.js. See dist/ for browser files.
+
+	var Hogan = __webpack_require__(116);
+	Hogan.Template = __webpack_require__(117).Template;
+	Hogan.template = Hogan.Template;
+	module.exports = Hogan;
+
 
 /***/ },
 /* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	/*
+	 *  Copyright 2011 Twitter, Inc.
+	 *  Licensed under the Apache License, Version 2.0 (the "License");
+	 *  you may not use this file except in compliance with the License.
+	 *  You may obtain a copy of the License at
+	 *
+	 *  http://www.apache.org/licenses/LICENSE-2.0
+	 *
+	 *  Unless required by applicable law or agreed to in writing, software
+	 *  distributed under the License is distributed on an "AS IS" BASIS,
+	 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	 *  See the License for the specific language governing permissions and
+	 *  limitations under the License.
+	 */
 
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
+	(function (Hogan) {
+	  // Setup regex  assignments
+	  // remove whitespace according to Mustache spec
+	  var rIsWhitespace = /\S/,
+	      rQuot = /\"/g,
+	      rNewline =  /\n/g,
+	      rCr = /\r/g,
+	      rSlash = /\\/g,
+	      rLineSep = /\u2028/,
+	      rParagraphSep = /\u2029/;
 
-	var tmplSrc = __webpack_require__(117);
-	var tmpl = hogan.compile(tmplSrc);
+	  Hogan.tags = {
+	    '#': 1, '^': 2, '<': 3, '$': 4,
+	    '/': 5, '!': 6, '>': 7, '=': 8, '_v': 9,
+	    '{': 10, '&': 11, '_t': 12
+	  };
 
-	function CurrentManip(dom){
-		this.dom = dom;
-	}
+	  Hogan.scan = function scan(text, delimiters) {
+	    var len = text.length,
+	        IN_TEXT = 0,
+	        IN_TAG_TYPE = 1,
+	        IN_TAG = 2,
+	        state = IN_TEXT,
+	        tagType = null,
+	        tag = null,
+	        buf = '',
+	        tokens = [],
+	        seenTag = false,
+	        i = 0,
+	        lineStart = 0,
+	        otag = '{{',
+	        ctag = '}}';
 
-	CurrentManip.prototype.render = function(){
-		this.bindEndPatient();
-		return this;
-	};
+	    function addBuf() {
+	      if (buf.length > 0) {
+	        tokens.push({tag: '_t', text: new String(buf)});
+	        buf = '';
+	      }
+	    }
 
-	CurrentManip.prototype.bindEndPatient = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=endPatientButton]", function(event){
-			event.preventDefault();
-			self.dom.trigger("end-patient");
-		})
-	};
+	    function lineIsWhitespace() {
+	      var isAllWhitespace = true;
+	      for (var j = lineStart; j < tokens.length; j++) {
+	        isAllWhitespace =
+	          (Hogan.tags[tokens[j].tag] < Hogan.tags['_v']) ||
+	          (tokens[j].tag == '_t' && tokens[j].text.match(rIsWhitespace) === null);
+	        if (!isAllWhitespace) {
+	          return false;
+	        }
+	      }
 
-	CurrentManip.prototype.update = function(patientId, visitId){
-		this.patientId = patientId;
-		this.visitId = visitId;
-		this.dom.html("");
-		if( patientId > 0 ){
-			this.dom.html(tmpl.render({}));
-		} else {
-			this.dom.html("");
-		}
-	};
+	      return isAllWhitespace;
+	    }
 
-	module.exports = CurrentManip;
+	    function filterLine(haveSeenTag, noNewLine) {
+	      addBuf();
+
+	      if (haveSeenTag && lineIsWhitespace()) {
+	        for (var j = lineStart, next; j < tokens.length; j++) {
+	          if (tokens[j].text) {
+	            if ((next = tokens[j+1]) && next.tag == '>') {
+	              // set indent to token value
+	              next.indent = tokens[j].text.toString()
+	            }
+	            tokens.splice(j, 1);
+	          }
+	        }
+	      } else if (!noNewLine) {
+	        tokens.push({tag:'\n'});
+	      }
+
+	      seenTag = false;
+	      lineStart = tokens.length;
+	    }
+
+	    function changeDelimiters(text, index) {
+	      var close = '=' + ctag,
+	          closeIndex = text.indexOf(close, index),
+	          delimiters = trim(
+	            text.substring(text.indexOf('=', index) + 1, closeIndex)
+	          ).split(' ');
+
+	      otag = delimiters[0];
+	      ctag = delimiters[delimiters.length - 1];
+
+	      return closeIndex + close.length - 1;
+	    }
+
+	    if (delimiters) {
+	      delimiters = delimiters.split(' ');
+	      otag = delimiters[0];
+	      ctag = delimiters[1];
+	    }
+
+	    for (i = 0; i < len; i++) {
+	      if (state == IN_TEXT) {
+	        if (tagChange(otag, text, i)) {
+	          --i;
+	          addBuf();
+	          state = IN_TAG_TYPE;
+	        } else {
+	          if (text.charAt(i) == '\n') {
+	            filterLine(seenTag);
+	          } else {
+	            buf += text.charAt(i);
+	          }
+	        }
+	      } else if (state == IN_TAG_TYPE) {
+	        i += otag.length - 1;
+	        tag = Hogan.tags[text.charAt(i + 1)];
+	        tagType = tag ? text.charAt(i + 1) : '_v';
+	        if (tagType == '=') {
+	          i = changeDelimiters(text, i);
+	          state = IN_TEXT;
+	        } else {
+	          if (tag) {
+	            i++;
+	          }
+	          state = IN_TAG;
+	        }
+	        seenTag = i;
+	      } else {
+	        if (tagChange(ctag, text, i)) {
+	          tokens.push({tag: tagType, n: trim(buf), otag: otag, ctag: ctag,
+	                       i: (tagType == '/') ? seenTag - otag.length : i + ctag.length});
+	          buf = '';
+	          i += ctag.length - 1;
+	          state = IN_TEXT;
+	          if (tagType == '{') {
+	            if (ctag == '}}') {
+	              i++;
+	            } else {
+	              cleanTripleStache(tokens[tokens.length - 1]);
+	            }
+	          }
+	        } else {
+	          buf += text.charAt(i);
+	        }
+	      }
+	    }
+
+	    filterLine(seenTag, true);
+
+	    return tokens;
+	  }
+
+	  function cleanTripleStache(token) {
+	    if (token.n.substr(token.n.length - 1) === '}') {
+	      token.n = token.n.substring(0, token.n.length - 1);
+	    }
+	  }
+
+	  function trim(s) {
+	    if (s.trim) {
+	      return s.trim();
+	    }
+
+	    return s.replace(/^\s*|\s*$/g, '');
+	  }
+
+	  function tagChange(tag, text, index) {
+	    if (text.charAt(index) != tag.charAt(0)) {
+	      return false;
+	    }
+
+	    for (var i = 1, l = tag.length; i < l; i++) {
+	      if (text.charAt(index + i) != tag.charAt(i)) {
+	        return false;
+	      }
+	    }
+
+	    return true;
+	  }
+
+	  // the tags allowed inside super templates
+	  var allowedInSuper = {'_t': true, '\n': true, '$': true, '/': true};
+
+	  function buildTree(tokens, kind, stack, customTags) {
+	    var instructions = [],
+	        opener = null,
+	        tail = null,
+	        token = null;
+
+	    tail = stack[stack.length - 1];
+
+	    while (tokens.length > 0) {
+	      token = tokens.shift();
+
+	      if (tail && tail.tag == '<' && !(token.tag in allowedInSuper)) {
+	        throw new Error('Illegal content in < super tag.');
+	      }
+
+	      if (Hogan.tags[token.tag] <= Hogan.tags['$'] || isOpener(token, customTags)) {
+	        stack.push(token);
+	        token.nodes = buildTree(tokens, token.tag, stack, customTags);
+	      } else if (token.tag == '/') {
+	        if (stack.length === 0) {
+	          throw new Error('Closing tag without opener: /' + token.n);
+	        }
+	        opener = stack.pop();
+	        if (token.n != opener.n && !isCloser(token.n, opener.n, customTags)) {
+	          throw new Error('Nesting error: ' + opener.n + ' vs. ' + token.n);
+	        }
+	        opener.end = token.i;
+	        return instructions;
+	      } else if (token.tag == '\n') {
+	        token.last = (tokens.length == 0) || (tokens[0].tag == '\n');
+	      }
+
+	      instructions.push(token);
+	    }
+
+	    if (stack.length > 0) {
+	      throw new Error('missing closing tag: ' + stack.pop().n);
+	    }
+
+	    return instructions;
+	  }
+
+	  function isOpener(token, tags) {
+	    for (var i = 0, l = tags.length; i < l; i++) {
+	      if (tags[i].o == token.n) {
+	        token.tag = '#';
+	        return true;
+	      }
+	    }
+	  }
+
+	  function isCloser(close, open, tags) {
+	    for (var i = 0, l = tags.length; i < l; i++) {
+	      if (tags[i].c == close && tags[i].o == open) {
+	        return true;
+	      }
+	    }
+	  }
+
+	  function stringifySubstitutions(obj) {
+	    var items = [];
+	    for (var key in obj) {
+	      items.push('"' + esc(key) + '": function(c,p,t,i) {' + obj[key] + '}');
+	    }
+	    return "{ " + items.join(",") + " }";
+	  }
+
+	  function stringifyPartials(codeObj) {
+	    var partials = [];
+	    for (var key in codeObj.partials) {
+	      partials.push('"' + esc(key) + '":{name:"' + esc(codeObj.partials[key].name) + '", ' + stringifyPartials(codeObj.partials[key]) + "}");
+	    }
+	    return "partials: {" + partials.join(",") + "}, subs: " + stringifySubstitutions(codeObj.subs);
+	  }
+
+	  Hogan.stringify = function(codeObj, text, options) {
+	    return "{code: function (c,p,i) { " + Hogan.wrapMain(codeObj.code) + " }," + stringifyPartials(codeObj) +  "}";
+	  }
+
+	  var serialNo = 0;
+	  Hogan.generate = function(tree, text, options) {
+	    serialNo = 0;
+	    var context = { code: '', subs: {}, partials: {} };
+	    Hogan.walk(tree, context);
+
+	    if (options.asString) {
+	      return this.stringify(context, text, options);
+	    }
+
+	    return this.makeTemplate(context, text, options);
+	  }
+
+	  Hogan.wrapMain = function(code) {
+	    return 'var t=this;t.b(i=i||"");' + code + 'return t.fl();';
+	  }
+
+	  Hogan.template = Hogan.Template;
+
+	  Hogan.makeTemplate = function(codeObj, text, options) {
+	    var template = this.makePartials(codeObj);
+	    template.code = new Function('c', 'p', 'i', this.wrapMain(codeObj.code));
+	    return new this.template(template, text, this, options);
+	  }
+
+	  Hogan.makePartials = function(codeObj) {
+	    var key, template = {subs: {}, partials: codeObj.partials, name: codeObj.name};
+	    for (key in template.partials) {
+	      template.partials[key] = this.makePartials(template.partials[key]);
+	    }
+	    for (key in codeObj.subs) {
+	      template.subs[key] = new Function('c', 'p', 't', 'i', codeObj.subs[key]);
+	    }
+	    return template;
+	  }
+
+	  function esc(s) {
+	    return s.replace(rSlash, '\\\\')
+	            .replace(rQuot, '\\\"')
+	            .replace(rNewline, '\\n')
+	            .replace(rCr, '\\r')
+	            .replace(rLineSep, '\\u2028')
+	            .replace(rParagraphSep, '\\u2029');
+	  }
+
+	  function chooseMethod(s) {
+	    return (~s.indexOf('.')) ? 'd' : 'f';
+	  }
+
+	  function createPartial(node, context) {
+	    var prefix = "<" + (context.prefix || "");
+	    var sym = prefix + node.n + serialNo++;
+	    context.partials[sym] = {name: node.n, partials: {}};
+	    context.code += 't.b(t.rp("' +  esc(sym) + '",c,p,"' + (node.indent || '') + '"));';
+	    return sym;
+	  }
+
+	  Hogan.codegen = {
+	    '#': function(node, context) {
+	      context.code += 'if(t.s(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,1),' +
+	                      'c,p,0,' + node.i + ',' + node.end + ',"' + node.otag + " " + node.ctag + '")){' +
+	                      't.rs(c,p,' + 'function(c,p,t){';
+	      Hogan.walk(node.nodes, context);
+	      context.code += '});c.pop();}';
+	    },
+
+	    '^': function(node, context) {
+	      context.code += 'if(!t.s(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,1),c,p,1,0,0,"")){';
+	      Hogan.walk(node.nodes, context);
+	      context.code += '};';
+	    },
+
+	    '>': createPartial,
+	    '<': function(node, context) {
+	      var ctx = {partials: {}, code: '', subs: {}, inPartial: true};
+	      Hogan.walk(node.nodes, ctx);
+	      var template = context.partials[createPartial(node, context)];
+	      template.subs = ctx.subs;
+	      template.partials = ctx.partials;
+	    },
+
+	    '$': function(node, context) {
+	      var ctx = {subs: {}, code: '', partials: context.partials, prefix: node.n};
+	      Hogan.walk(node.nodes, ctx);
+	      context.subs[node.n] = ctx.code;
+	      if (!context.inPartial) {
+	        context.code += 't.sub("' + esc(node.n) + '",c,p,i);';
+	      }
+	    },
+
+	    '\n': function(node, context) {
+	      context.code += write('"\\n"' + (node.last ? '' : ' + i'));
+	    },
+
+	    '_v': function(node, context) {
+	      context.code += 't.b(t.v(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,0)));';
+	    },
+
+	    '_t': function(node, context) {
+	      context.code += write('"' + esc(node.text) + '"');
+	    },
+
+	    '{': tripleStache,
+
+	    '&': tripleStache
+	  }
+
+	  function tripleStache(node, context) {
+	    context.code += 't.b(t.t(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,0)));';
+	  }
+
+	  function write(s) {
+	    return 't.b(' + s + ');';
+	  }
+
+	  Hogan.walk = function(nodelist, context) {
+	    var func;
+	    for (var i = 0, l = nodelist.length; i < l; i++) {
+	      func = Hogan.codegen[nodelist[i].tag];
+	      func && func(nodelist[i], context);
+	    }
+	    return context;
+	  }
+
+	  Hogan.parse = function(tokens, text, options) {
+	    options = options || {};
+	    return buildTree(tokens, '', [], options.sectionTags || []);
+	  }
+
+	  Hogan.cache = {};
+
+	  Hogan.cacheKey = function(text, options) {
+	    return [text, !!options.asString, !!options.disableLambda, options.delimiters, !!options.modelGet].join('||');
+	  }
+
+	  Hogan.compile = function(text, options) {
+	    options = options || {};
+	    var key = Hogan.cacheKey(text, options);
+	    var template = this.cache[key];
+
+	    if (template) {
+	      var partials = template.partials;
+	      for (var name in partials) {
+	        delete partials[name].instance;
+	      }
+	      return template;
+	    }
+
+	    template = this.generate(this.parse(this.scan(text, options.delimiters), text, options), text, options);
+	    return this.cache[key] = template;
+	  }
+	})( true ? exports : Hogan);
 
 
 /***/ },
 /* 117 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
-	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+	/*
+	 *  Copyright 2011 Twitter, Inc.
+	 *  Licensed under the Apache License, Version 2.0 (the "License");
+	 *  you may not use this file except in compliance with the License.
+	 *  You may obtain a copy of the License at
+	 *
+	 *  http://www.apache.org/licenses/LICENSE-2.0
+	 *
+	 *  Unless required by applicable law or agreed to in writing, software
+	 *  distributed under the License is distributed on an "AS IS" BASIS,
+	 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	 *  See the License for the specific language governing permissions and
+	 *  limitations under the License.
+	 */
+
+	var Hogan = {};
+
+	(function (Hogan) {
+	  Hogan.Template = function (codeObj, text, compiler, options) {
+	    codeObj = codeObj || {};
+	    this.r = codeObj.code || this.r;
+	    this.c = compiler;
+	    this.options = options || {};
+	    this.text = text || '';
+	    this.partials = codeObj.partials || {};
+	    this.subs = codeObj.subs || {};
+	    this.buf = '';
+	  }
+
+	  Hogan.Template.prototype = {
+	    // render: replaced by generated code.
+	    r: function (context, partials, indent) { return ''; },
+
+	    // variable escaping
+	    v: hoganEscape,
+
+	    // triple stache
+	    t: coerceToString,
+
+	    render: function render(context, partials, indent) {
+	      return this.ri([context], partials || {}, indent);
+	    },
+
+	    // render internal -- a hook for overrides that catches partials too
+	    ri: function (context, partials, indent) {
+	      return this.r(context, partials, indent);
+	    },
+
+	    // ensurePartial
+	    ep: function(symbol, partials) {
+	      var partial = this.partials[symbol];
+
+	      // check to see that if we've instantiated this partial before
+	      var template = partials[partial.name];
+	      if (partial.instance && partial.base == template) {
+	        return partial.instance;
+	      }
+
+	      if (typeof template == 'string') {
+	        if (!this.c) {
+	          throw new Error("No compiler available.");
+	        }
+	        template = this.c.compile(template, this.options);
+	      }
+
+	      if (!template) {
+	        return null;
+	      }
+
+	      // We use this to check whether the partials dictionary has changed
+	      this.partials[symbol].base = template;
+
+	      if (partial.subs) {
+	        // Make sure we consider parent template now
+	        if (!partials.stackText) partials.stackText = {};
+	        for (key in partial.subs) {
+	          if (!partials.stackText[key]) {
+	            partials.stackText[key] = (this.activeSub !== undefined && partials.stackText[this.activeSub]) ? partials.stackText[this.activeSub] : this.text;
+	          }
+	        }
+	        template = createSpecializedPartial(template, partial.subs, partial.partials,
+	          this.stackSubs, this.stackPartials, partials.stackText);
+	      }
+	      this.partials[symbol].instance = template;
+
+	      return template;
+	    },
+
+	    // tries to find a partial in the current scope and render it
+	    rp: function(symbol, context, partials, indent) {
+	      var partial = this.ep(symbol, partials);
+	      if (!partial) {
+	        return '';
+	      }
+
+	      return partial.ri(context, partials, indent);
+	    },
+
+	    // render a section
+	    rs: function(context, partials, section) {
+	      var tail = context[context.length - 1];
+
+	      if (!isArray(tail)) {
+	        section(context, partials, this);
+	        return;
+	      }
+
+	      for (var i = 0; i < tail.length; i++) {
+	        context.push(tail[i]);
+	        section(context, partials, this);
+	        context.pop();
+	      }
+	    },
+
+	    // maybe start a section
+	    s: function(val, ctx, partials, inverted, start, end, tags) {
+	      var pass;
+
+	      if (isArray(val) && val.length === 0) {
+	        return false;
+	      }
+
+	      if (typeof val == 'function') {
+	        val = this.ms(val, ctx, partials, inverted, start, end, tags);
+	      }
+
+	      pass = !!val;
+
+	      if (!inverted && pass && ctx) {
+	        ctx.push((typeof val == 'object') ? val : ctx[ctx.length - 1]);
+	      }
+
+	      return pass;
+	    },
+
+	    // find values with dotted names
+	    d: function(key, ctx, partials, returnFound) {
+	      var found,
+	          names = key.split('.'),
+	          val = this.f(names[0], ctx, partials, returnFound),
+	          doModelGet = this.options.modelGet,
+	          cx = null;
+
+	      if (key === '.' && isArray(ctx[ctx.length - 2])) {
+	        val = ctx[ctx.length - 1];
+	      } else {
+	        for (var i = 1; i < names.length; i++) {
+	          found = findInScope(names[i], val, doModelGet);
+	          if (found !== undefined) {
+	            cx = val;
+	            val = found;
+	          } else {
+	            val = '';
+	          }
+	        }
+	      }
+
+	      if (returnFound && !val) {
+	        return false;
+	      }
+
+	      if (!returnFound && typeof val == 'function') {
+	        ctx.push(cx);
+	        val = this.mv(val, ctx, partials);
+	        ctx.pop();
+	      }
+
+	      return val;
+	    },
+
+	    // find values with normal names
+	    f: function(key, ctx, partials, returnFound) {
+	      var val = false,
+	          v = null,
+	          found = false,
+	          doModelGet = this.options.modelGet;
+
+	      for (var i = ctx.length - 1; i >= 0; i--) {
+	        v = ctx[i];
+	        val = findInScope(key, v, doModelGet);
+	        if (val !== undefined) {
+	          found = true;
+	          break;
+	        }
+	      }
+
+	      if (!found) {
+	        return (returnFound) ? false : "";
+	      }
+
+	      if (!returnFound && typeof val == 'function') {
+	        val = this.mv(val, ctx, partials);
+	      }
+
+	      return val;
+	    },
+
+	    // higher order templates
+	    ls: function(func, cx, partials, text, tags) {
+	      var oldTags = this.options.delimiters;
+
+	      this.options.delimiters = tags;
+	      this.b(this.ct(coerceToString(func.call(cx, text)), cx, partials));
+	      this.options.delimiters = oldTags;
+
+	      return false;
+	    },
+
+	    // compile text
+	    ct: function(text, cx, partials) {
+	      if (this.options.disableLambda) {
+	        throw new Error('Lambda features disabled.');
+	      }
+	      return this.c.compile(text, this.options).render(cx, partials);
+	    },
+
+	    // template result buffering
+	    b: function(s) { this.buf += s; },
+
+	    fl: function() { var r = this.buf; this.buf = ''; return r; },
+
+	    // method replace section
+	    ms: function(func, ctx, partials, inverted, start, end, tags) {
+	      var textSource,
+	          cx = ctx[ctx.length - 1],
+	          result = func.call(cx);
+
+	      if (typeof result == 'function') {
+	        if (inverted) {
+	          return true;
+	        } else {
+	          textSource = (this.activeSub && this.subsText && this.subsText[this.activeSub]) ? this.subsText[this.activeSub] : this.text;
+	          return this.ls(result, cx, partials, textSource.substring(start, end), tags);
+	        }
+	      }
+
+	      return result;
+	    },
+
+	    // method replace variable
+	    mv: function(func, ctx, partials) {
+	      var cx = ctx[ctx.length - 1];
+	      var result = func.call(cx);
+
+	      if (typeof result == 'function') {
+	        return this.ct(coerceToString(result.call(cx)), cx, partials);
+	      }
+
+	      return result;
+	    },
+
+	    sub: function(name, context, partials, indent) {
+	      var f = this.subs[name];
+	      if (f) {
+	        this.activeSub = name;
+	        f(context, partials, this, indent);
+	        this.activeSub = false;
+	      }
+	    }
+
+	  };
+
+	  //Find a key in an object
+	  function findInScope(key, scope, doModelGet) {
+	    var val;
+
+	    if (scope && typeof scope == 'object') {
+
+	      if (scope[key] !== undefined) {
+	        val = scope[key];
+
+	      // try lookup with get for backbone or similar model data
+	      } else if (doModelGet && scope.get && typeof scope.get == 'function') {
+	        val = scope.get(key);
+	      }
+	    }
+
+	    return val;
+	  }
+
+	  function createSpecializedPartial(instance, subs, partials, stackSubs, stackPartials, stackText) {
+	    function PartialTemplate() {};
+	    PartialTemplate.prototype = instance;
+	    function Substitutions() {};
+	    Substitutions.prototype = instance.subs;
+	    var key;
+	    var partial = new PartialTemplate();
+	    partial.subs = new Substitutions();
+	    partial.subsText = {};  //hehe. substext.
+	    partial.buf = '';
+
+	    stackSubs = stackSubs || {};
+	    partial.stackSubs = stackSubs;
+	    partial.subsText = stackText;
+	    for (key in subs) {
+	      if (!stackSubs[key]) stackSubs[key] = subs[key];
+	    }
+	    for (key in stackSubs) {
+	      partial.subs[key] = stackSubs[key];
+	    }
+
+	    stackPartials = stackPartials || {};
+	    partial.stackPartials = stackPartials;
+	    for (key in partials) {
+	      if (!stackPartials[key]) stackPartials[key] = partials[key];
+	    }
+	    for (key in stackPartials) {
+	      partial.partials[key] = stackPartials[key];
+	    }
+
+	    return partial;
+	  }
+
+	  var rAmp = /&/g,
+	      rLt = /</g,
+	      rGt = />/g,
+	      rApos = /\'/g,
+	      rQuot = /\"/g,
+	      hChars = /[&<>\"\']/;
+
+	  function coerceToString(val) {
+	    return String((val === null || val === undefined) ? '' : val);
+	  }
+
+	  function hoganEscape(str) {
+	    str = coerceToString(str);
+	    return hChars.test(str) ?
+	      str
+	        .replace(rAmp, '&amp;')
+	        .replace(rLt, '&lt;')
+	        .replace(rGt, '&gt;')
+	        .replace(rApos, '&#39;')
+	        .replace(rQuot, '&quot;') :
+	      str;
+	  }
+
+	  var isArray = Array.isArray || function(a) {
+	    return Object.prototype.toString.call(a) === '[object Array]';
+	  };
+
+	})( true ? exports : Hogan);
+
 
 /***/ },
 /* 118 */
 /***/ function(module, exports, __webpack_require__) {
 
+	(function(exports){
+
 	"use strict";
 
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-
-	var tmplSrc = __webpack_require__(119);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function calcNumberOfPages(totalItems, itemsPerPage){
-		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
-	}
-
-	function RecordNav(dom, itemsPerPage){
-		this.dom = dom;
-		this.itemsPerPage = itemsPerPage;
-		this.totalItems = 0;
-		this.numberOfPages = 0;
-		this.currentPage = 0;
-	}
-
-	RecordNav.prototype.render = function(){
-		this.bindGotoFirst();
-		this.bindGotoPrev();
-		this.bindGotoNext();
-		this.bindGotoLast();
-		return this;
-	};
-
-	RecordNav.prototype.bindGotoFirst = function(){
-		var self = this;
-		if( this.numberOfPages < 1 ){
-			return;
-		}
-		this.dom.on("click", "[mc-name=gotoFirst]", function(event){
-			event.preventDefault();
-			if( self.currentPage === 1 ){
-				return;
-			}
-			$("body").trigger("goto-page", [1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoPrev = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=gotoPrev]", function(event){
-			event.preventDefault();
-			if( self.currentPage <= 1 ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.currentPage - 1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoNext = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=gotoNext]", function(event){
-			event.preventDefault();
-			if( self.currentPage >= self.numberOfPages ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.currentPage + 1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoLast = function(){
-		var self = this;
-		if( this.numberOfPages < 1 ){
-			return;
-		}
-		this.dom.on("click", "[mc-name=gotoLast]", function(event){
-			event.preventDefault();
-			if( self.currentPage === self.numberOfPages ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.numberOfPages]);
-		});
-	};
-
-	RecordNav.prototype.setTotalItems = function(n){
-		this.totalItems = +n;
-		this.numberOfPages = calcNumberOfPages(n, this.itemsPerPage);
-		return this;
-	};
-
-	RecordNav.prototype.update = function(page){
-		if( this.numberOfPages <= 0 ){
-			this.currentPage = 0;
-			this.dom.html("");
-		}
-		if( this.numberOfPages === 1 ){
-			this.currentPage = 1;
-			this.dom.html("");
+	var trunc = Math.trunc || function(x){
+		if( x >= 0 ){
+			return Math.floor(x);
 		} else {
-			if( page < 1 ){
-				page = 1;
-			} else if( page > this.numberOfPages ){
-				page = this.numberOfPages;
-			}
-			var data = {
-				page: page,
-				total: this.numberOfPages
-			};
-			this.currentPage = +page;
-			this.dom.html(tmpl.render(data));
+			return Math.ceil(x);
+		}
+	};
+
+	function ge(year1, month1, day1, year2, month2, day2){
+		if( year1 > year2 ){
+			return true;
+		}
+		if( year1 < year2 ){
+			return false;
+		}
+		if( month1 > month2 ){
+			return true;
+		}
+		if( month1 < month2 ){
+			return false;
+		}
+		return day1 >= day2;
+	}
+
+	function gengouToAlpha(gengou){
+		switch(gengou){
+			case "平成": return "Heisei";
+			case "昭和": return "Shouwa";
+			case "大正": return "Taishou";
+			case "明治": return "Meiji";
+			default: throw new Error("unknown gengou: " + gengou);
 		}
 	}
 
-	module.exports = RecordNav;
+	function padLeft(str, n, ch){
+		var m = n - str.length;
+		var pad = "";
+		while( m-- > 0 ){
+			pad += ch;
+		}
+		return pad + str;
+	}
+
+	var zenkakuDigits = ["０", "１", "２", "３", "４", "５", "６", "７", "８", "９"];
+	var alphaDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
+	function isZenkakuDigit(ch){
+		return zenkakuDigits.indexOf(ch) >= 0;
+	}
+
+	function isAlphaDigit(ch){
+		return alphaDigits.indexOf(ch) >= 0;
+	}
+
+	function alphaDigitToZenkaku(ch){
+		var i = alphaDigits.indexOf(ch);
+		return i >= 0 ? zenkakuDigits[i] : ch;
+	}
+
+	function isDateObject(obj){
+		return obj instanceof Date;
+	}
+
+	function removeOpt(opts, what){
+		var result = [];
+		for(var i=0;i<opts.length;i++){
+			var opt = opts[i];
+			if( opt === what ){
+				continue;
+			} else {
+				result.push(opt);
+			}
+		}
+		return result;
+	}
+
+	function toGengou(year, month, day){
+		if( ge(year, month, day, 1989, 1, 8) ){
+			return { gengou:"平成", nen:year - 1988 };
+		}
+		if( ge(year, month, day, 1926, 12, 25) ){
+			return { gengou:"昭和", nen:year - 1925 };
+		}
+		if( ge(year, month, day, 1912, 7, 30) ){
+			return { gengou:"大正", nen:year - 1911 };
+		}
+		if( ge(year, month, day, 1873, 1, 1) ){
+			return { gengou: "明治", nen: year - 1867 };
+		}
+		return { gengou: "西暦", nen: year };
+	}
+
+	exports.toGengou = toGengou;
+
+	function fromGengou(gengou, nen){
+	    nen = Math.floor(+nen);
+	    if( nen < 0 ){
+	    	throw new Error("invalid nen: " + nen);
+	    }
+	    switch (gengou) {
+	        case "平成":
+	            return 1988 + nen;
+	        case "昭和":
+	            return 1925 + nen;
+	        case "大正":
+	            return 1911 + nen;
+	        case "明治":
+	            return 1867 + nen;
+	        case "西暦":
+	            return nen;
+	        default:
+	            throw new Error("invalid gengou: " + gengou);
+	    }
+	}
+
+	exports.fromGengou = fromGengou;
+
+	var youbi = ["日", "月", "火", "水", "木", "金", "土"];
+
+	function toYoubi(dayOfWeek){
+		return youbi[dayOfWeek];
+	}
+
+	exports.toYoubi = toYoubi;
+
+	function KanjiDate(date){
+		this.year = date.getFullYear();
+		this.month = date.getMonth()+1;
+		this.day = date.getDate();
+		this.hour = date.getHours();
+		this.minute = date.getMinutes();
+		this.second = date.getSeconds();
+		this.msec = date.getMilliseconds();
+		this.dayOfWeek = date.getDay();
+		var g = toGengou(this.year, this.month, this.day);
+		this.gengou = g.gengou;
+		this.nen = g.nen;
+		this.youbi = youbi[this.dayOfWeek];
+	}
+
+	function KanjiDateExplicit(year, month, day, hour, minute, second, millisecond){
+		if( hour === undefined ) hour = 0;
+		if( minute === undefined ) minute = 0;
+		if( second === undefined ) second = 0;
+		if( millisecond === undefined ) millisecond = 0;
+		var date = new Date(year, month-1, day, hour, minute, second, millisecond);
+		return new KanjiDate(date);
+	}
+
+	function KanjiDateFromString(str){
+		var m;
+		m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+		if( m ){
+			return KanjiDateExplicit(+m[1], +m[2], +m[3]);
+		}
+		m = str.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+		if( m ){
+			return KanjiDateExplicit(+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]);
+		}
+		throw new Error("cannot convert to KanjiDate");
+	}
+
+	function parseFormatString(fmtStr){
+		var result = [];
+		var parts = fmtStr.split(/(\{[^}]+)\}/);
+		parts.forEach(function(part){
+			if( part === "" ) return;
+			if( part[0] === "{" ){
+				part = part.substring(1);
+				var token = {opts: []};
+				var colon = part.indexOf(":");
+				if( part.indexOf(":") >= 0 ){
+					token.part = part.substring(0, colon);
+					var optStr = part.substring(colon+1).trim();
+					if( optStr !== "" ){
+						if( optStr.indexOf(",") >= 0 ){
+							token.opts = optStr.split(/\s*,\s*/);
+						} else {
+							token.opts = [optStr];
+						}
+					}
+				} else {
+					token.part = part;
+				}
+				result.push(token);
+			} else {
+				result.push(part);
+			}
+		});
+		return result;
+	}
+
+	var format1 = "{G}{N}年{M}月{D}日（{W}）";
+	var format2 = "{G}{N}年{M}月{D}日";
+	var format3 = "{G:a}{N}.{M}.{D}";
+	var format4 = "{G}{N:2}年{M:2}月{D:2}日（{W}）";
+	var format5 = "{G}{N:2}年{M:2}月{D:2}日";
+	var format6 = "{G:a}{N:2}.{M:2}.{D:2}";
+	var format7 = "{G}{N}年{M}月{D}日（{W}） {a}{h:12}時{m}分{s}秒";
+	var format8 = "{G}{N:2}年{M:2}月{D:2}日（{W}） {a}{h:12,2}時{m:2}分{s:2}秒";
+	var format9 = "{G}{N}年{M}月{D}日（{W}） {a}{h:12}時{m}分";
+	var format10 = "{G}{N:2}年{M:2}月{D:2}日（{W}） {a}{h:12,2}時{m:2}分";
+	var format11 = "{G}{N:z}年{M:z}月{D:z}日";
+	var format12 = "{G}{N:z,2}年{M:z,2}月{D:z,2}日";
+	var format13 = "{Y}-{M:2}-{D:2}";
+	var format14 = "{Y}-{M:2}-{D:2} {h:2}:{m:2}:{s:2}";
+
+	exports.f1 = format1;
+	exports.f2 = format2;
+	exports.f3 = format3;
+	exports.f4 = format4;
+	exports.f5 = format5;
+	exports.f6 = format6;
+	exports.f7 = format7;
+	exports.f8 = format8;
+	exports.f9 = format9;
+	exports.f10 = format10;
+	exports.f11 = format11;
+	exports.f12 = format12;
+	exports.f13 = format13;
+	exports.f14 = format14;
+	exports.fSqlDate = format13;
+	exports.fSqlDateTime = format14;
+
+	function gengouPart(kdate, opts){
+		var style = "2";
+		opts.forEach(function(opt){
+			if( ["2", "1", "a", "alpha"].indexOf(opt) >= 0 ){
+				style = opt;
+			}
+		})
+		switch(style){
+			case "2": return kdate.gengou;
+			case "1": return kdate.gengou[0]; 
+			case "a": return gengouToAlpha(kdate.gengou)[0]; 
+			case "alpha": return gengouToAlpha(kdate.gengou);
+			default: return kdate.gengou;
+		}
+	}
+
+	function numberPart(num, opts){
+		var zenkaku = false;
+		var width = 1;
+		opts.forEach(function(opt){
+			switch(opt){
+				case "1": width = 1; break;
+				case "2": width = 2; break;
+				case "z": zenkaku = true; break;
+			}
+		});
+		var result = num.toString();
+		if( zenkaku ){
+			result = result.split("").map(alphaDigitToZenkaku).join("");
+		}
+		if( width > 1 && num < 10 ){
+			result = (zenkaku ? "０" : "0") + result;
+		}
+		return result;
+	}
+
+	function nenPart(kdate, opts){
+		if( kdate.nen === 1 && opts.indexOf("g") >= 0 ){
+			return "元";
+		} else {
+			return numberPart(kdate.nen, opts);
+		}
+	}
+
+	function youbiPart(kdate, opts){
+		var style;
+		opts.forEach(function(opt){
+			if( ["1", "2", "3", "alpha"].indexOf(opt) >= 0 ){
+				style = opt;
+			}
+		})
+		switch(style){
+			case "1": return kdate.youbi;
+			case "2": return kdate.youbi + "曜";
+			case "3": return kdate.youbi + "曜日";
+			case "alpha": return dayOfWeek[kdate.dayOfWeek];
+			default: return kdate.youbi;
+		}
+	}
+
+	function hourPart(hour, opts){
+		var ampm = false;
+		if( opts.indexOf("12") >= 0 ){
+			ampm = true;
+			opts = removeOpt(opts, "12");
+		}
+		if( ampm ){
+			hour = hour % 12;
+		}
+		return numberPart(hour, opts);
+	}
+
+	function ampmPart(kdate, opts){
+		var style = "kanji";
+		opts.forEach(function(opt){
+			switch(opt){
+				case "am/pm": style = "am/pm"; break;
+				case "AM/PM": style = "AM/PM"; break;
+			}
+		});
+		var am = kdate.hour < 12;
+		switch(style){
+			case "kanji": return am ? "午前" : "午後";
+			case "am/pm": return am ? "am" : "pm";
+			case "AM/PM": return am ? "AM" : "PM";
+			default : throw new Error("unknown style for AM/PM");
+		}
+	}
+
+	function yearPart(year, opts){
+		return year.toString();
+	}
+
+	function format(formatStr, kdate){
+		var output = [];
+		var tokens = parseFormatString(formatStr);
+		tokens.forEach(function(token){
+			if( typeof token === "string" ){
+				output.push(token);
+			} else {
+				switch(token.part){
+					case "G": output.push(gengouPart(kdate, token.opts)); break;
+					case "N": output.push(nenPart(kdate, token.opts)); break;
+					case "M": output.push(numberPart(kdate.month, token.opts)); break;
+					case "D": output.push(numberPart(kdate.day, token.opts)); break;
+					case "W": output.push(youbiPart(kdate, token.opts)); break;
+					case "h": output.push(hourPart(kdate.hour, token.opts)); break;
+					case "m": output.push(numberPart(kdate.minute, token.opts)); break;
+					case "s": output.push(numberPart(kdate.second, token.opts)); break;
+					case "a": output.push(ampmPart(kdate, token.opts)); break;
+					case "Y": output.push(yearPart(kdate.year, token.opts)); break;
+				}
+			}
+		})
+		return output.join("");
+	}
+
+	exports.format = function(){
+		var narg = arguments.length;
+		var formatStr, args, i;
+		if( narg === 0 ){
+			return format(format1, new KanjiDate(new Date()));
+		} else if( narg === 1 ){
+			return format(format1, cvt(arguments[0]));
+		} else {
+			formatStr = arguments[0];
+			if( formatStr == null ){
+				formatStr = format1;
+			}
+			args = [];
+			for(i=1;i<arguments.length;i++){
+				args.push(arguments[i]);
+			}
+			if( args.length === 1 ){
+				return format(formatStr, cvt(args[0]));
+			} else {
+				return format(formatStr, KanjiDateExplicit.apply(null, args));
+			}
+		}
+		throw new Error("invalid format call");
+
+		function cvt(x){
+			if( isDateObject(x) ){
+				return new KanjiDate(x);
+			} else if( typeof x === "string" ){
+				return KanjiDateFromString(x);
+			}
+			throw new Error("cannot convert to KanjiDate");
+		}
+	}
+
+	})( false ? (window.kanjidate = {}) : exports);
 
 /***/ },
-/* 119 */
-/***/ function(module, exports) {
-
-	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
-
-/***/ },
-/* 120 */
+/* 119 */,
+/* 120 */,
+/* 121 */,
+/* 122 */,
+/* 123 */,
+/* 124 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var service = __webpack_require__(3);
-	var mUtil = __webpack_require__(9);
-	var Title = __webpack_require__(121);
-	var Text = __webpack_require__(123);
-	var Hoken = __webpack_require__(125);
-	var DrugMenu = __webpack_require__(127);
-	var Drug = __webpack_require__(129);
-	var ShinryouMenu = __webpack_require__(131);
-	var Shinryou = __webpack_require__(133);
-	var ConductMenu = __webpack_require__(135);
-	var ConductList = __webpack_require__(137);
-	var Charge = __webpack_require__(143);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
+	var Title = __webpack_require__(126);
+	var Text = __webpack_require__(128);
+	var Hoken = __webpack_require__(130);
+	var DrugMenu = __webpack_require__(132);
+	var Drug = __webpack_require__(134);
+	var ShinryouMenu = __webpack_require__(136);
+	var Shinryou = __webpack_require__(138);
+	var ConductMenu = __webpack_require__(140);
+	var ConductList = __webpack_require__(142);
+	var Charge = __webpack_require__(148);
 
-	var recordTmplSrc = __webpack_require__(145);
+	var recordTmplSrc = __webpack_require__(194);
 	var recordTmpl = hogan.compile(recordTmplSrc);
 
 	function makeRecord(visit){
@@ -26368,17 +26155,18 @@
 
 
 /***/ },
-/* 121 */
+/* 125 */,
+/* 126 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var kanjidate = __webpack_require__(8);
+	var kanjidate = __webpack_require__(118);
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var service = __webpack_require__(3);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
 
-	var tmplSrc = __webpack_require__(122);
+	var tmplSrc = __webpack_require__(127);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordTitle(dom){
@@ -26436,21 +26224,21 @@
 	module.exports = RecordTitle;
 
 /***/ },
-/* 122 */
+/* 127 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"titleBox\" class=\"visit-date\">\r\n    <a href=\"javascript:void(0)\" class=\"record-title\">\r\n    \t<span mc-name=\"label\">{{label}}</span>\r\n    </a>\r\n</div>\r\n<div mc-name=\"workarea\" class=\"record-title-workarea\" style=\"display:none\">\r\n    <a mc-name=\"deleteVisitLink\" class=\"cmd-link\" href=\"javascript:void(0)\">この診察を削除</a> |\r\n    <a mc-name=\"setCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察設定</a> |\r\n    <a mc-name=\"unsetCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察解除</a>\r\n</div>\r\n"
 
 /***/ },
-/* 123 */
+/* 128 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
+	var hogan = __webpack_require__(115);
 
-	var tmplSrc = __webpack_require__(124);
+	var tmplSrc = __webpack_require__(129);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordText(dom){
@@ -26470,23 +26258,23 @@
 	module.exports = RecordText;
 
 /***/ },
-/* 124 */
+/* 129 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"content\" class=\"record-text cursor-pointer\">{{& content}}</div>\r\n"
 
 /***/ },
-/* 125 */
+/* 130 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var myclinicUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(126);
+	var tmplSrc = __webpack_require__(131);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordHoken(dom){
@@ -26510,23 +26298,23 @@
 
 
 /***/ },
-/* 126 */
+/* 131 */
 /***/ function(module, exports) {
 
 	module.exports = "<span mc-name=\"label\" class=\"cursor-pointer\">{{label}}</span>\r\n"
 
 /***/ },
-/* 127 */
+/* 132 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var myclinicUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(128);
+	var tmplSrc = __webpack_require__(133);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function DrugMenu(dom){
@@ -26549,23 +26337,23 @@
 
 
 /***/ },
-/* 128 */
+/* 133 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n"
 
 /***/ },
-/* 129 */
+/* 134 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var myclinicUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(130);
+	var tmplSrc = __webpack_require__(135);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordDrug(dom){
@@ -26590,23 +26378,23 @@
 
 
 /***/ },
-/* 130 */
+/* 135 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"wrapper\"><span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span></div>\r\n"
 
 /***/ },
-/* 131 */
+/* 136 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var myclinicUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(132);
+	var tmplSrc = __webpack_require__(137);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function ShinryouMenu(dom){
@@ -26629,23 +26417,23 @@
 
 
 /***/ },
-/* 132 */
+/* 137 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n"
 
 /***/ },
-/* 133 */
+/* 138 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var myclinicUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(134);
+	var tmplSrc = __webpack_require__(139);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordShinryou(dom){
@@ -26669,23 +26457,23 @@
 
 
 /***/ },
-/* 134 */
+/* 139 */
 /***/ function(module, exports) {
 
 	module.exports = "{{label}}"
 
 /***/ },
-/* 135 */
+/* 140 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var myclinicUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(136);
+	var tmplSrc = __webpack_require__(141);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function ConductMenu(dom){
@@ -26708,19 +26496,19 @@
 
 
 /***/ },
-/* 136 */
+/* 141 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n"
 
 /***/ },
-/* 137 */
+/* 142 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var Conduct = __webpack_require__(138);
+	var Conduct = __webpack_require__(143);
 
 	function ConductList(dom){
 		this.dom = dom;
@@ -26744,20 +26532,20 @@
 
 
 /***/ },
-/* 138 */
+/* 143 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var mUtil = __webpack_require__(9);
-	var ConductShinryouList = __webpack_require__(139);
-	var ConductDrugList = __webpack_require__(140);
-	var ConductKizaiList = __webpack_require__(141);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(3);
+	var ConductShinryouList = __webpack_require__(144);
+	var ConductDrugList = __webpack_require__(145);
+	var ConductKizaiList = __webpack_require__(146);
 
-	var tmplSrc = __webpack_require__(142);
+	var tmplSrc = __webpack_require__(147);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function RecordConduct(dom){
@@ -26785,7 +26573,7 @@
 
 
 /***/ },
-/* 139 */
+/* 144 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26812,13 +26600,13 @@
 	module.exports = ConductShinryouList;
 
 /***/ },
-/* 140 */
+/* 145 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var mUtil = __webpack_require__(9);
+	var mUtil = __webpack_require__(3);
 
 	function ConductDrugList(dom){
 		this.dom = dom;
@@ -26840,13 +26628,13 @@
 	module.exports = ConductDrugList;
 
 /***/ },
-/* 141 */
+/* 146 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var mUtil = __webpack_require__(9);
+	var mUtil = __webpack_require__(3);
 
 	function ConductKizaiList(dom){
 		this.dom = dom;
@@ -26868,22 +26656,22 @@
 	module.exports = ConductKizaiList;
 
 /***/ },
-/* 142 */
+/* 147 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n\r\n"
 
 /***/ },
-/* 143 */
+/* 148 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var mUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(144);
+	var tmplSrc = __webpack_require__(149);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function Charge(dom){
@@ -26913,30 +26701,25 @@
 
 
 /***/ },
-/* 144 */
+/* 149 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
-/* 145 */
-/***/ function(module, exports) {
-
-	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
-
-/***/ },
-/* 146 */
+/* 150 */,
+/* 151 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
+	var hogan = __webpack_require__(115);
 
-	var tmplSrc = __webpack_require__(147);
+	var tmplSrc = __webpack_require__(152);
 	var tmpl = hogan.compile(tmplSrc);
 
-	var ListPane = __webpack_require__(148)
+	var ListPane = __webpack_require__(153)
 
 	function Disease(dom){
 		this.dom = dom;
@@ -26968,24 +26751,24 @@
 
 
 /***/ },
-/* 147 */
+/* 152 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
 
 /***/ },
-/* 148 */
+/* 153 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
+	var hogan = __webpack_require__(115);
 
-	var tmplSrc = __webpack_require__(149);
+	var tmplSrc = __webpack_require__(154);
 	var tmpl = hogan.compile(tmplSrc);
 
-	var DiseaseListItem = __webpack_require__(150);
+	var DiseaseListItem = __webpack_require__(155);
 
 	function DiseaseListPane(dom){
 		this.dom = dom;
@@ -27011,23 +26794,23 @@
 	module.exports = DiseaseListPane;
 
 /***/ },
-/* 149 */
+/* 154 */
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
 
 /***/ },
-/* 150 */
+/* 155 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
-	var mUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(151);
+	var tmplSrc = __webpack_require__(156);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function DiseaseListItem(dom){
@@ -27046,23 +26829,23 @@
 	module.exports = DiseaseListItem;
 
 /***/ },
-/* 151 */
+/* 156 */
 /***/ function(module, exports) {
 
 	module.exports = "<td>\r\n\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t{{label}}\r\n\t</a>\r\n\t<span style=\"color:#999\">\r\n\t\t({{start_date_label}})\r\n\t</span>\r\n</td>\r\n"
 
 /***/ },
-/* 152 */
+/* 157 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var service = __webpack_require__(3);
-	var SelectPatientItem = __webpack_require__(153);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var SelectPatientItem = __webpack_require__(158);
 
-	var tmplSrc = __webpack_require__(155);
+	var tmplSrc = __webpack_require__(160);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function SelectPatient(dom){
@@ -27125,16 +26908,16 @@
 
 
 /***/ },
-/* 153 */
+/* 158 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var mUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(154);
+	var tmplSrc = __webpack_require__(159);
 	var tmpl = hogan.compile(tmplSrc);
 
 	function SelectPatientItem(dom){
@@ -27151,32 +26934,32 @@
 	module.exports = SelectPatientItem;
 
 /***/ },
-/* 154 */
+/* 159 */
 /***/ function(module, exports) {
 
 	module.exports = "[{{state_label}}] {{last_name}} {{first_name}}"
 
 /***/ },
-/* 155 */
+/* 160 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
 
 /***/ },
-/* 156 */
+/* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var service = __webpack_require__(3);
-	var mUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(157);
+	var tmplSrc = __webpack_require__(162);
 	var tmpl = hogan.compile(tmplSrc);
 
-	var itemTmplSrc = __webpack_require__(158);
+	var itemTmplSrc = __webpack_require__(163);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	function SearchPatient(dom){
@@ -27259,122 +27042,35 @@
 	module.exports = SearchPatient;
 
 /***/ },
-/* 157 */
+/* 162 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
-/* 158 */
+/* 163 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 159 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var hogan = __webpack_require__(5);
-	var myclinicUtil = __webpack_require__(9);
-	var service = __webpack_require__(3);
-	var $ = __webpack_require__(1);
-
-	var tmplSrc = __webpack_require__(160);
-	var listTmplSrc = __webpack_require__(161);
-
-	var tmpl = hogan.compile(tmplSrc);
-	var listTmpl = hogan.compile(listTmplSrc);
-
-	function RecentVisits(dom){
-		this.dom = dom;
-	}
-
-	RecentVisits.prototype.getButtonDom = function(){
-		return this.dom.find("[mc-name=button]");
-	};
-
-	RecentVisits.prototype.getSelectDom = function(){
-		return this.dom.find("[mc-name=select]");
-	};
-
-	RecentVisits.prototype.render = function(data){
-		this.dom.html(tmpl.render(data));
-		this.bindButton();
-		this.bindSelect();
-		return this;
-	};
-
-	RecentVisits.prototype.bindButton = function(){
-		var self = this;
-		this.getButtonDom().click(function(){
-			var select = self.getSelectDom();
-			if( select.is(":visible") ){
-				select.hide();
-				select.html("");
-			} else {
-				service.recentVisits(function(err, list){
-					if( err ){
-						alert(err);
-						return;
-					}
-					self.updateSelect(list);
-					select.show();
-				});
-			}
-		});
-	};
-
-	RecentVisits.prototype.bindSelect = function(){
-		var self = this;
-		this.getSelectDom().on("dblclick", "option", function(){
-			var e = $(this);
-			var patientId = e.val();
-			$("body").trigger("start-patient", [patientId]);
-			self.getSelectDom().hide().html("");
-		});
-	};
-
-	RecentVisits.prototype.updateSelect = function(list){
-		var data = list.map(function(item){
-			return myclinicUtil.assign({}, item, {
-				patient_id_part: myclinicUtil.padNumber(item.patient_id, 4)
-			})
-		});
-		var html = listTmpl.render({list: data});
-		this.getSelectDom().html(html);
-	};
-
-	module.exports = RecentVisits;
-
-
-/***/ },
-/* 160 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">最近の受診</button>\r\n<div>\r\n  <select mc-name=\"select\" size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
-
-/***/ },
-/* 161 */
-/***/ function(module, exports) {
-
-	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}"
-
-/***/ },
-/* 162 */
+/* 164 */,
+/* 165 */,
+/* 166 */,
+/* 167 */,
+/* 168 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(5);
-	var service = __webpack_require__(3);
-	var mUtil = __webpack_require__(9);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(163);
+	var tmplSrc = __webpack_require__(169);
 	var tmpl = hogan.compile(tmplSrc);
-	var itemTmplSrc = __webpack_require__(164);
+	var itemTmplSrc = __webpack_require__(170);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	function makeOption(data){
@@ -27438,33 +27134,33 @@
 	module.exports = TodaysVisits;
 
 /***/ },
-/* 163 */
+/* 169 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 164 */
+/* 170 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ },
-/* 165 */
+/* 171 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var modal = __webpack_require__(166);
-	var service = __webpack_require__(3);
-	var mUtil = __webpack_require__(9);
-	var hogan = __webpack_require__(5);
-	var kanjidate = __webpack_require__(8);
+	var modal = __webpack_require__(172);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
 
-	var mainTmpl = hogan.compile(__webpack_require__(167));
-	var optionTmpl = hogan.compile(__webpack_require__(168));
-	var dispTmpl = hogan.compile(__webpack_require__(169));
+	var mainTmpl = hogan.compile(__webpack_require__(173));
+	var optionTmpl = hogan.compile(__webpack_require__(174));
+	var dispTmpl = hogan.compile(__webpack_require__(175));
 
 	function getSearchTextDom(dom){
 		return dom.find("input[mc-name=searchText]");
@@ -27571,7 +27267,7 @@
 	}
 
 /***/ },
-/* 166 */
+/* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var $ = __webpack_require__(1);
@@ -27706,22 +27402,354 @@
 
 
 /***/ },
-/* 167 */
+/* 173 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
 
 /***/ },
-/* 168 */
+/* 174 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 169 */
+/* 175 */
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 176 */,
+/* 177 */,
+/* 178 */,
+/* 179 */,
+/* 180 */,
+/* 181 */,
+/* 182 */,
+/* 183 */,
+/* 184 */,
+/* 185 */,
+/* 186 */,
+/* 187 */,
+/* 188 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(189);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function PatientInfo(dom){
+		this.dom = dom;
+	}
+
+	PatientInfo.prototype.render = function(data){
+		this.bindDetail();
+		return this;
+	};
+
+	PatientInfo.prototype.bindDetail = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=detailLink]", function(event){
+			event.preventDefault();
+			self.dom.find("[mc-name=patientInfoDetail]").toggle();
+		});
+	};
+
+	PatientInfo.prototype.update = function(data){
+		if( !data ){
+			this.dom.html("");
+		} else {
+			data = myclinicUtil.assign({}, data, {
+				sex_as_kanji: myclinicUtil.sexToKanji(data.sex)
+			});
+			if( data.birth_day !== "0000-00-00" ){
+				data.birthday_part = kanjidate.format("{G}{N}年{M}月{D}日生", data.birth_day);
+				data.age_part = myclinicUtil.calcAge(data.birth_day) + "才";
+			}
+			this.dom.html(tmpl.render(data));
+		}
+	};
+
+	module.exports = PatientInfo;
+
+
+/***/ },
+/* 189 */
+/***/ function(module, exports) {
+
+	module.exports = "[{{patient_id}}]\r\n{{last_name}} {{first_name}}\r\n（{{last_name_yomi}} {{first_name_yomi}}）\r\n{{birthday_part}}\r\n{{age_part}}\r\n{{sex_as_kanji}}性\r\n<a href=\"javascript:void(0)\" mc-name=\"detailLink\" class=\"cmd-link\" style=\"font-size:13px\">詳細</a>\r\n\r\n<div style=\"display:none; margin:4px; padding:2px 0 0 0; border: 1px solid #ccc\" mc-name=\"patientInfoDetail\">\r\n\t<div style=\"margin:6px;\">電話番号： {{phone}}</div>\r\n\t<div style=\"margin:6px;\">住所： {{address}}</div>\r\n</div>\r\n"
+
+/***/ },
+/* 190 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplSrc = __webpack_require__(191);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function CurrentManip(dom){
+		this.dom = dom;
+	}
+
+	CurrentManip.prototype.render = function(){
+		this.bindEndPatient();
+		return this;
+	};
+
+	CurrentManip.prototype.bindEndPatient = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=endPatientButton]", function(event){
+			event.preventDefault();
+			self.dom.trigger("end-patient");
+		})
+	};
+
+	CurrentManip.prototype.update = function(patientId, visitId){
+		this.patientId = patientId;
+		this.visitId = visitId;
+		this.dom.html("");
+		if( patientId > 0 ){
+			this.dom.html(tmpl.render({}));
+		} else {
+			this.dom.html("");
+		}
+	};
+
+	module.exports = CurrentManip;
+
+
+/***/ },
+/* 191 */
+/***/ function(module, exports) {
+
+	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+
+/***/ },
+/* 192 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplSrc = __webpack_require__(193);
+	var tmpl = hogan.compile(tmplSrc);
+
+	function calcNumberOfPages(totalItems, itemsPerPage){
+		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
+	}
+
+	function RecordNav(dom, itemsPerPage){
+		this.dom = dom;
+		this.itemsPerPage = itemsPerPage;
+		this.totalItems = 0;
+		this.numberOfPages = 0;
+		this.currentPage = 0;
+	}
+
+	RecordNav.prototype.render = function(){
+		this.bindGotoFirst();
+		this.bindGotoPrev();
+		this.bindGotoNext();
+		this.bindGotoLast();
+		return this;
+	};
+
+	RecordNav.prototype.bindGotoFirst = function(){
+		var self = this;
+		if( this.numberOfPages < 1 ){
+			return;
+		}
+		this.dom.on("click", "[mc-name=gotoFirst]", function(event){
+			event.preventDefault();
+			if( self.currentPage === 1 ){
+				return;
+			}
+			$("body").trigger("goto-page", [1]);
+		});
+	};
+
+	RecordNav.prototype.bindGotoPrev = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=gotoPrev]", function(event){
+			event.preventDefault();
+			if( self.currentPage <= 1 ){
+				return;
+			}
+			$("body").trigger("goto-page", [self.currentPage - 1]);
+		});
+	};
+
+	RecordNav.prototype.bindGotoNext = function(){
+		var self = this;
+		this.dom.on("click", "[mc-name=gotoNext]", function(event){
+			event.preventDefault();
+			if( self.currentPage >= self.numberOfPages ){
+				return;
+			}
+			$("body").trigger("goto-page", [self.currentPage + 1]);
+		});
+	};
+
+	RecordNav.prototype.bindGotoLast = function(){
+		var self = this;
+		if( this.numberOfPages < 1 ){
+			return;
+		}
+		this.dom.on("click", "[mc-name=gotoLast]", function(event){
+			event.preventDefault();
+			if( self.currentPage === self.numberOfPages ){
+				return;
+			}
+			$("body").trigger("goto-page", [self.numberOfPages]);
+		});
+	};
+
+	RecordNav.prototype.setTotalItems = function(n){
+		this.totalItems = +n;
+		this.numberOfPages = calcNumberOfPages(n, this.itemsPerPage);
+		return this;
+	};
+
+	RecordNav.prototype.update = function(page){
+		if( this.numberOfPages <= 0 ){
+			this.currentPage = 0;
+			this.dom.html("");
+		}
+		if( this.numberOfPages === 1 ){
+			this.currentPage = 1;
+			this.dom.html("");
+		} else {
+			if( page < 1 ){
+				page = 1;
+			} else if( page > this.numberOfPages ){
+				page = this.numberOfPages;
+			}
+			var data = {
+				page: page,
+				total: this.numberOfPages
+			};
+			this.currentPage = +page;
+			this.dom.html(tmpl.render(data));
+		}
+	}
+
+	module.exports = RecordNav;
+
+/***/ },
+/* 193 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
+
+/***/ },
+/* 194 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
+
+/***/ },
+/* 195 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var hogan = __webpack_require__(115);
+	var myclinicUtil = __webpack_require__(3);
+	var service = __webpack_require__(111);
+	var $ = __webpack_require__(1);
+
+	var tmplSrc = __webpack_require__(196);
+	var listTmplSrc = __webpack_require__(197);
+
+	var tmpl = hogan.compile(tmplSrc);
+	var listTmpl = hogan.compile(listTmplSrc);
+
+	function RecentVisits(dom){
+		this.dom = dom;
+	}
+
+	RecentVisits.prototype.getButtonDom = function(){
+		return this.dom.find("[mc-name=button]");
+	};
+
+	RecentVisits.prototype.getSelectDom = function(){
+		return this.dom.find("[mc-name=select]");
+	};
+
+	RecentVisits.prototype.render = function(data){
+		this.dom.html(tmpl.render(data));
+		this.bindButton();
+		this.bindSelect();
+		return this;
+	};
+
+	RecentVisits.prototype.bindButton = function(){
+		var self = this;
+		this.getButtonDom().click(function(){
+			var select = self.getSelectDom();
+			if( select.is(":visible") ){
+				select.hide();
+				select.html("");
+			} else {
+				service.recentVisits(function(err, list){
+					if( err ){
+						alert(err);
+						return;
+					}
+					self.updateSelect(list);
+					select.show();
+				});
+			}
+		});
+	};
+
+	RecentVisits.prototype.bindSelect = function(){
+		var self = this;
+		this.getSelectDom().on("dblclick", "option", function(){
+			var e = $(this);
+			var patientId = e.val();
+			$("body").trigger("start-patient", [patientId]);
+			self.getSelectDom().hide().html("");
+		});
+	};
+
+	RecentVisits.prototype.updateSelect = function(list){
+		var data = list.map(function(item){
+			return myclinicUtil.assign({}, item, {
+				patient_id_part: myclinicUtil.padNumber(item.patient_id, 4)
+			})
+		});
+		var html = listTmpl.render({list: data});
+		this.getSelectDom().html(html);
+	};
+
+	module.exports = RecentVisits;
+
+
+/***/ },
+/* 196 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">最近の受診</button>\r\n<div>\r\n  <select mc-name=\"select\" size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
+
+/***/ },
+/* 197 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}"
 
 /***/ }
 /******/ ]);
