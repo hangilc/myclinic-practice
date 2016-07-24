@@ -23,20 +23,17 @@ CurrentManip.setup($("#current-manip-pane"));
 $(".record-nav-wrapper").each(function(i){
 	RecordNav.setup($(this), i);
 });
+RecordList.setup($("#record-list"));
 RecentVisits.setup($("#recent-visits-wrapper"));
 
 var appData = new AppData();
 
-window.getCurrentPatientId = function(){
-	return pageData.currentPatientId;
-};
-
 window.getCurrentVisitId = function(){
-	return pageData.currentVisitId;
+	return appData.currentVisitId;
 };
 
 window.getTempVisitId = function(){
-	return pageData.tempVisitId;
+	return appData.tempVisitId;
 };
 
 function startPage(patientId, visitId){
@@ -57,3 +54,14 @@ $("body").on("start-patient", function(event, patientId){
 $("body").on("end-patient", function(event){
 	startPage(0, 0);
 });
+
+$("body").on("goto-page", function(event, page){
+	appData.gotoPage(page, function(err){
+		if( err ){
+			alert(err);
+			return;
+		}
+		var data = mUtil.assign({}, appData);
+		$("body").broadcast("rx-goto-page", data);
+	})
+})

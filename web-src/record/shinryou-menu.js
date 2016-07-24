@@ -3,25 +3,11 @@
 var $ = require("jquery");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");
-var myclinicUtil = require("../../myclinic-util");
+var mUtil = require("../../myclinic-util");
 
-var tmplSrc = require("raw!./shinryou-menu.html");
-var tmpl = hogan.compile(tmplSrc);
+var tmplHtml = require("raw!./shinryou-menu.html");
 
-function ShinryouMenu(dom){
-	this.dom = dom;
+exports.setup = function(dom){
+	dom.html(tmplHtml);
 }
-
-ShinryouMenu.prototype.render = function(){
-	return this;
-};
-
-ShinryouMenu.prototype.update = function(){
-	var html = tmpl.render({
-	});
-	this.dom.html(html);
-	return this;
-};
-
-module.exports = ShinryouMenu;
 

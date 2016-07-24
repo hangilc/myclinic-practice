@@ -7,11 +7,23 @@ var tmplSrc = require("raw!./record-nav.html");
 var tmpl = hogan.compile(tmplSrc);
 
 exports.setup = function(dom){
-	dom.addClass("rx-page-settings-changed");
-	dom.data("rx-page-settings-changed", function(value){
-		var totalPages = value.totalPages;
-		var currentPage = value.currentPage;
+	dom.listen("rx-start-page", function(appData){
+		var totalPages = appData.totalPages;
+		var currentPage = appData.currentPage;
 		dom.data("number-of-pages", totalPages);
+		dom.data("page", currentPage);
+		if( totalPages <= 1 ){
+			dom.html("");
+		} else {
+			dom.html(tmpl.render({
+				page: currentPage,
+				total: totalPages
+			}));
+		}
+	});
+	dom.listen("rx-goto-page", function(appData){
+		var totalPages = dom.data("number-of-pages");
+		var currentPage = appData.currentPage;
 		dom.data("page", currentPage);
 		if( totalPages <= 1 ){
 			dom.html("");

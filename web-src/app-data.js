@@ -67,7 +67,8 @@ function makeFullVisitsLoader(pageData){
 	var patientId = pageData.currentPatientId;
 	return function(done){
 		if( patientId > 0 && pageData.totalPages > 0 ){
-			service.listFullVisits(patientId, 0, pageData.itemsPerPage, function(err, result){
+			var offset = (pageData.currentPage - 1) * pageData.itemsPerPage;
+			service.listFullVisits(patientId, offset, pageData.itemsPerPage, function(err, result){
 				if( err ){
 					done(err);
 					return;
@@ -163,5 +164,21 @@ AppData.prototype.startPage = function(patientId, visitId, done){
 		], done);
 	}, done);
 };
+
+AppData.prototype.gotoPage = function(page, done){
+	if( page === 0 ){
+		if( this.totalPages === 0 ){
+			this.record_list = [];
+			done();
+		} else {
+			done("invalid number of pages");
+		}
+	} else if( page >= 1 && page <= this.totalPages ){
+		this.currentPage = page;
+		makeFullVisitsLoader(this)(done);
+	} else {
+		done("invalid page");
+	}
+}
 
 module.exports = AppData;

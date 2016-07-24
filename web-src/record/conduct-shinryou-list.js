@@ -2,21 +2,12 @@
 
 var $ = require("jquery");
 
-function ConductShinryouList(dom){
-	this.dom = dom;
-}
-
-ConductShinryouList.prototype.render = function(){
-	return this;
-};
-
-ConductShinryouList.prototype.update = function(list){
-	var wrapper = this.dom.html("");
-	list.forEach(function(data){
+exports.setup = function(dom, shinryouList){
+	dom.html("");
+	shinryouList.forEach(function(shinryou){
 		var e = $("<div></div>");
-		e.text(data.name);
-		wrapper.append(e);
+		e.text(shinryou.name);
+		dom.append(e);
 	});
 };
 
-module.exports = ConductShinryouList;

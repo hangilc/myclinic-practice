@@ -7,6 +7,19 @@ var mUtil = require("../../myclinic-util");
 var tmplSrc = require("raw!./charge.html");
 var tmpl = hogan.compile(tmplSrc);
 
+exports.setup = function(dom, charge){
+	if( charge ){
+		charge = mUtil.assign({}, charge, {
+			has_charge: true,
+			charge_rep: mUtil.formatNumber(charge.charge)
+		})
+	} else {
+		charge = { has_charge: false };
+	}
+	var html = tmpl.render(charge);
+	dom.html(html);
+};
+
 function Charge(dom){
 	this.dom = dom;
 }
@@ -29,5 +42,5 @@ Charge.prototype.update = function(data){
 	return this;
 };
 
-module.exports = Charge;
+//module.exports = Charge;
 
