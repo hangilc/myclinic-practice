@@ -3,22 +3,13 @@
 var $ = require("jquery");
 var Conduct = require("./conduct");
 
-function ConductList(dom){
-	this.dom = dom;
+exports.setup = function(dom, conducts){
+	dom.html("");
+	conducts.forEach(function(conduct){
+		var ce = $("<div></div>");
+		Conduct.setup(ce, conduct);
+		dom.append(ce);
+	})
 }
 
-ConductList.prototype.render = function(){
-	return this;
-};
-
-ConductList.prototype.update = function(conducts){
-	var wrapper = this.dom.html("");
-	conducts.forEach(function(data){
-		var ce = $("<div></div>");
-		new Conduct(ce).render().update(data);
-		wrapper.append(ce);
-	})
-};
-
-module.exports = ConductList;
 

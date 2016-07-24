@@ -48,247 +48,81 @@
 
 	var $ = __webpack_require__(1);
 	var conti = __webpack_require__(2);
+	var mUtil = __webpack_require__(3);
+	var task = __webpack_require__(109);
 	var service = __webpack_require__(111);
-	var PatientInfo = __webpack_require__(188);
-	var CurrentManip = __webpack_require__(190);
-	var RecordNav = __webpack_require__(192);
+	var AppData = __webpack_require__(112);
+
+	var PatientInfo = __webpack_require__(114);
+	var CurrentManip = __webpack_require__(120);
+	var RecordNav = __webpack_require__(122);
 	var RecordList = __webpack_require__(124);
 	var Disease = __webpack_require__(151);
 	var SelectPatient = __webpack_require__(157);
 	var SearchPatient = __webpack_require__(161);
-	var RecentVisits = __webpack_require__(195);
+	var RecentVisits = __webpack_require__(164);
 	var TodaysVisits = __webpack_require__(168);
 	var Reception = __webpack_require__(171);
 
-	var currentPatientId = 0;
-	var currentPatient = null;
-	var currentVisitId = 0;
-	var tempVisitId = 0;
-
-	var itemsPerPage = 10;
-
-	var patientInfo = new PatientInfo($("#patient-info-wrapper")).render();
-
-	var currentManip = new CurrentManip($("#current-manip-pane")).render();
-
-	var recordNavs = $(".record-nav-wrapper").map(function(index, e){
-		return new RecordNav($(e), itemsPerPage).render();
-	}).get();
-
-	var recordList = new RecordList($("#record-list")).render();
-
-	var disease = new Disease($("#disease-wrapper")).render();
-
-	new SelectPatient($("#select-patient-wrapper")).update();
-	new SearchPatient($("#search-patient-wrapper")).update();
-	new RecentVisits($("#recent-visits-wrapper")).render();
-	new TodaysVisits($("#todays-visits-wrapper")).update();
-
+	PatientInfo.setup($("#patient-info-wrapper"));
+	CurrentManip.setup($("#current-manip-pane"));
+	$(".record-nav-wrapper").each(function(i){
+		RecordNav.setup($(this), i);
+	});
+	RecordList.setup($("#record-list"));
+	Disease.setup($("#disease-wrapper"));
+	SelectPatient.setup($("#select-patient-wrapper"));
+	SearchPatient.setup($("#search-patient-wrapper"));
+	RecentVisits.setup($("#recent-visits-wrapper"));
+	TodaysVisits.setup($("#todays-visits-wrapper"));
 	$("#reception-link").click(function(event){
 		event.preventDefault();
 		Reception.open();
 	});
 
-	function setStates(patientId, visitId){
-		currentPatientId = +patientId;
-		currentPatient = null;
-		currentVisitId = +visitId;
-	}
+	var appData = new AppData();
 
-	function clearStates(){
-		currentPatientId = 0;
-		currentPatient = null;
-		currentVisitId = 0;
-	}
+	window.getCurrentVisitId = function(){
+		return appData.currentVisitId;
+	};
 
-	function clearComponents(){
-		patientInfo.update(null);
-		currentManip.update(0, 0);
-		recordNavs.forEach(function(nav){
-			nav.setTotalItems(0);
-			nav.update(0);
-		});
-		recordList.update(0, 0, 0, function(){});
-		disease.update(null);
-	}
+	window.getTempVisitId = function(){
+		return appData.tempVisitId;
+	};
 
-	function updateComponents(){
-		conti.exec([
-			function(done){
-				service.getPatient(currentPatientId, function(err, patient){
-					if( err ){
-						done(err);
-						return;
-					}
-					currentPatient = patient;
-					patientInfo.update(patient);
-					currentManip.update(currentPatientId, currentVisitId);
-					done();
-				});
-			},
-			function(done){
-				service.calcVisits(currentPatientId, function(err, count){
-					if( err ){
-						done(err);
-						return;
-					}
-					recordNavs.forEach(function(nav){
-						nav.setTotalItems(count);
-					});
-					$("body").trigger("goto-page", 1);
-					done();
-				})
-			},
-			function(done){
-				service.listCurrentFullDiseases(currentPatientId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					disease.update(result);
-					done();
-				})
-			}
-		], function(err){
+	function startPage(patientId, visitId){
+		appData.startPage(patientId, visitId, function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
-		})
+			var data = mUtil.assign({}, appData);
+			$("body").broadcast("rx-start-page", data);
+		});
 	}
 
 	$("body").on("start-patient", function(event, patientId){
-		conti.exec([
-			function(done){
-				if( currentVisitId > 0 ){
-					service.suspendExam(currentVisitId, done);
-				} else {
-					done();
-				}
-			},
-			function(done){
-				clearStates();
-				clearComponents();
-				done();
-			}
-		], function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			setStates(patientId, 0);
-			updateComponents();
-		})
+		startPage(patientId, 0);
 	});
 
-	$("body").on("start-exam", function(event, visitId){
-		conti.exec([
-			function(done){
-				if( currentVisitId > 0 ){
-					service.suspendExam(currentVisitId, done);
-				} else {
-					done();
-				}
-			},
-			function(done){
-				clearStates();
-				clearComponents();
-				done();
-			},
-			function(done){
-				service.startExam(visitId, done);
-			},
-			function(done){
-				service.getVisit(visitId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					setStates(result.patient_id, visitId);
-					done();
-				})
-			}
-		], function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			updateComponents();
-		})
+	$("body").on("start-exam", function(event, patientId, visitId){
+		startPage(patientId, visitId);
+	});
+
+	$("body").on("end-patient", function(event){
+		startPage(0, 0);
 	});
 
 	$("body").on("goto-page", function(event, page){
-		if( currentPatientId <= 0 ){
-			return;
-		}
-		if( page <= 0 ){
-			page = 1;
-		}
-		var offset = itemsPerPage * (page-1);
-		recordNavs.forEach(function(nav){
-			nav.update(page);
-		})
-		recordList.update(currentPatientId, offset, itemsPerPage, function(err){
+		appData.gotoPage(page, function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
+			var data = mUtil.assign({}, appData);
+			$("body").broadcast("rx-goto-page", data);
 		})
-	});
-
-	$("body").on("visit-deleted", function(event, visitId){
-		if( !(currentPatientId > 0) ){
-			return;
-		}
-		var page = recordNavs[0].currentPage;
-		conti.exec([
-			function(done){
-				service.calcVisits(currentPatientId, function(err, count){
-					if( err ){
-						done(err);
-						return;
-					}
-					recordNavs.forEach(function(nav){
-						nav.setTotalItems(count);
-					});
-					done();
-				})
-			},
-		], function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			if( currentVisitId === visitId ){
-				currentVisitId = 0;
-			} else if( tempVisitId === visitId ){
-				tempVisitId = 0;
-			}
-			$("body").trigger("goto-page", [page]);
-		})
-	});
-
-	currentManip.dom.on("end-patient", function(event){
-		event.stopPropagation();
-		conti.exec([
-			function(done){
-				if( currentVisitId > 0 ){
-					service.suspendExam(currentVisitId, done);
-				} else {
-					done();
-				}
-			}
-		], function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			clearStates();
-			clearComponents();
-		});
-	});
-
-
+	})
 
 /***/ },
 /* 1 */
@@ -24790,8 +24624,51 @@
 
 
 /***/ },
-/* 109 */,
-/* 110 */,
+/* 109 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var conti = __webpack_require__(2);
+	var contiEnqueue = __webpack_require__(110);
+	conti.enqueue = contiEnqueue.enqueue;
+
+	exports.run = function(fun, cb){
+		conti.enqueue(fun, cb);
+	};
+
+/***/ },
+/* 110 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var queue = [];
+
+	function run(){
+		if( queue.length < 1 ){
+			return;
+		}
+		var task = queue[0];
+		var f = task[0], cb = task[1];
+		f(function(){
+			var args = [].slice.call(arguments);
+			cb.apply(null, args);
+			queue.shift();
+			run();
+		})	
+	}
+
+	exports.enqueue = function(f, cb){
+		queue.push([f, cb]);
+		if( queue.length === 1 ){
+			run();
+		}
+	};
+
+
+
+/***/ },
 /* 111 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -24871,9 +24748,277 @@
 
 
 /***/ },
-/* 112 */,
-/* 113 */,
-/* 114 */,
+/* 112 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var task = __webpack_require__(109);
+	var service = __webpack_require__(111);
+	var conti = __webpack_require__(2);
+	var contiPara = __webpack_require__(113);
+	conti.para = contiPara.para;
+
+	function calcNumberOfPages(totalItems, itemsPerPage){
+		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
+	}
+
+	function adjustPage(page, numPages){
+		if( numPages <= 0 ){
+			page = 0;
+		} else {
+			if( page <= 0 ){
+				page = 1;
+			} else if( page > numPages ){
+				page = numPages;
+			}
+		}
+		return page;
+	}
+
+	function taskStartExam(pageData){
+		return function(done){
+			var visitId = pageData.currentVisitId;
+			if( visitId > 0 ){
+				service.startExam(visitId, done);
+			} else {
+				done();
+			}
+		};
+	}
+
+	function makePatientLoader(pageData){
+		var patientId = pageData.currentPatientId;
+		return function(done){
+			if( patientId > 0 ){
+				service.getPatient(patientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					pageData.currentPatient = result;
+					done();
+				})
+			} else {
+				pageData.currentPatient = null;
+				done();
+			}
+		};
+	}
+
+	function makeCalcVisitsLoader(pageData){
+		var patientId = pageData.currentPatientId;
+		return function(done){
+			if( patientId > 0 ){
+				service.calcVisits(patientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					pageData.totalPages = calcNumberOfPages(result, pageData.itemsPerPage);
+					pageData.currentPage = adjustPage(1, pageData.totalPages);
+					done();
+				});
+			} else {
+				pageData.totalPages = 0;
+				pageData.currentPage = 0;
+				done();
+			}
+		}
+	}
+
+	function makeFullVisitsLoader(pageData){
+		var patientId = pageData.currentPatientId;
+		return function(done){
+			if( patientId > 0 && pageData.totalPages > 0 ){
+				var offset = (pageData.currentPage - 1) * pageData.itemsPerPage;
+				service.listFullVisits(patientId, offset, pageData.itemsPerPage, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					pageData.record_list = result;
+					done();
+				});
+			} else {
+				pageData.record_list = [];
+				done();
+			}
+		}
+	}
+
+	function makeDiseasesLoader(pageData){
+		var patientId = pageData.currentPatientId;
+		return function(done){
+			if( patientId > 0 ){
+				service.listCurrentFullDiseases(patientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					pageData.diseases = result;
+					done();
+				})
+			} else {
+				pageData.diseases = [];
+				done();
+			}
+		}
+	}
+
+	function makeLoader(appData){
+		return function(done){
+			conti.exec([
+				taskStartExam(appData),
+				makePatientLoader(appData),
+				makeCalcVisitsLoader(appData),
+				makeFullVisitsLoader(appData),
+				makeDiseasesLoader(appData)
+			], done);
+		}
+	}
+
+	function taskClearPage(appData){
+		return function(done){
+			conti.exec([
+				function(done){
+					if( appData.currentVisitId > 0 ){
+						service.suspendExam(appData.currentVisitId, done)
+					} else {
+						done();
+					}
+				}
+			], function(err){
+				if( err ){
+					done(err);
+					return;
+				}
+				appData.clear();
+				done();
+			})
+		}
+	}
+
+	function AppData(){
+		this.clear();
+	}
+
+	AppData.prototype.clear = function(){
+		this.currentPatientId = 0;
+		this.currentVisitId = 0;
+		this.tempVisitId = 0;
+		this.currentPatient = null;
+		this.itemsPerPage = 10;
+		this.totalPages = 0;
+		this.currentPage = 0;
+		this.record_list = [];
+		this.diseases = [];
+	};
+
+	AppData.prototype.startPage = function(patientId, visitId, done){
+		var self = this;
+		task.run(function(done){
+			conti.exec([
+				taskClearPage(self),
+				function(done){
+					self.currentPatientId = patientId;
+					self.currentVisitId = visitId;
+					done();
+				},
+				makeLoader(self)
+			], done);
+		}, done);
+	};
+
+	AppData.prototype.gotoPage = function(page, done){
+		if( page === 0 ){
+			if( this.totalPages === 0 ){
+				this.record_list = [];
+				done();
+			} else {
+				done("invalid number of pages");
+			}
+		} else if( page >= 1 && page <= this.totalPages ){
+			this.currentPage = page;
+			makeFullVisitsLoader(this)(done);
+		} else {
+			done("invalid page");
+		}
+	}
+
+	module.exports = AppData;
+
+/***/ },
+/* 113 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	exports.para = function(funs, done){
+		var funs = funs.slice();
+		var n = funs.length;
+		var no_more = false;
+		funs.forEach(function(f){
+			if( no_more ){
+				return;
+			}
+			f(function(err){
+				if( no_more ){
+					return;
+				}
+				if( err ){
+					no_more = true;
+					done(err);
+					return;
+				}
+				n -= 1;
+				if( n === 0 ){
+					done();
+				}
+			})
+		})
+	};
+
+
+
+/***/ },
+/* 114 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(119);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom){
+		dom.listen("rx-start-page", function(appData){
+			if( appData.currentPatientId > 0 ){
+				var data = appData.currentPatient;
+				var data = mUtil.assign({}, data, {
+					sex_as_kanji: mUtil.sexToKanji(data.sex)
+				});
+				if( data.birth_day !== "0000-00-00" ){
+					data.birthday_part = kanjidate.format("{G}{N}年{M}月{D}日生", data.birth_day);
+					data.age_part = mUtil.calcAge(data.birth_day) + "才";
+				}
+				dom.html(tmpl.render(data));
+			} else {
+				dom.html("");
+			}
+		})
+		dom.on("click", "[mc-name=detailLink]", function(event){
+			event.preventDefault();
+			dom.find("[mc-name=patientInfoDetail]").toggle();
+		});
+	};
+
+
+/***/ },
 /* 115 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26062,11 +26207,145 @@
 	})( false ? (window.kanjidate = {}) : exports);
 
 /***/ },
-/* 119 */,
-/* 120 */,
-/* 121 */,
-/* 122 */,
-/* 123 */,
+/* 119 */
+/***/ function(module, exports) {
+
+	module.exports = "[{{patient_id}}]\r\n{{last_name}} {{first_name}}\r\n（{{last_name_yomi}} {{first_name_yomi}}）\r\n{{birthday_part}}\r\n{{age_part}}\r\n{{sex_as_kanji}}性\r\n<a href=\"javascript:void(0)\" mc-name=\"detailLink\" class=\"cmd-link\" style=\"font-size:13px\">詳細</a>\r\n\r\n<div style=\"display:none; margin:4px; padding:2px 0 0 0; border: 1px solid #ccc\" mc-name=\"patientInfoDetail\">\r\n\t<div style=\"margin:6px;\">電話番号： {{phone}}</div>\r\n\t<div style=\"margin:6px;\">住所： {{address}}</div>\r\n</div>\r\n"
+
+/***/ },
+/* 120 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+
+	var tmplHtml = __webpack_require__(121);
+
+	exports.setup = function(dom){
+		dom.listen("rx-start-page", function(appData){
+			if( appData.currentPatientId > 0 ){
+				dom.html(tmplHtml);
+			} else {
+				dom.html("");
+			}
+		})
+		dom.on("click", "[mc-name=endPatientButton]", function(event){
+			event.preventDefault();
+			dom.trigger("end-patient");
+		})
+	};
+
+
+/***/ },
+/* 121 */
+/***/ function(module, exports) {
+
+	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+
+/***/ },
+/* 122 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplSrc = __webpack_require__(123);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom){
+		dom.listen("rx-start-page", function(appData){
+			var totalPages = appData.totalPages;
+			var currentPage = appData.currentPage;
+			dom.data("number-of-pages", totalPages);
+			dom.data("page", currentPage);
+			if( totalPages <= 1 ){
+				dom.html("");
+			} else {
+				dom.html(tmpl.render({
+					page: currentPage,
+					total: totalPages
+				}));
+			}
+		});
+		dom.listen("rx-goto-page", function(appData){
+			var totalPages = dom.data("number-of-pages");
+			var currentPage = appData.currentPage;
+			dom.data("page", currentPage);
+			if( totalPages <= 1 ){
+				dom.html("");
+			} else {
+				dom.html(tmpl.render({
+					page: currentPage,
+					total: totalPages
+				}));
+			}
+		});
+		bindGotoFirst(dom);
+		bindGotoPrev(dom);
+		bindGotoNext(dom);
+		bindGotoLast(dom);
+	};
+
+	function bindGotoFirst(dom){
+		dom.on("click", "[mc-name=gotoFirst]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page <= 1 ){
+				return;
+			}
+			dom.trigger("goto-page", [1]);
+		});
+	};
+
+	function bindGotoPrev(dom){
+		dom.on("click", "[mc-name=gotoPrev]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page <= 1 ){
+				return;
+			}
+			dom.trigger("goto-page", [page - 1]);
+		});
+	};
+
+	function bindGotoNext(dom){
+		dom.on("click", "[mc-name=gotoNext]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page >= numPages ){
+				return;
+			}
+			dom.trigger("goto-page", [page + 1]);
+		});
+	};
+
+	function bindGotoLast(dom){
+		dom.on("click", "[mc-name=gotoLast]", function(event){
+			var numPages = dom.data("number-of-pages");
+			var page = dom.data("page");
+			event.preventDefault();
+			if( page >= numPages ){
+				return;
+			}
+			dom.trigger("goto-page", [numPages]);
+		});
+	};
+
+
+
+/***/ },
+/* 123 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
+
+/***/ },
 /* 124 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26076,6 +26355,7 @@
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(111);
 	var mUtil = __webpack_require__(3);
+	var registry = __webpack_require__(125);
 	var Title = __webpack_require__(126);
 	var Text = __webpack_require__(128);
 	var Hoken = __webpack_require__(130);
@@ -26087,75 +26367,73 @@
 	var ConductList = __webpack_require__(142);
 	var Charge = __webpack_require__(148);
 
-	var recordTmplSrc = __webpack_require__(194);
+	var recordTmplSrc = __webpack_require__(150);
 	var recordTmpl = hogan.compile(recordTmplSrc);
 
-	function makeRecord(visit){
+	exports.setup = function(dom){
+		["rx-start-page", "rx-goto-page"].forEach(function(key){
+			dom.listen(key, function(appData){
+				var currentVisitId = window.getCurrentVisitId();
+				var tempVisitId = window.getTempVisitId();
+				var records = appData.record_list;
+				dom.html("");
+				records.forEach(function(data){
+					dom.append(makeRecord(data, currentVisitId, tempVisitId));
+				})
+			})
+		});
+	};
+
+	function makeRecord(visit, currentVisitId, tempVisitId){
 		var e = $(recordTmpl.render(visit));
-		new Title(e.find("[mc-name=title]")).update(visit.v_datetime, visit.visit_id);
+		Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
 		var textWrapper = e.find("[mc-name=texts]");
 		visit.texts.forEach(function(text){
-			var te = $("<div></div>");
-			new Text(te).render().update(text.content);
+			var te = Text.create(text);
 			textWrapper.append(te);
 		});
-		new Hoken(e.find("[mc-name=hoken]")).render().update(mUtil.hokenRep(visit));
-		new DrugMenu(e.find("[mc-name=drugMenu]")).render().update();
-		var drugWrapper = e.find("[mc-name=drugs]");
+		Hoken.setup(e.find("[mc-name=hoken]"), visit);
+		DrugMenu.setup(e.find("[mc-name=drugMenu]"));
+		var drugWrapper = e.find("[mc-name=drugs]").html("");
 		var drugIndex = 1;
+		if( visit.drugs.length > 0 ){
+			drugWrapper.append("<div>Rp)</div>");
+		}
 		visit.drugs.forEach(function(drug){
-			var de = $("<div></div>");
-			new Drug(de).render().update(drugIndex++, mUtil.drugRep(drug));
+			var de = Drug.create(drugIndex++, drug);
 			drugWrapper.append(de);
 		});
-		new ShinryouMenu(e.find("[mc-name=shinryouMenu]")).render().update();
+		ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"));
 		var shinryouWrapper = e.find("[mc-name=shinryouList]");
 		visit.shinryou_list.forEach(function(shinryou){
-			var se = $("<div></div>");
-			new Shinryou(se).render().update(shinryou.name);
+			var se = Shinryou.create(shinryou);
 			shinryouWrapper.append(se);
 		});
-		new ConductMenu(e.find("[mc-name=conductMenu]")).render().update();
-		new ConductList(e.find("[mc-name=conducts]")).render().update(visit.conducts);
-		new Charge(e.find("[mc-name=charge]")).render().update(visit.charge);
+		ConductMenu.setup(e.find("[mc-name=conductMenu]"));
+		ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
+		Charge.setup(e.find("[mc-name=charge]"), visit.charge);
 		return e;
 	}
 
-	function RecordList(dom){
-		this.dom = dom;
-	}
-
-	RecordList.prototype.render = function(){
-		return this;
-	};
-
-	RecordList.prototype.update = function(patientId, offset, n, done){
-		if( patientId === 0 ){
-			this.dom.html("");
-			done();
-			return;
-		}
-		var wrapper = $("<div></div>");
-		this.dom.html("").append(wrapper);
-		var main = this.main;
-		service.listFullVisits(patientId, offset, n, function(err, result){
-			if( err ){
-				done(err);
-				return;
-			}
-			result.forEach(function(data){
-				var e = makeRecord(data, main);
-				wrapper.append(e);
-			});
-			done();
-		})
-	};
-
-	module.exports = RecordList;
 
 
 /***/ },
-/* 125 */,
+/* 125 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var store = {};
+
+	exports.set = function(key, value){
+		store[key] = value;
+	};
+
+	exports.get = function(key){
+		return store[key];
+	};
+
+/***/ },
 /* 126 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26169,34 +26447,62 @@
 	var tmplSrc = __webpack_require__(127);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function RecordTitle(dom){
-		this.dom = dom;
-		this.bindClick();
-		this.bindDeleteClick();
-	}
-
-	RecordTitle.prototype.getWorkspaceDom = function(){
-		return this.dom.find("[mc-name=workarea]")
+	exports.setup = function(dom, visit, currentVisitId, tempVisitId){
+		var label = kanjidate.format("{G}{N:2}年{M:2}月{D:2}日（{W}） {h:2}時{m:2}分", visit.v_datetime);
+		dom.data("label", label);
+		dom.data("visit-id", visit.visit_id);
+		dom.data("current-visit-id", currentVisitId);
+		dom.data("temp-visit-id", tempVisitId);
+		render(dom);
+		bindClick(dom);
+		bindDelete(dom);
+		bindSetTemp(dom);
+		bindUnsetTemp(dom);
+		dom.addClass("rx-set-temp-visit-id");
+		dom.data("rx-set-temp-visit-id", function(newTempVisitId){
+			dom.data("temp-visit-id", newTempVisitId);
+			renderClass(dom);
+		});
 	};
 
-	RecordTitle.prototype.bindClick = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=titleBox] a", function(event){
+	function renderClass(dom){
+		var dateDom = dom.find(".visit-date");
+		dateDom.removeClass("current currentTmp");
+		if( dom.data("visit-id") === dom.data("current-visit-id") ){
+			dateDom.addClass("current");
+		} else if( dom.data("visit-id") === dom.data("temp-visit-id") ){
+			dateDom.addClass("currentTmp");
+		}
+	}
+
+	function render(dom){
+		var html = tmpl.render({
+			label: dom.data("label")
+		});
+		dom.html(html);
+		renderClass(dom);
+	}
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=workarea]")
+	};
+
+	function bindClick(dom){
+		dom.on("click", "[mc-name=titleBox] a", function(event){
 			event.preventDefault();
-			var ws = self.getWorkspaceDom();
+			var ws = getWorkspaceDom(dom);
 			if( ws.is(":visible") ){
 				ws.hide();
 			} else {
 				ws.show();
 			}
 		});
-	};
+	}
 
-	RecordTitle.prototype.bindDeleteClick = function(){
-		var self = this;
-		this.dom.on("click", "a[mc-name=deleteVisitLink]", function(event){
+	function bindDelete(dom){
+		dom.on("click", "a[mc-name=deleteVisitLink]", function(event){
 			event.preventDefault();
-			var visitId = self.visitId;
+			var visitId = dom.data("visit-id");
 			if( !(visitId > 0) ){
 				alert("invalid visit_id");
 				return;
@@ -26206,22 +26512,31 @@
 					alert(err);
 					return;
 				}
-				self.dom.trigger("visit-deleted", [visitId]);
+				dom.trigger("visit-deleted", [visitId]);
 			})
 		});
-	};
-
-	RecordTitle.prototype.update = function(at, visitId){
-		var label = kanjidate.format("{G}{N:2}年{M:2}月{D:2}日（{W}） {h:2}時{m:2}分", at);
-		var data = {
-			label: label
-		};
-		var html = tmpl.render(data);
-		this.visitId = visitId;
-		this.dom.html(html);
 	}
 
-	module.exports = RecordTitle;
+	function bindSetTemp(dom){
+		dom.on("click", "a[mc-name=setCurrentTmpVisitId]", function(event){
+			event.preventDefault();
+			dom.trigger("set-temp-visit-id", [dom.data("visit-id")]);
+			getWorkspaceDom(dom).hide();
+		})
+	}
+
+	function bindUnsetTemp(dom){
+		dom.on("click", "a[mc-name=unsetCurrentTmpVisitId]", function(event){
+			event.preventDefault();
+			if( dom.data("visit-id") !== dom.data("temp-visit-id") ){
+				return;
+			}
+			dom.trigger("set-temp-visit-id", [0]);
+			getWorkspaceDom(dom).hide();
+		})
+	}
+
+
 
 /***/ },
 /* 127 */
@@ -26241,21 +26556,12 @@
 	var tmplSrc = __webpack_require__(129);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function RecordText(dom){
-		this.dom = dom;
+	exports.create = function(text){
+		var content = text.content.replace(/\n/g, "<br />\n");
+		return tmpl.render({content: content});
 	}
 
-	RecordText.prototype.render = function(){
-		return this;
-	};
 
-	RecordText.prototype.update = function(content){
-		content = content.replace(/\n/g, "<br />\n");
-		this.dom.html(tmpl.render({content: content}));
-		return this;
-	}
-
-	module.exports = RecordText;
 
 /***/ },
 /* 129 */
@@ -26272,28 +26578,15 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
-	var myclinicUtil = __webpack_require__(3);
+	var mUtil = __webpack_require__(3);
 
 	var tmplSrc = __webpack_require__(131);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function RecordHoken(dom){
-		this.dom = dom;
-	}
-
-	RecordHoken.prototype.render = function(){
-		return this;
+	exports.setup = function(dom, visit){
+		var label = mUtil.hokenRep(visit);
+		dom.html(tmpl.render({label: label}));
 	};
-
-	RecordHoken.prototype.update = function(label){
-		var html = tmpl.render({
-			label: label
-		});
-		this.dom.html(html);
-		return this;
-	};
-
-	module.exports = RecordHoken;
 
 
 
@@ -26314,25 +26607,11 @@
 	var kanjidate = __webpack_require__(118);
 	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(133);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplHtml = __webpack_require__(133);
 
-	function DrugMenu(dom){
-		this.dom = dom;
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
 	}
-
-	DrugMenu.prototype.render = function(){
-		return this;
-	};
-
-	DrugMenu.prototype.update = function(){
-		var html = tmpl.render({
-		});
-		this.dom.html(html);
-		return this;
-	};
-
-	module.exports = DrugMenu;
 
 
 
@@ -26351,29 +26630,22 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
-	var myclinicUtil = __webpack_require__(3);
+	var mUtil = __webpack_require__(3);
 
 	var tmplSrc = __webpack_require__(135);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function RecordDrug(dom){
-		this.dom = dom;
-	}
-
-	RecordDrug.prototype.render = function(){
-		return this;
-	};
-
-	RecordDrug.prototype.update = function(index, label){
+	exports.create = function(index, drug){
+		var e = $("<div></div>");
 		var html = tmpl.render({
 			index: index,
-			label: label
+			label: mUtil.drugRep(drug)
 		});
-		this.dom.html(html);
-		return this;
-	};
+		e.html(html);
+		return e;
+	}
 
-	module.exports = RecordDrug;
+
 
 
 
@@ -26392,27 +26664,13 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
-	var myclinicUtil = __webpack_require__(3);
+	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(137);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplHtml = __webpack_require__(137);
 
-	function ShinryouMenu(dom){
-		this.dom = dom;
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
 	}
-
-	ShinryouMenu.prototype.render = function(){
-		return this;
-	};
-
-	ShinryouMenu.prototype.update = function(){
-		var html = tmpl.render({
-		});
-		this.dom.html(html);
-		return this;
-	};
-
-	module.exports = ShinryouMenu;
 
 
 
@@ -26431,28 +26689,20 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
-	var myclinicUtil = __webpack_require__(3);
+	var mUtil = __webpack_require__(3);
 
 	var tmplSrc = __webpack_require__(139);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function RecordShinryou(dom){
-		this.dom = dom;
-	}
-
-	RecordShinryou.prototype.render = function(){
-		return this;
-	};
-
-	RecordShinryou.prototype.update = function(label){
+	exports.create = function(shinryou){
+		var e = $("<div></div>");
 		var html = tmpl.render({
-			label: label
+			label: shinryou.name
 		});
-		this.dom.html(html);
-		return this;
+		e.html(html);
+		return e;
 	};
 
-	module.exports = RecordShinryou;
 
 
 
@@ -26473,25 +26723,11 @@
 	var kanjidate = __webpack_require__(118);
 	var myclinicUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(141);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplHtml = __webpack_require__(141);
 
-	function ConductMenu(dom){
-		this.dom = dom;
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
 	}
-
-	ConductMenu.prototype.render = function(){
-		return this;
-	};
-
-	ConductMenu.prototype.update = function(){
-		var html = tmpl.render({
-		});
-		this.dom.html(html);
-		return this;
-	};
-
-	module.exports = ConductMenu;
 
 
 
@@ -26510,24 +26746,15 @@
 	var $ = __webpack_require__(1);
 	var Conduct = __webpack_require__(143);
 
-	function ConductList(dom){
-		this.dom = dom;
+	exports.setup = function(dom, conducts){
+		dom.html("");
+		conducts.forEach(function(conduct){
+			var ce = $("<div></div>");
+			Conduct.setup(ce, conduct);
+			dom.append(ce);
+		})
 	}
 
-	ConductList.prototype.render = function(){
-		return this;
-	};
-
-	ConductList.prototype.update = function(conducts){
-		var wrapper = this.dom.html("");
-		conducts.forEach(function(data){
-			var ce = $("<div></div>");
-			new Conduct(ce).render().update(data);
-			wrapper.append(ce);
-		})
-	};
-
-	module.exports = ConductList;
 
 
 
@@ -26548,27 +26775,16 @@
 	var tmplSrc = __webpack_require__(147);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function RecordConduct(dom){
-		this.dom = dom;
-	}
-
-	RecordConduct.prototype.render = function(){
-		return this;
-	};
-
-	RecordConduct.prototype.update = function(conduct){
+	exports.setup = function(dom, conduct){
 		var data = mUtil.assign({}, conduct, {
 			kind_label: mUtil.conductKindToKanji(conduct.kind)
 		})
 		var html = tmpl.render(data);
-		this.dom.html(html);
-		new ConductShinryouList(this.dom.find("[mc-name=shinryouList]")).render().update(conduct.shinryou_list);
-		new ConductDrugList(this.dom.find("[mc-name=drugs]")).render().update(conduct.drugs);
-		new ConductKizaiList(this.dom.find("[mc-name=kizaiList]")).render().update(conduct.kizai_list);
-		return this;
-	};
-
-	module.exports = RecordConduct;
+		dom.html(html);
+		ConductShinryouList.setup(dom.find("[mc-name=shinryouList]"), conduct.shinryou_list);
+		ConductDrugList.setup(dom.find("[mc-name=drugs]"), conduct.drugs);
+		ConductKizaiList.setup(dom.find("[mc-name=kizaiList]"), conduct.kizai_list);
+	}
 
 
 
@@ -26580,24 +26796,16 @@
 
 	var $ = __webpack_require__(1);
 
-	function ConductShinryouList(dom){
-		this.dom = dom;
-	}
-
-	ConductShinryouList.prototype.render = function(){
-		return this;
-	};
-
-	ConductShinryouList.prototype.update = function(list){
-		var wrapper = this.dom.html("");
-		list.forEach(function(data){
+	exports.setup = function(dom, shinryouList){
+		dom.html("");
+		shinryouList.forEach(function(shinryou){
 			var e = $("<div></div>");
-			e.text(data.name);
-			wrapper.append(e);
+			e.text(shinryou.name);
+			dom.append(e);
 		});
 	};
 
-	module.exports = ConductShinryouList;
+
 
 /***/ },
 /* 145 */
@@ -26608,24 +26816,16 @@
 	var $ = __webpack_require__(1);
 	var mUtil = __webpack_require__(3);
 
-	function ConductDrugList(dom){
-		this.dom = dom;
+	exports.setup = function(dom, drugs){
+		dom.html("");
+		drugs.forEach(function(drug){
+			var e = $("<div></div>");
+			e.text(mUtil.conductDrugRep(drug));
+			dom.append(e);
+		});
 	}
 
-	ConductDrugList.prototype.render = function(){
-		return this;
-	};
 
-	ConductDrugList.prototype.update = function(list){
-		var wrapper = this.dom.html("");
-		list.forEach(function(data){
-			var e = $("<div></div>");
-			e.text(mUtil.conductDrugRep(data));
-			wrapper.append(e);
-		});
-	};
-
-	module.exports = ConductDrugList;
 
 /***/ },
 /* 146 */
@@ -26636,24 +26836,17 @@
 	var $ = __webpack_require__(1);
 	var mUtil = __webpack_require__(3);
 
-	function ConductKizaiList(dom){
-		this.dom = dom;
-	}
-
-	ConductKizaiList.prototype.render = function(){
-		return this;
-	};
-
-	ConductKizaiList.prototype.update = function(list){
-		var wrapper = this.dom.html("");
-		list.forEach(function(data){
+	exports.setup = function(dom, kizaiList){
+		dom.html("");
+		kizaiList.forEach(function(kizai){
 			var e = $("<div></div>");
-			e.text(mUtil.conductKizaiRep(data));
-			wrapper.append(e);
+			e.text(mUtil.conductKizaiRep(kizai));
+			dom.append(e);
 		});
+
 	};
 
-	module.exports = ConductKizaiList;
+
 
 /***/ },
 /* 147 */
@@ -26673,6 +26866,19 @@
 
 	var tmplSrc = __webpack_require__(149);
 	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom, charge){
+		if( charge ){
+			charge = mUtil.assign({}, charge, {
+				has_charge: true,
+				charge_rep: mUtil.formatNumber(charge.charge)
+			})
+		} else {
+			charge = { has_charge: false };
+		}
+		var html = tmpl.render(charge);
+		dom.html(html);
+	};
 
 	function Charge(dom){
 		this.dom = dom;
@@ -26696,7 +26902,7 @@
 		return this;
 	};
 
-	module.exports = Charge;
+	//module.exports = Charge;
 
 
 
@@ -26707,7 +26913,12 @@
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
-/* 150 */,
+/* 150 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
+
+/***/ },
 /* 151 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26716,37 +26927,24 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 
-	var tmplSrc = __webpack_require__(152);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplHtml = __webpack_require__(152);
 
 	var ListPane = __webpack_require__(153)
 
-	function Disease(dom){
-		this.dom = dom;
-		this.mode = "list";
-	}
-
-	Disease.prototype.render = function(){
-		return this;
+	exports.setup = function(dom){
+		dom.listen("rx-start-page", function(appData){
+			var patientId = appData.currentPatientId;
+			if( patientId > 0 ){
+				dom.html(tmplHtml);
+				var ws = dom.find("[mc-name=workarea]");
+				ListPane.setup(ws, appData.diseases);
+			} else {
+				dom.html("");
+			}
+		})
 	};
 
-	Disease.prototype.update = function(diseaseList){
-		if( diseaseList === null || diseaseList === undefined ){
-			this.dom.html("");
-			return;
-		}
-		this.dom.hide();
-		this.dom.html(tmpl.render({}));
-		var wrapper = this.dom.find("[mc-name=workarea]");
-		switch(this.mode){
-			case "list": 
-				new ListPane(wrapper).render().update(diseaseList); break;
-			default: wrapper.text(this.mode); break;
-		}
-		this.dom.show();
-	};
 
-	module.exports = Disease;
 
 
 
@@ -26770,28 +26968,16 @@
 
 	var DiseaseListItem = __webpack_require__(155);
 
-	function DiseaseListPane(dom){
-		this.dom = dom;
-	}
-
-	DiseaseListPane.prototype.render = function(){
-		return this;
-	};
-
-	DiseaseListPane.prototype.update = function(diseaseList){
-		var e = $("<div></div>");
-		e.html(tmpl.render({}));
-		var wrapper = e.find("[mc-name=list]");
-		diseaseList.forEach(function(disease){
-			var tr = $("<tr></tr>");
-			new DiseaseListItem(tr).update(disease);
+	exports.setup = function(dom, list){
+		dom.html(tmpl.render({}));
+		var wrapper = dom.find("[mc-name=list]");
+		list.forEach(function(disease){
+			var tr = DiseaseListItem.create(disease);
 			wrapper.append(tr);
 		});
-		this.dom.html("").append(e);
-		return this;
 	};
 
-	module.exports = DiseaseListPane;
+
 
 /***/ },
 /* 154 */
@@ -26813,26 +26999,21 @@
 	var tmplSrc = __webpack_require__(156);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function DiseaseListItem(dom){
-		this.dom = dom;
-	}
-
-	DiseaseListItem.prototype.update = function(data){
+	exports.create = function(data){
 		data = mUtil.assign({}, data, {
 			label: mUtil.diseaseFullName(data),
 			start_date_label: kanjidate.format("{G:a}{N}.{M}.{D}.", data.start_date)
 		});
-		this.dom.html(tmpl.render(data));
-		return this;
-	};
+		return $(tmpl.render(data));
+	}
 
-	module.exports = DiseaseListItem;
+
 
 /***/ },
 /* 156 */
 /***/ function(module, exports) {
 
-	module.exports = "<td>\r\n\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t{{label}}\r\n\t</a>\r\n\t<span style=\"color:#999\">\r\n\t\t({{start_date_label}})\r\n\t</span>\r\n</td>\r\n"
+	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
 
 /***/ },
 /* 157 */
@@ -26843,68 +27024,74 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(111);
+	var task = __webpack_require__(109);
 	var SelectPatientItem = __webpack_require__(158);
 
-	var tmplSrc = __webpack_require__(160);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplHtml = __webpack_require__(160);
 
-	function SelectPatient(dom){
-		this.dom = dom;
-		this.bindButton();
-		this.bindOption();
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+	};
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=selectWrapper]");
+	};
+
+	function getSelectDom(dom){
+		return dom.find("[mc-name=selectWrapper] select");
 	}
 
-	SelectPatient.prototype.bindButton = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=button]", function(event){
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(event){
 			event.preventDefault();
-			var ws = self.getWorkspaceDom();
+			var ws = getWorkspaceDom(dom);
 			if( ws.is(":visible") ){
-				self.getSelectDom().html("");
+				getSelectDom(dom).html("");
 				ws.hide();
 			} else {
-				service.listFullWqueueForExam(function(err, result){
+				var list;
+				task.run(function(done){
+					service.listFullWqueueForExam(function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						list = result;
+						done();
+					});
+				}, function(err){
 					if( err ){
 						alert(err);
 						return;
 					}
-					var select = self.getSelectDom().html("");
-					result.forEach(function(wq){
+					var select = getSelectDom(dom).html("");
+					list.forEach(function(wq){
 						var e = $("<option></option>").val(wq.visit_id);
-						new SelectPatientItem(e).update(wq);
+						var e = SelectPatientItem.create(wq);
 						select.append(e);
 					});
 					ws.show();
-				});
+				})
 			}
+		});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(event){
+			var opt = $(this);
+			var values = opt.val().split(",");
+			var patientId = +values[0];
+			var visitId = +values[1];
+			opt.trigger("start-exam", [patientId, visitId]);
+		});
+		dom.listen("rx-start-page", function(){
+			getSelectDom(dom).html("");
+			getWorkspaceDom(dom).hide();
 		});
 	};
 
-	SelectPatient.prototype.bindOption = function(){
-		var self = this;
-		this.dom.on("dblclick", "option", function(event){
-			var opt = $(this);
-			var visit_id = opt.val();
-			opt.trigger("start-exam", [visit_id]);
-			self.getSelectDom().html("");
-			self.getWorkspaceDom().hide();
-		})
-	};
-
-	SelectPatient.prototype.getWorkspaceDom = function(){
-		return this.dom.find("[mc-name=selectWrapper]");
-	};
-
-	SelectPatient.prototype.getSelectDom = function(){
-		return this.dom.find("[mc-name=selectWrapper] select");
-	}
-
-	SelectPatient.prototype.update = function(){
-		this.dom.html(tmpl.render({}));
-		return this;
-	};
-
-	module.exports = SelectPatient;
 
 
 /***/ },
@@ -26920,24 +27107,21 @@
 	var tmplSrc = __webpack_require__(159);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function SelectPatientItem(dom){
-		this.dom = dom;
-	}
-
-	SelectPatientItem.prototype.update = function(data){
+	exports.create = function(data){
 		data = mUtil.assign({}, data, {
 			state_label: mUtil.wqueueStateToKanji(data.wait_state)
 		});
-		this.dom.html(tmpl.render(data));
+		var e = $(tmpl.render(data));
+		return e;
 	};
 
-	module.exports = SelectPatientItem;
+
 
 /***/ },
 /* 159 */
 /***/ function(module, exports) {
 
-	module.exports = "[{{state_label}}] {{last_name}} {{first_name}}"
+	module.exports = "<option value=\"{{patient_id}},{{visit_id}}\">[{{state_label}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
 /* 160 */
@@ -26954,92 +27138,96 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(111);
+	var task = __webpack_require__(109);
 	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(162);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplHtml = __webpack_require__(162);
 
 	var itemTmplSrc = __webpack_require__(163);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
-	function SearchPatient(dom){
-		this.dom = dom;
-		this.bindButton();
-		this.bindForm();
-		this.bindOption();
-	}
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindForm(dom);
+		bindOption(dom);
+	};
 
-	SearchPatient.prototype.bindButton = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=button]", function(){
-			var ws = self.getWorkspaceDom();
+	function hideWorkspace(dom){
+		getWorkspaceDom(dom).hide();
+		getInputDom(dom).val("");
+		getSelectDom(dom).html("");
+	};
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=workspace]");
+	};
+
+	function getInputDom(dom){
+		return dom.find("[mc-name=searchForm] input.search-patient-input");
+	};
+
+	function getSelectDom(dom){
+		return dom.find("select");
+	};
+
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(){
+			var ws = getWorkspaceDom(dom);
 			if( ws.is(":visible") ){
-				self.hideWorkspace();
+				hideWorkspace(dom);
 			} else {
 				ws.show();
-				self.getInputDom().focus();
+				getInputDom(dom).focus();
 			}
 		});
 	};
 
-	SearchPatient.prototype.bindForm = function(){
-		var self = this;
-		this.dom.on("submit", "form", function(){
-			var text = self.getInputDom().val();
+	function bindForm(dom){
+		dom.on("submit", "form", function(){
+			var text = getInputDom(dom).val();
 			if( text === "" ){
 				return;
 			}
-			service.searchPatient(text, function(err, result){
+			var list;
+			task.run(function(done){
+				service.searchPatient(text, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					list = result;
+					done();
+				});
+			}, function(err){
 				if( err ){
 					alert(err);
 					return;
 				}
-				var select = self.getSelectDom().html("");
-				result.forEach(function(patient){
+				var select = getSelectDom(dom).html("");
+				list.forEach(function(patient){
 					var data = mUtil.assign({}, patient, {
 						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
 					});
 					var opt = itemTmpl.render(data);
 					select.append(opt);
 				});
-			})
+			});
 		});
-	};
+	}
 
-	SearchPatient.prototype.bindOption = function(){
-		var self = this;
-		this.dom.on("dblclick", "option", function(){
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
 			var opt = $(this);
 			var patientId = +opt.val();
 			opt.trigger("start-patient", [patientId]);
-			self.hideWorkspace();
-		})
-	};
+		});
+		dom.listen("rx-start-page", function(){
+			hideWorkspace(dom);
+		});
+	}
 
-	SearchPatient.prototype.hideWorkspace = function(){
-		this.getWorkspaceDom().hide();
-		this.getInputDom().val("");
-		this.getSelectDom().html("");
-	};
 
-	SearchPatient.prototype.getWorkspaceDom = function(){
-		return this.dom.find("[mc-name=workspace]");
-	};
-
-	SearchPatient.prototype.getInputDom = function(){
-		return this.dom.find("[mc-name=searchForm] input.search-patient-input");
-	};
-
-	SearchPatient.prototype.getSelectDom = function(){
-		return this.dom.find("select");
-	};
-
-	SearchPatient.prototype.update = function(){
-		this.dom.html(tmpl.render({}));
-		return this;
-	};
-
-	module.exports = SearchPatient;
 
 /***/ },
 /* 162 */
@@ -27054,10 +27242,112 @@
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 164 */,
-/* 165 */,
-/* 166 */,
-/* 167 */,
+/* 164 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(3);
+	var service = __webpack_require__(111);
+	var $ = __webpack_require__(1);
+	__webpack_require__(165);
+	var task = __webpack_require__(109)
+
+	var tmplHtml = __webpack_require__(166);
+	var optionTmpl = hogan.compile(__webpack_require__(167));
+
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+		dom.listen("rx-start-page", function(pageData){
+			getSelectDom(dom).hide().html("");
+		})
+	};
+
+	function getSelectDom(dom){
+		return dom.find("select");
+	}
+
+	function bindButton(dom){
+		dom.on("click", "button", function(){
+			var select = getSelectDom(dom);
+			if( select.is(":visible") ){
+				select.hide().html("");
+			} else {
+				task.run(function(cb){
+					service.recentVisits(cb);
+				}, function(err, list){
+					if( err ){
+						alert(err);
+						return;
+					}
+					updateSelect(select, list);
+					select.show();
+				});
+			}
+		});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
+			var patientId = $(this).val();
+			dom.trigger("start-patient", [+patientId]);
+		});
+	}
+
+	function updateSelect(select, list){
+		list.forEach(function(data){
+			data = mUtil.assign({}, data, {
+				patient_id_part: mUtil.padNumber(data.patient_id, 4)
+			});
+			select.append(optionTmpl.render(data))
+		});
+	}
+
+
+/***/ },
+/* 165 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+
+	$.fn.broadcast = function(key, arg1){
+		var args = [].slice.call(arguments, 1);
+		this.each(function(){
+			var e = $(this);
+			e.find("." + key).each(function(){
+				var listener = $(this);
+				var cb = listener.data(key);
+				cb.apply(listener, args);
+			});
+		});
+	};
+
+	$.fn.listen = function(key, cb){
+		this.each(function(){
+			var e = $(this);
+			e.addClass(key);
+			e.data(key, cb);
+		});
+	};
+
+/***/ },
+/* 166 */
+/***/ function(module, exports) {
+
+	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
+
+/***/ },
+/* 167 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
+
+/***/ },
 /* 168 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -27066,72 +27356,75 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(111);
+	var task = __webpack_require__(109);
 	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(169);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplHtml = __webpack_require__(169);
 	var itemTmplSrc = __webpack_require__(170);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
-	function makeOption(data){
-		data = mUtil.assign({}, data, {
-			patient_id_label: mUtil.padNumber(+data.patient_id, 4)
-		});
-		return $(itemTmpl.render(data)).val(data.patient_id);
-	}
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+	};
 
-	function TodaysVisits(dom){
-		this.dom = dom;
-		this.bindButton();
-		this.bindOption();
-	}
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=selectWrapper]");
+	};
 
-	TodaysVisits.prototype.bindButton = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=button]", function(){
-			var ws = self.getWorkspaceDom();
+	function getSelectDom(dom){
+		return dom.find("select");
+	};
+
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(){
+			var ws = getWorkspaceDom(dom);
 			if( ws.is(":visible") ){
 				ws.hide();
-				self.getSelectDom().html("");
+				getSelectDom(dom).html("");
 			} else {
-				service.listTodaysVisits(function(err, result){
+				var list;
+				task.run(function(done){
+					service.listTodaysVisits(function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						list = result;
+						done();
+					})
+				}, function(err){
 					if( err ){
 						alert(err);
 						return;
 					}
-					var select = self.getSelectDom().html("");
-					result.forEach(function(data){
+					var select = getSelectDom(dom).html("");
+					list.forEach(function(data){
 						var opt = makeOption(data);
 						select.append(opt);
-					})
+					});
 					ws.show();
-				})
+				});
 			}
 		})
-	};
+	}
 
-	TodaysVisits.prototype.bindOption = function(){
-		this.dom.on("dblclick", "option", function(){
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
 			var opt = $(this);
 			var patientId = opt.val();
 			opt.trigger("start-patient", [patientId]);
 		});
-	};
+		dom.listen("rx-start-page", function(appData){
+			if( appData.currentPatientId === 0 ){
+				getWorkspaceDom(dom).hide();
+				getSelectDom(dom).hide();
+			}
+		})
+	}
 
-	TodaysVisits.prototype.getWorkspaceDom = function(){
-		return this.dom.find("[mc-name=selectWrapper]");
-	};
 
-	TodaysVisits.prototype.getSelectDom = function(){
-		return this.dom.find("select");
-	};
-
-	TodaysVisits.prototype.update = function(){
-		this.dom.html(tmpl.render({}));
-		return this;
-	};
-
-	module.exports = TodaysVisits;
 
 /***/ },
 /* 169 */
@@ -27418,338 +27711,6 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
-
-/***/ },
-/* 176 */,
-/* 177 */,
-/* 178 */,
-/* 179 */,
-/* 180 */,
-/* 181 */,
-/* 182 */,
-/* 183 */,
-/* 184 */,
-/* 185 */,
-/* 186 */,
-/* 187 */,
-/* 188 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-	var myclinicUtil = __webpack_require__(3);
-
-	var tmplSrc = __webpack_require__(189);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function PatientInfo(dom){
-		this.dom = dom;
-	}
-
-	PatientInfo.prototype.render = function(data){
-		this.bindDetail();
-		return this;
-	};
-
-	PatientInfo.prototype.bindDetail = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=detailLink]", function(event){
-			event.preventDefault();
-			self.dom.find("[mc-name=patientInfoDetail]").toggle();
-		});
-	};
-
-	PatientInfo.prototype.update = function(data){
-		if( !data ){
-			this.dom.html("");
-		} else {
-			data = myclinicUtil.assign({}, data, {
-				sex_as_kanji: myclinicUtil.sexToKanji(data.sex)
-			});
-			if( data.birth_day !== "0000-00-00" ){
-				data.birthday_part = kanjidate.format("{G}{N}年{M}月{D}日生", data.birth_day);
-				data.age_part = myclinicUtil.calcAge(data.birth_day) + "才";
-			}
-			this.dom.html(tmpl.render(data));
-		}
-	};
-
-	module.exports = PatientInfo;
-
-
-/***/ },
-/* 189 */
-/***/ function(module, exports) {
-
-	module.exports = "[{{patient_id}}]\r\n{{last_name}} {{first_name}}\r\n（{{last_name_yomi}} {{first_name_yomi}}）\r\n{{birthday_part}}\r\n{{age_part}}\r\n{{sex_as_kanji}}性\r\n<a href=\"javascript:void(0)\" mc-name=\"detailLink\" class=\"cmd-link\" style=\"font-size:13px\">詳細</a>\r\n\r\n<div style=\"display:none; margin:4px; padding:2px 0 0 0; border: 1px solid #ccc\" mc-name=\"patientInfoDetail\">\r\n\t<div style=\"margin:6px;\">電話番号： {{phone}}</div>\r\n\t<div style=\"margin:6px;\">住所： {{address}}</div>\r\n</div>\r\n"
-
-/***/ },
-/* 190 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-
-	var tmplSrc = __webpack_require__(191);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function CurrentManip(dom){
-		this.dom = dom;
-	}
-
-	CurrentManip.prototype.render = function(){
-		this.bindEndPatient();
-		return this;
-	};
-
-	CurrentManip.prototype.bindEndPatient = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=endPatientButton]", function(event){
-			event.preventDefault();
-			self.dom.trigger("end-patient");
-		})
-	};
-
-	CurrentManip.prototype.update = function(patientId, visitId){
-		this.patientId = patientId;
-		this.visitId = visitId;
-		this.dom.html("");
-		if( patientId > 0 ){
-			this.dom.html(tmpl.render({}));
-		} else {
-			this.dom.html("");
-		}
-	};
-
-	module.exports = CurrentManip;
-
-
-/***/ },
-/* 191 */
-/***/ function(module, exports) {
-
-	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
-
-/***/ },
-/* 192 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-
-	var tmplSrc = __webpack_require__(193);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function calcNumberOfPages(totalItems, itemsPerPage){
-		return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);
-	}
-
-	function RecordNav(dom, itemsPerPage){
-		this.dom = dom;
-		this.itemsPerPage = itemsPerPage;
-		this.totalItems = 0;
-		this.numberOfPages = 0;
-		this.currentPage = 0;
-	}
-
-	RecordNav.prototype.render = function(){
-		this.bindGotoFirst();
-		this.bindGotoPrev();
-		this.bindGotoNext();
-		this.bindGotoLast();
-		return this;
-	};
-
-	RecordNav.prototype.bindGotoFirst = function(){
-		var self = this;
-		if( this.numberOfPages < 1 ){
-			return;
-		}
-		this.dom.on("click", "[mc-name=gotoFirst]", function(event){
-			event.preventDefault();
-			if( self.currentPage === 1 ){
-				return;
-			}
-			$("body").trigger("goto-page", [1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoPrev = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=gotoPrev]", function(event){
-			event.preventDefault();
-			if( self.currentPage <= 1 ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.currentPage - 1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoNext = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=gotoNext]", function(event){
-			event.preventDefault();
-			if( self.currentPage >= self.numberOfPages ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.currentPage + 1]);
-		});
-	};
-
-	RecordNav.prototype.bindGotoLast = function(){
-		var self = this;
-		if( this.numberOfPages < 1 ){
-			return;
-		}
-		this.dom.on("click", "[mc-name=gotoLast]", function(event){
-			event.preventDefault();
-			if( self.currentPage === self.numberOfPages ){
-				return;
-			}
-			$("body").trigger("goto-page", [self.numberOfPages]);
-		});
-	};
-
-	RecordNav.prototype.setTotalItems = function(n){
-		this.totalItems = +n;
-		this.numberOfPages = calcNumberOfPages(n, this.itemsPerPage);
-		return this;
-	};
-
-	RecordNav.prototype.update = function(page){
-		if( this.numberOfPages <= 0 ){
-			this.currentPage = 0;
-			this.dom.html("");
-		}
-		if( this.numberOfPages === 1 ){
-			this.currentPage = 1;
-			this.dom.html("");
-		} else {
-			if( page < 1 ){
-				page = 1;
-			} else if( page > this.numberOfPages ){
-				page = this.numberOfPages;
-			}
-			var data = {
-				page: page,
-				total: this.numberOfPages
-			};
-			this.currentPage = +page;
-			this.dom.html(tmpl.render(data));
-		}
-	}
-
-	module.exports = RecordNav;
-
-/***/ },
-/* 193 */
-/***/ function(module, exports) {
-
-	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
-
-/***/ },
-/* 194 */
-/***/ function(module, exports) {
-
-	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
-
-/***/ },
-/* 195 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var hogan = __webpack_require__(115);
-	var myclinicUtil = __webpack_require__(3);
-	var service = __webpack_require__(111);
-	var $ = __webpack_require__(1);
-
-	var tmplSrc = __webpack_require__(196);
-	var listTmplSrc = __webpack_require__(197);
-
-	var tmpl = hogan.compile(tmplSrc);
-	var listTmpl = hogan.compile(listTmplSrc);
-
-	function RecentVisits(dom){
-		this.dom = dom;
-	}
-
-	RecentVisits.prototype.getButtonDom = function(){
-		return this.dom.find("[mc-name=button]");
-	};
-
-	RecentVisits.prototype.getSelectDom = function(){
-		return this.dom.find("[mc-name=select]");
-	};
-
-	RecentVisits.prototype.render = function(data){
-		this.dom.html(tmpl.render(data));
-		this.bindButton();
-		this.bindSelect();
-		return this;
-	};
-
-	RecentVisits.prototype.bindButton = function(){
-		var self = this;
-		this.getButtonDom().click(function(){
-			var select = self.getSelectDom();
-			if( select.is(":visible") ){
-				select.hide();
-				select.html("");
-			} else {
-				service.recentVisits(function(err, list){
-					if( err ){
-						alert(err);
-						return;
-					}
-					self.updateSelect(list);
-					select.show();
-				});
-			}
-		});
-	};
-
-	RecentVisits.prototype.bindSelect = function(){
-		var self = this;
-		this.getSelectDom().on("dblclick", "option", function(){
-			var e = $(this);
-			var patientId = e.val();
-			$("body").trigger("start-patient", [patientId]);
-			self.getSelectDom().hide().html("");
-		});
-	};
-
-	RecentVisits.prototype.updateSelect = function(list){
-		var data = list.map(function(item){
-			return myclinicUtil.assign({}, item, {
-				patient_id_part: myclinicUtil.padNumber(item.patient_id, 4)
-			})
-		});
-		var html = listTmpl.render({list: data});
-		this.getSelectDom().html(html);
-	};
-
-	module.exports = RecentVisits;
-
-
-/***/ },
-/* 196 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">最近の受診</button>\r\n<div>\r\n  <select mc-name=\"select\" size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
-
-/***/ },
-/* 197 */
-/***/ function(module, exports) {
-
-	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}"
 
 /***/ }
 /******/ ]);

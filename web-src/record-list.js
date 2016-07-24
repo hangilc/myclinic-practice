@@ -4,6 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var service = require("./service");
 var mUtil = require("../myclinic-util");
+var registry = require("../hc-registry");
 var Title = require("./record/title");
 var Text = require("./record/text");
 var Hoken = require("./record/hoken");
@@ -15,68 +16,51 @@ var ConductMenu = require("./record/conduct-menu");
 var ConductList = require("./record/conduct-list");
 var Charge = require("./record/charge");
 
-var recordTmplSrc = require("raw!./record.html");
+var recordTmplSrc = require("raw!./record/record.html");
 var recordTmpl = hogan.compile(recordTmplSrc);
 
-function makeRecord(visit){
+exports.setup = function(dom){
+	["rx-start-page", "rx-goto-page"].forEach(function(key){
+		dom.listen(key, function(appData){
+			var currentVisitId = window.getCurrentVisitId();
+			var tempVisitId = window.getTempVisitId();
+			var records = appData.record_list;
+			dom.html("");
+			records.forEach(function(data){
+				dom.append(makeRecord(data, currentVisitId, tempVisitId));
+			})
+		})
+	});
+};
+
+function makeRecord(visit, currentVisitId, tempVisitId){
 	var e = $(recordTmpl.render(visit));
-	new Title(e.find("[mc-name=title]")).update(visit.v_datetime, visit.visit_id);
+	Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
 	var textWrapper = e.find("[mc-name=texts]");
 	visit.texts.forEach(function(text){
-		var te = $("<div></div>");
-		new Text(te).render().update(text.content);
+		var te = Text.create(text);
 		textWrapper.append(te);
 	});
-	new Hoken(e.find("[mc-name=hoken]")).render().update(mUtil.hokenRep(visit));
-	new DrugMenu(e.find("[mc-name=drugMenu]")).render().update();
-	var drugWrapper = e.find("[mc-name=drugs]");
+	Hoken.setup(e.find("[mc-name=hoken]"), visit);
+	DrugMenu.setup(e.find("[mc-name=drugMenu]"));
+	var drugWrapper = e.find("[mc-name=drugs]").html("");
 	var drugIndex = 1;
+	if( visit.drugs.length > 0 ){
+		drugWrapper.append("<div>Rp)</div>");
+	}
 	visit.drugs.forEach(function(drug){
-		var de = $("<div></div>");
-		new Drug(de).render().update(drugIndex++, mUtil.drugRep(drug));
+		var de = Drug.create(drugIndex++, drug);
 		drugWrapper.append(de);
 	});
-	new ShinryouMenu(e.find("[mc-name=shinryouMenu]")).render().update();
+	ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"));
 	var shinryouWrapper = e.find("[mc-name=shinryouList]");
 	visit.shinryou_list.forEach(function(shinryou){
-		var se = $("<div></div>");
-		new Shinryou(se).render().update(shinryou.name);
+		var se = Shinryou.create(shinryou);
 		shinryouWrapper.append(se);
 	});
-	new ConductMenu(e.find("[mc-name=conductMenu]")).render().update();
-	new ConductList(e.find("[mc-name=conducts]")).render().update(visit.conducts);
-	new Charge(e.find("[mc-name=charge]")).render().update(visit.charge);
+	ConductMenu.setup(e.find("[mc-name=conductMenu]"));
+	ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
+	Charge.setup(e.find("[mc-name=charge]"), visit.charge);
 	return e;
 }
 
-function RecordList(dom){
-	this.dom = dom;
-}
-
-RecordList.prototype.render = function(){
-	return this;
-};
-
-RecordList.prototype.update = function(patientId, offset, n, done){
-	if( patientId === 0 ){
-		this.dom.html("");
-		done();
-		return;
-	}
-	var wrapper = $("<div></div>");
-	this.dom.html("").append(wrapper);
-	var main = this.main;
-	service.listFullVisits(patientId, offset, n, function(err, result){
-		if( err ){
-			done(err);
-			return;
-		}
-		result.forEach(function(data){
-			var e = makeRecord(data, main);
-			wrapper.append(e);
-		});
-		done();
-	})
-};
-
-module.exports = RecordList;

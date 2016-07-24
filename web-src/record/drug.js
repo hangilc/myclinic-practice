@@ -3,27 +3,20 @@
 var $ = require("jquery");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");
-var myclinicUtil = require("../../myclinic-util");
+var mUtil = require("../../myclinic-util");
 
 var tmplSrc = require("raw!./drug.html");
 var tmpl = hogan.compile(tmplSrc);
 
-function RecordDrug(dom){
-	this.dom = dom;
-}
-
-RecordDrug.prototype.render = function(){
-	return this;
-};
-
-RecordDrug.prototype.update = function(index, label){
+exports.create = function(index, drug){
+	var e = $("<div></div>");
 	var html = tmpl.render({
 		index: index,
-		label: label
+		label: mUtil.drugRep(drug)
 	});
-	this.dom.html(html);
-	return this;
-};
+	e.html(html);
+	return e;
+}
 
-module.exports = RecordDrug;
+
 
