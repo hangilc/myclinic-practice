@@ -133,7 +133,17 @@
 			var data = mUtil.assign({}, appData);
 			$("body").broadcast("rx-delete-visit", data);
 		})	
-	})
+	});
+
+	$("body").on("set-temp-visit-id", function(event, visitId, done){
+		if( appData.currentVisitId > 0 ){
+			done("現在診察中なので、暫定診察を設定できません。");
+			return;
+		}
+		appData.tempVisitId = visitId;
+		$("body").broadcast("rx-set-temp-visit-id", appData);
+		done();
+	});
 
 /***/ },
 /* 1 */
@@ -26471,38 +26481,34 @@
 
 	exports.setup = function(dom, visit, currentVisitId, tempVisitId){
 		var label = kanjidate.format("{G}{N:2}年{M:2}月{D:2}日（{W}） {h:2}時{m:2}分", visit.v_datetime);
-		dom.data("label", label);
 		dom.data("visit-id", visit.visit_id);
-		dom.data("current-visit-id", currentVisitId);
-		dom.data("temp-visit-id", tempVisitId);
-		render(dom);
+		render(dom, label, currentVisitId, tempVisitId);
 		bindClick(dom);
 		bindDelete(dom);
 		bindSetTemp(dom);
 		bindUnsetTemp(dom);
-		dom.addClass("rx-set-temp-visit-id");
-		dom.data("rx-set-temp-visit-id", function(newTempVisitId){
-			dom.data("temp-visit-id", newTempVisitId);
-			renderClass(dom);
-		});
 	};
 
-	function renderClass(dom){
-		var dateDom = dom.find(".visit-date");
+	function getDateDom(dom){
+		return dom.find(".visit-date")
+	}
+
+	function renderClass(dom, currentVisitId, tempVisitId){
+		var dateDom = getDateDom(dom);
 		dateDom.removeClass("current currentTmp");
-		if( dom.data("visit-id") === dom.data("current-visit-id") ){
+		if( dom.data("visit-id") === currentVisitId ){
 			dateDom.addClass("current");
-		} else if( dom.data("visit-id") === dom.data("temp-visit-id") ){
+		} else if( dom.data("visit-id") === tempVisitId ){
 			dateDom.addClass("currentTmp");
 		}
 	}
 
-	function render(dom){
+	function render(dom, label, currentVisitId, tempVisitId){
 		var html = tmpl.render({
-			label: dom.data("label")
+			label: label
 		});
 		dom.html(html);
-		renderClass(dom);
+		renderClass(dom, currentVisitId, tempVisitId);
 	}
 
 	function getWorkspaceDom(dom){
@@ -26536,19 +26542,34 @@
 	function bindSetTemp(dom){
 		dom.on("click", "a[mc-name=setCurrentTmpVisitId]", function(event){
 			event.preventDefault();
-			dom.trigger("set-temp-visit-id", [dom.data("visit-id")]);
-			getWorkspaceDom(dom).hide();
-		})
+			var visitId = dom.data("visit-id");
+			dom.trigger("set-temp-visit-id", [visitId, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				getWorkspaceDom(dom).hide();
+			}]);
+		});
+		dom.listen("rx-set-temp-visit-id", function(appData){
+			renderClass(dom, appData.currentVisitId, appData.tempVisitId);
+		});
 	}
 
 	function bindUnsetTemp(dom){
 		dom.on("click", "a[mc-name=unsetCurrentTmpVisitId]", function(event){
 			event.preventDefault();
-			if( dom.data("visit-id") !== dom.data("temp-visit-id") ){
+			if( !getDateDom(dom).hasClass("currentTmp") ){
+				alert("暫定診察ではありません。")
 				return;
 			}
-			dom.trigger("set-temp-visit-id", [0]);
-			getWorkspaceDom(dom).hide();
+			dom.trigger("set-temp-visit-id", [0, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				getWorkspaceDom(dom).hide();
+			}]);
 		})
 	}
 
@@ -27349,6 +27370,9 @@
 		this.each(function(){
 			var e = $(this);
 			e.addClass(key);
+			if( e.data(key) ){
+				console.warn("There is already a listener.", e);
+			}
 			e.data(key, cb);
 		});
 	};

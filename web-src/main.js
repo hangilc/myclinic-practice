@@ -87,4 +87,14 @@ $("body").on("delete-visit", function(event, visitId){
 		var data = mUtil.assign({}, appData);
 		$("body").broadcast("rx-delete-visit", data);
 	})	
-})
+});
+
+$("body").on("set-temp-visit-id", function(event, visitId, done){
+	if( appData.currentVisitId > 0 ){
+		done("現在診察中なので、暫定診察を設定できません。");
+		return;
+	}
+	appData.tempVisitId = visitId;
+	$("body").broadcast("rx-set-temp-visit-id", appData);
+	done();
+});

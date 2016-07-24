@@ -20,6 +20,9 @@ $.fn.listen = function(key, cb){
 	this.each(function(){
 		var e = $(this);
 		e.addClass(key);
+		if( e.data(key) ){
+			console.warn("There is already a listener.", e);
+		}
 		e.data(key, cb);
 	});
 };
