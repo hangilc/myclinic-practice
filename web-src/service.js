@@ -83,3 +83,7 @@ exports.updateText = function(text, done){
 exports.deleteText = function(textId, done){
 	request("delete_text", {text_id: textId}, "POST", done);
 };
+
+exports.enterText = function(text, cb){
+	request("enter_text", text, "POST", cb);
+};

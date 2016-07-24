@@ -99,6 +99,3 @@ $("body").on("set-temp-visit-id", function(event, visitId, done){
 	done();
 });
 
-$("body").on("cancel-edit", function(){
-	console.log("body cancel-edit");
-})

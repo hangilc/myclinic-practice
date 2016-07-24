@@ -7,6 +7,7 @@ var mUtil = require("../myclinic-util");
 var registry = require("../hc-registry");
 var Title = require("./record/title");
 var Text = require("./record/text");
+var TextMenu = require("./record/text-menu");
 var Hoken = require("./record/hoken");
 var DrugMenu = require("./record/drug-menu");
 var Drug = require("./record/drug");
@@ -41,6 +42,7 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 		var te = Text.create(text);
 		textWrapper.append(te);
 	});
+	TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
 	Hoken.setup(e.find("[mc-name=hoken]"), visit);
 	DrugMenu.setup(e.find("[mc-name=drugMenu]"));
 	var drugWrapper = e.find("[mc-name=drugs]").html("");

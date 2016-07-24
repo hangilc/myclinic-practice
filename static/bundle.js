@@ -145,9 +145,7 @@
 		done();
 	});
 
-	$("body").on("cancel-edit", function(){
-		console.log("body cancel-edit");
-	})
+
 
 /***/ },
 /* 1 */
@@ -24661,7 +24659,6 @@
 	exports.run = function(fun, cb){
 		var f;
 		if( fun instanceof Array ){
-			console.log(fun);
 			f = function(done){
 				conti.exec(fun, done);
 			};
@@ -24790,6 +24787,10 @@
 
 	exports.deleteText = function(textId, done){
 		request("delete_text", {text_id: textId}, "POST", done);
+	};
+
+	exports.enterText = function(text, cb){
+		request("enter_text", text, "POST", cb);
 	};
 
 
@@ -26414,6 +26415,7 @@
 	var registry = __webpack_require__(125);
 	var Title = __webpack_require__(126);
 	var Text = __webpack_require__(128);
+	var TextMenu = __webpack_require__(178);
 	var Hoken = __webpack_require__(130);
 	var DrugMenu = __webpack_require__(132);
 	var Drug = __webpack_require__(134);
@@ -26448,6 +26450,7 @@
 			var te = Text.create(text);
 			textWrapper.append(te);
 		});
+		TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
 		Hoken.setup(e.find("[mc-name=hoken]"), visit);
 		DrugMenu.setup(e.find("[mc-name=drugMenu]"));
 		var drugWrapper = e.find("[mc-name=drugs]").html("");
@@ -27019,7 +27022,7 @@
 /* 150 */
 /***/ function(module, exports) {
 
-	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
+	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div mc-name=\"text-menu\" class=\"record-text-menu\" />\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
 
 /***/ },
 /* 151 */
@@ -27832,53 +27835,93 @@
 	var tmpl = hogan.compile(tmplSrc);
 	var task = __webpack_require__(109);
 	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
 
 	exports.create = function(text){
-		var html = tmpl.render(text);
+		var html = tmpl.render(mUtil.assign({}, text, {
+			isEditing: text.text_id > 0,
+			isEntering: text.text_id <= 0
+		}));
 		var dom = $(html);
-		bindEnter(dom, text.text_id);
+		bindEnter(dom, text);
 		bindCancel(dom);
 		bindDelete(dom, text.text_id);
 		return dom;
 	};
 
-	function bindEnter(dom, textId){
+	function taskReloadText(ctx){
+		return function(done){
+			service.getText(ctx.text.text_id, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				ctx.text = result;
+				done();
+			})
+		}
+	}
+
+	function bindUpdate(dom, text){
 		dom.find("[mc-name=enterLink]").click(function(event){
-			var text;
+			event.preventDefault();
+			var ctx = {text: text};
 			task.run([
 				function(done){
-					service.getText(textId, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						text = result;
-						done();
-					})
-				},
-				function(done){
 					var content = dom.find("textarea[mc-name=content]").val().trim();
-					text.content = content;
-					service.updateText(text, done);
+					ctx.text.content = content;
+					service.updateText(ctx.text, done);
 				},
-				function(done){
-					service.getText(textId, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						text = result;
-						done();
-					})
-				}
+				taskReloadText(ctx)
 			], function(err){
 				if( err ){
 					alert(err);
 					return;
 				}
-				dom.trigger("text-updated", [text]);
+				dom.trigger("text-updated", [ctx.text]);
 			})
 		});
+	}
+
+	function bindNew(dom, visitId){
+		dom.find("[mc-name=enterLink]").click(function(event){
+			event.preventDefault();
+			var ctx = {
+				text: {
+					visit_id: visitId,
+					content: dom.find("textarea[mc-name=content]").val().trim()
+				}
+			};
+			task.run([
+				function(done){
+					service.enterText(ctx.text, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						ctx.text.text_id = result;
+						done();
+					});
+				},
+				taskReloadText(ctx)
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("text-entered", [ctx.text]);
+			})
+		})
+	}
+
+	function bindEnter(dom, text){
+		if( text.text_id > 0 ){
+			bindUpdate(dom, text);
+		} else if( !text.text_id && text.visit_id > 0 ) {
+			bindNew(dom, text.visit_id);
+		} else {
+			alert("cannot bind enter in text form");
+		}
 	}
 
 	function bindCancel(dom){
@@ -27910,7 +27953,54 @@
 /* 177 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t    <a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t    <a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
+
+/***/ },
+/* 178 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplHtml = __webpack_require__(179);
+	var TextForm = __webpack_require__(176);
+	var Text = __webpack_require__(128);
+
+	exports.setup = function(dom, visitId){
+		dom.html(tmplHtml);
+		bindEnter(dom, visitId);
+	};
+
+	function bindEnter(dom, visitId){
+		dom.on("click", "[mc-name=addTextLink]", function(event){
+			event.preventDefault();
+			var editor = TextForm.create({content: "", visit_id: visitId});
+			bindEditor(dom, editor, visitId);
+			dom.hide();
+			dom.after(editor);
+		});
+	}
+
+	function bindEditor(dom, editor, visitId){
+		editor.on("text-entered", function(event, text){
+			event.stopPropagation();
+			var textDom = Text.create(text);
+			editor.remove();
+			dom.before(textDom);
+			dom.show();
+		});
+		editor.on("cancel-edit", function(event){
+			event.stopPropagation();
+			editor.remove();
+			dom.show();
+		})
+	}
+
+/***/ },
+/* 179 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"addTextLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>"
 
 /***/ }
 /******/ ]);
