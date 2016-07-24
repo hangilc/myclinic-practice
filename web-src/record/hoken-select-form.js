@@ -70,7 +70,6 @@ function collectChecked(dom){
 	};
 	dom.find("input[type=checkbox][name=hoken]:checked").each(function(){
 		var e = $(this);
-		console.log(e);
 		switch(e.data("kind")){
 			case "shahokokuho": checked.shahokokuho_list.push(e.val()); break;
 			case "koukikourei": checked.koukikourei_list.push(e.val()); break;
@@ -103,7 +102,7 @@ function bindEnter(dom, visit){
 				service.updateVisit(data, done);
 			},
 			function(done){
-				service.getVisit(visit.visit_id, function(err, result){
+				service.getVisitWithFullHoken(visit.visit_id, function(err, result){
 					if( err ){
 						done(err);
 						return;

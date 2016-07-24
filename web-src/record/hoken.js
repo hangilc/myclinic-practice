@@ -13,17 +13,19 @@ var tmpl = hogan.compile(tmplSrc);
 
 exports.setup = function(dom, visit){
 	update(dom, visit);
-	bindClick(dom, visit);
+	bindClick(dom);
 };
 
 function update(dom, visit){
 	var label = mUtil.hokenRep(visit);
 	dom.html(tmpl.render({label: label}));
+	dom.data("visit", visit);
 };
 
-function bindClick(dom, visit){
+function bindClick(dom){
 	dom.on("click", "[mc-name=label]", function(event){
 		event.preventDefault();
+		var visit = dom.data("visit");
 		var list;
 		task.run(function(done){
 			service.listAvailableHoken(visit.patient_id, visit.v_datetime, function(err, result){

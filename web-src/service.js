@@ -95,3 +95,7 @@ exports.listAvailableHoken = function(patientId, at, cb){
 exports.updateVisit = function(visit, done){
 	request("update_visit", visit, "POST", done);
 };
+
+exports.getVisitWithFullHoken = function(visitId, cb){
+	request("get_visit_with_full_hoken", {visit_id: visitId}, "GET", cb);
+};
