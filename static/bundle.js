@@ -24788,6 +24788,10 @@
 		request("update_text", text, "POST", done);
 	};
 
+	exports.deleteText = function(textId, done){
+		request("delete_text", {text_id: textId}, "POST", done);
+	};
+
 
 /***/ },
 /* 112 */
@@ -26625,6 +26629,9 @@
 
 	function update(dom, text){
 		var content = text.content.replace(/\n/g, "<br />\n");
+		if( content === "" ){
+			content = "（空白）"
+		}
 		dom.html(tmpl.render({content: content}));
 		dom.data("text", text);
 	}
@@ -26649,6 +26656,11 @@
 			event.stopPropagation();
 			editor.remove();
 			dom.show();
+		});
+		editor.on("text-deleted", function(event){
+			event.stopPropagation();
+			editor.remove();
+			dom.remove();
 		});
 	}
 
@@ -27826,6 +27838,7 @@
 		var dom = $(html);
 		bindEnter(dom, text.text_id);
 		bindCancel(dom);
+		bindDelete(dom, text.text_id);
 		return dom;
 	};
 
@@ -27872,14 +27885,32 @@
 		dom.find("[mc-name=cancelLink]").click(function(event){
 			event.preventDefault();
 			dom.trigger("cancel-edit");
-		})
+		});
+	}
+
+	function bindDelete(dom, textId){
+		dom.find("[mc-name=deleteLink]").click(function(event){
+			event.preventDefault();
+			if( !confirm("この文章を削除していいですか？") ){
+				return;
+			}
+			task.run(function(done){
+				service.deleteText(textId, done);
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("text-deleted");
+			});
+		});
 	}
 
 /***/ },
 /* 177 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" \r\n\t    \tstyle=\"display:none\">削除</a>\r\n\t    <a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t    <a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);

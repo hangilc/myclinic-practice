@@ -79,3 +79,7 @@ exports.getText = function(textId, cb){
 exports.updateText = function(text, done){
 	request("update_text", text, "POST", done);
 };
+
+exports.deleteText = function(textId, done){
+	request("delete_text", {text_id: textId}, "POST", done);
+};

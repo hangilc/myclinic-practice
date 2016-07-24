@@ -12,6 +12,7 @@ exports.create = function(text){
 	var dom = $(html);
 	bindEnter(dom, text.text_id);
 	bindCancel(dom);
+	bindDelete(dom, text.text_id);
 	return dom;
 };
 
@@ -58,5 +59,23 @@ function bindCancel(dom){
 	dom.find("[mc-name=cancelLink]").click(function(event){
 		event.preventDefault();
 		dom.trigger("cancel-edit");
-	})
+	});
+}
+
+function bindDelete(dom, textId){
+	dom.find("[mc-name=deleteLink]").click(function(event){
+		event.preventDefault();
+		if( !confirm("この文章を削除していいですか？") ){
+			return;
+		}
+		task.run(function(done){
+			service.deleteText(textId, done);
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("text-deleted");
+		});
+	});
 }

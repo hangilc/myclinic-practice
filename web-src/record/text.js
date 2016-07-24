@@ -17,6 +17,9 @@ exports.create = function(text){
 
 function update(dom, text){
 	var content = text.content.replace(/\n/g, "<br />\n");
+	if( content === "" ){
+		content = "（空白）"
+	}
 	dom.html(tmpl.render({content: content}));
 	dom.data("text", text);
 }
@@ -41,6 +44,11 @@ function bindEditor(dom, editor){
 		event.stopPropagation();
 		editor.remove();
 		dom.show();
+	});
+	editor.on("text-deleted", function(event){
+		event.stopPropagation();
+		editor.remove();
+		dom.remove();
 	});
 }
 
