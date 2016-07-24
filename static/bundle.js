@@ -24793,6 +24793,14 @@
 		request("enter_text", text, "POST", cb);
 	};
 
+	exports.listAvailableHoken = function(patientId, at, cb){
+		request("list_available_hoken", {patient_id: patientId, at: at}, "GET", cb);
+	};
+
+	exports.updateVisit = function(visit, done){
+		request("update_visit", visit, "POST", done);
+	};
+
 
 /***/ },
 /* 112 */
@@ -26685,14 +26693,61 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(3);
+	var HokenSelectForm = __webpack_require__(180);
+	var task = __webpack_require__(109);
+	var service = __webpack_require__(111);
 
 	var tmplSrc = __webpack_require__(131);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, visit){
+		update(dom, visit);
+		bindClick(dom, visit);
+	};
+
+	function update(dom, visit){
 		var label = mUtil.hokenRep(visit);
 		dom.html(tmpl.render({label: label}));
 	};
+
+	function bindClick(dom, visit){
+		dom.on("click", "[mc-name=label]", function(event){
+			event.preventDefault();
+			var list;
+			task.run(function(done){
+				service.listAvailableHoken(visit.patient_id, visit.v_datetime, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					list = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var form = HokenSelectForm.create(list, visit);
+				bindForm(form, dom);
+				dom.hide();
+				dom.after(form);
+			})
+		});
+	}
+
+	function bindForm(form, dom){
+		form.on("hoken-updated", function(event, visit){
+			update(dom, visit);
+			form.remove();
+			dom.show();
+		});
+		form.on("cancel-edit", function(event){
+			event.stopPropagation();
+			form.remove();
+			dom.show();
+		})
+	}
 
 
 
@@ -28001,6 +28056,153 @@
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addTextLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>"
+
+/***/ },
+/* 180 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplHtml = __webpack_require__(181);
+	var itemTmplSrc = __webpack_require__(182);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+	var mUtil = __webpack_require__(3);
+	var task = __webpack_require__(109);
+	var service = __webpack_require__(111);
+
+	exports.create = function(hoken, visit){
+		var dom = $(tmplHtml);
+		var wrapper = dom.find("[mc-name=checkboxes]").html("");
+		hoken.shahokokuho_list.forEach(function(shahokokuho){
+			var label = mUtil.shahokokuhoRep(shahokokuho.hokensha_bangou);
+			if( shahokokuho.kourei > 0 ){
+				label += "高齢・" + shahokokuho.kourei + "割";
+			}
+			var check = itemTmpl.render({
+				label: label,
+				kind: "shahokokuho",
+				value: shahokokuho.shahokokuho_id,
+				checked: shahokokuho.shahokokuho_id == visit.shahokokuho_id
+			});
+			wrapper.append(check);
+		});
+		hoken.koukikourei_list.forEach(function(koukikourei){
+			var label = mUtil.koukikoureiRep(koukikourei.futan_wari);
+			var check = itemTmpl.render({
+				label: label,
+				kind: "koukikourei",
+				value: koukikourei.koukikourei_id,
+				checked: koukikourei.koukikourei_id == visit.koukikourei_id
+			});
+			wrapper.append(check);
+		});
+		hoken.roujin_list.forEach(function(roujin){
+			var label = mUtil.roujinRep(roujin.futan_wari);
+			var check = itemTmpl.render({
+				label: label,
+				kind: "roujin",
+				value: roujin.roujin_id,
+				checked: roujin.roujin_id == visit.roujin_id
+			});
+			wrapper.append(check);
+		});
+		hoken.kouhi_list.forEach(function(kouhi){
+			var label = mUtil.kouhiRep(kouhi.futansha);
+			var check = itemTmpl.render({
+				label: label,
+				kind: "kouhi",
+				value: kouhi.kouhi_id,
+				checked: kouhi.kouhi_id == visit.kouhi_1_id || kouhi.kouhi_id == visit.kouhi_2_id || 
+					kouhi.kouhi_id == visit.kouhi_3_id
+			});
+			wrapper.append(check);
+		});
+		bindEnter(dom, visit);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function collectChecked(dom){
+		var checked = {
+			shahokokuho_list: [],
+			koukikourei_list: [],
+			roujin_list: [],
+			kouhi_list: []
+		};
+		dom.find("input[type=checkbox][name=hoken]:checked").each(function(){
+			var e = $(this);
+			console.log(e);
+			switch(e.data("kind")){
+				case "shahokokuho": checked.shahokokuho_list.push(e.val()); break;
+				case "koukikourei": checked.koukikourei_list.push(e.val()); break;
+				case "roujin": checked.roujin_list.push(e.val()); break;
+				case "kouhi": checked.kouhi_list.push(e.val()); break;
+				default: alert("unknown kind " + e.data("kind")); break;
+			}
+		});
+		return checked;
+	}
+
+	function bindEnter(dom, visit){
+		dom.on("click", "[mc-name=enter]", function(event){
+			event.preventDefault();
+			var checked = collectChecked(dom);
+			var data = {visit_id: visit.visit_id};
+			if( checked.shahokokuho_list.length + checked.koukikourei_list.length >= 2 ){
+				alert("社保国保と後期高齢はあわせてひとつしか選択できません。");
+				return;
+			}
+			data.shahokokuho_id = checked.shahokokuho_list.length > 0 ? +checked.shahokokuho_list[0] : 0;
+			data.koukikourei_id = checked.koukikourei_list.length > 0 ? +checked.koukikourei_list[0] : 0;
+			data.roujin_id = checked.roujin_list.length > 0 ? +checked.roujin_list[0] : 0;
+			data.kouhi_1_id = checked.kouhi_list.length > 0 ? +checked.kouhi_list[0] : 0;
+			data.kouhi_2_id = checked.kouhi_list.length > 1 ? +checked.kouhi_list[1] : 0;
+			data.kouhi_3_id = checked.kouhi_list.length > 2 ? +checked.kouhi_list[2] : 0;
+			var updatedVisit;
+			task.run([
+				function(done){
+					service.updateVisit(data, done);
+				},
+				function(done){
+					service.getVisit(visit.visit_id, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						updatedVisit = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("hoken-updated", [updatedVisit]);
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "[mc-name=cancel]", function(event){
+			event.preventDefault();
+			dom.trigger("cancel-edit");
+		})
+	}
+
+/***/ },
+/* 181 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">適用保険の編集</div>\r\n\t<form onsubmit=\"return false\">\r\n\t\t<div mc-name=\"checkboxes\"></div>\r\n\t\t<div class=\"workarea-commandbox\">\r\n\t\t\t<button mc-name=\"enter\">入力</button>\r\n\t\t\t<button mc-name=\"cancel\">キャンセル</button>\r\n\t\t</div>\r\n\t</form>\r\n</div>\r\n\r\n"
+
+/***/ },
+/* 182 */
+/***/ function(module, exports) {
+
+	module.exports = "<div>\r\n\t<input type=\"checkbox\" name=\"hoken\" data-kind=\"{{kind}}\" value=\"{{value}}\"\r\n\t\t{{#checked}}checked{{/checked}}>\r\n\t\t{{label}}\r\n</div>"
 
 /***/ }
 /******/ ]);

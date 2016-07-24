@@ -87,3 +87,11 @@ exports.deleteText = function(textId, done){
 exports.enterText = function(text, cb){
 	request("enter_text", text, "POST", cb);
 };
+
+exports.listAvailableHoken = function(patientId, at, cb){
+	request("list_available_hoken", {patient_id: patientId, at: at}, "GET", cb);
+};
+
+exports.updateVisit = function(visit, done){
+	request("update_visit", visit, "POST", done);
+};
