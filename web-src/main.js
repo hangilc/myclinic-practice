@@ -15,7 +15,7 @@ var Disease = require("./disease/disease");
 var SelectPatient = require("./select-patient/select-patient");
 var SearchPatient = require("./search-patient/search-patient");
 var RecentVisits = require("./recent-visits/recent-visits");
-var TodaysVisits = require("./todays-visits");
+var TodaysVisits = require("./todays-visits/todays-visits");
 var Reception = require("./reception");
 
 PatientInfo.setup($("#patient-info-wrapper"));
@@ -28,6 +28,7 @@ Disease.setup($("#disease-wrapper"));
 SelectPatient.setup($("#select-patient-wrapper"));
 SearchPatient.setup($("#search-patient-wrapper"));
 RecentVisits.setup($("#recent-visits-wrapper"));
+TodaysVisits.setup($("#todays-visits-wrapper"));
 
 var appData = new AppData();
 
