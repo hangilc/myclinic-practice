@@ -58,8 +58,8 @@
 	var RecordNav = __webpack_require__(122);
 	var RecordList = __webpack_require__(124);
 	var Disease = __webpack_require__(176);
-	var SelectPatient = __webpack_require__(157);
-	var SearchPatient = __webpack_require__(161);
+	var SelectPatient = __webpack_require__(178);
+	var SearchPatient = __webpack_require__(182);
 	var RecentVisits = __webpack_require__(164);
 	var TodaysVisits = __webpack_require__(168);
 	var Reception = __webpack_require__(171);
@@ -71,6 +71,8 @@
 	});
 	RecordList.setup($("#record-list"));
 	Disease.setup($("#disease-wrapper"));
+	SelectPatient.setup($("#select-patient-wrapper"));
+	SearchPatient.setup($("#search-patient-wrapper"));
 	RecentVisits.setup($("#recent-visits-wrapper"));
 
 	var appData = new AppData();
@@ -96,6 +98,10 @@
 
 	$("body").on("start-patient", function(event, patientId){
 		startPage(patientId, 0);
+	});
+
+	$("body").on("start-exam", function(event, patientId, visitId){
+		startPage(patientId, visitId);
 	});
 
 	$("body").on("end-patient", function(event){
@@ -24765,25 +24771,15 @@
 		return page;
 	}
 
-	function makeCalcVisitsLoader(pageData){
-		var patientId = pageData.currentPatientId;
+	function taskStartExam(pageData){
 		return function(done){
-			if( patientId > 0 ){
-				service.calcVisits(patientId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					pageData.totalPages = calcNumberOfPages(result, pageData.itemsPerPage);
-					pageData.currentPage = adjustPage(1, pageData.totalPages);
-					done();
-				});
+			var visitId = pageData.currentVisitId;
+			if( visitId > 0 ){
+				service.startExam(visitId, done);
 			} else {
-				pageData.totalPages = 0;
-				pageData.currentPage = 0;
 				done();
 			}
-		}
+		};
 	}
 
 	function makePatientLoader(pageData){
@@ -24803,6 +24799,27 @@
 				done();
 			}
 		};
+	}
+
+	function makeCalcVisitsLoader(pageData){
+		var patientId = pageData.currentPatientId;
+		return function(done){
+			if( patientId > 0 ){
+				service.calcVisits(patientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					pageData.totalPages = calcNumberOfPages(result, pageData.itemsPerPage);
+					pageData.currentPage = adjustPage(1, pageData.totalPages);
+					done();
+				});
+			} else {
+				pageData.totalPages = 0;
+				pageData.currentPage = 0;
+				done();
+			}
+		}
 	}
 
 	function makeFullVisitsLoader(pageData){
@@ -24847,6 +24864,7 @@
 	function makeLoader(appData){
 		return function(done){
 			conti.exec([
+				taskStartExam(appData),
 				makePatientLoader(appData),
 				makeCalcVisitsLoader(appData),
 				makeFullVisitsLoader(appData),
@@ -26959,225 +26977,13 @@
 	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
 
 /***/ },
-/* 157 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var service = __webpack_require__(111);
-	var SelectPatientItem = __webpack_require__(158);
-
-	var tmplSrc = __webpack_require__(160);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function SelectPatient(dom){
-		this.dom = dom;
-		this.bindButton();
-		this.bindOption();
-	}
-
-	SelectPatient.prototype.bindButton = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=button]", function(event){
-			event.preventDefault();
-			var ws = self.getWorkspaceDom();
-			if( ws.is(":visible") ){
-				self.getSelectDom().html("");
-				ws.hide();
-			} else {
-				service.listFullWqueueForExam(function(err, result){
-					if( err ){
-						alert(err);
-						return;
-					}
-					var select = self.getSelectDom().html("");
-					result.forEach(function(wq){
-						var e = $("<option></option>").val(wq.visit_id);
-						new SelectPatientItem(e).update(wq);
-						select.append(e);
-					});
-					ws.show();
-				});
-			}
-		});
-	};
-
-	SelectPatient.prototype.bindOption = function(){
-		var self = this;
-		this.dom.on("dblclick", "option", function(event){
-			var opt = $(this);
-			var visit_id = opt.val();
-			opt.trigger("start-exam", [visit_id]);
-			self.getSelectDom().html("");
-			self.getWorkspaceDom().hide();
-		})
-	};
-
-	SelectPatient.prototype.getWorkspaceDom = function(){
-		return this.dom.find("[mc-name=selectWrapper]");
-	};
-
-	SelectPatient.prototype.getSelectDom = function(){
-		return this.dom.find("[mc-name=selectWrapper] select");
-	}
-
-	SelectPatient.prototype.update = function(){
-		this.dom.html(tmpl.render({}));
-		return this;
-	};
-
-	module.exports = SelectPatient;
-
-
-/***/ },
-/* 158 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var mUtil = __webpack_require__(3);
-
-	var tmplSrc = __webpack_require__(159);
-	var tmpl = hogan.compile(tmplSrc);
-
-	function SelectPatientItem(dom){
-		this.dom = dom;
-	}
-
-	SelectPatientItem.prototype.update = function(data){
-		data = mUtil.assign({}, data, {
-			state_label: mUtil.wqueueStateToKanji(data.wait_state)
-		});
-		this.dom.html(tmpl.render(data));
-	};
-
-	module.exports = SelectPatientItem;
-
-/***/ },
-/* 159 */
-/***/ function(module, exports) {
-
-	module.exports = "[{{state_label}}] {{last_name}} {{first_name}}"
-
-/***/ },
-/* 160 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
-
-/***/ },
-/* 161 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var service = __webpack_require__(111);
-	var mUtil = __webpack_require__(3);
-
-	var tmplSrc = __webpack_require__(162);
-	var tmpl = hogan.compile(tmplSrc);
-
-	var itemTmplSrc = __webpack_require__(163);
-	var itemTmpl = hogan.compile(itemTmplSrc);
-
-	function SearchPatient(dom){
-		this.dom = dom;
-		this.bindButton();
-		this.bindForm();
-		this.bindOption();
-	}
-
-	SearchPatient.prototype.bindButton = function(){
-		var self = this;
-		this.dom.on("click", "[mc-name=button]", function(){
-			var ws = self.getWorkspaceDom();
-			if( ws.is(":visible") ){
-				self.hideWorkspace();
-			} else {
-				ws.show();
-				self.getInputDom().focus();
-			}
-		});
-	};
-
-	SearchPatient.prototype.bindForm = function(){
-		var self = this;
-		this.dom.on("submit", "form", function(){
-			var text = self.getInputDom().val();
-			if( text === "" ){
-				return;
-			}
-			service.searchPatient(text, function(err, result){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var select = self.getSelectDom().html("");
-				result.forEach(function(patient){
-					var data = mUtil.assign({}, patient, {
-						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
-					});
-					var opt = itemTmpl.render(data);
-					select.append(opt);
-				});
-			})
-		});
-	};
-
-	SearchPatient.prototype.bindOption = function(){
-		var self = this;
-		this.dom.on("dblclick", "option", function(){
-			var opt = $(this);
-			var patientId = +opt.val();
-			opt.trigger("start-patient", [patientId]);
-			self.hideWorkspace();
-		})
-	};
-
-	SearchPatient.prototype.hideWorkspace = function(){
-		this.getWorkspaceDom().hide();
-		this.getInputDom().val("");
-		this.getSelectDom().html("");
-	};
-
-	SearchPatient.prototype.getWorkspaceDom = function(){
-		return this.dom.find("[mc-name=workspace]");
-	};
-
-	SearchPatient.prototype.getInputDom = function(){
-		return this.dom.find("[mc-name=searchForm] input.search-patient-input");
-	};
-
-	SearchPatient.prototype.getSelectDom = function(){
-		return this.dom.find("select");
-	};
-
-	SearchPatient.prototype.update = function(){
-		this.dom.html(tmpl.render({}));
-		return this;
-	};
-
-	module.exports = SearchPatient;
-
-/***/ },
-/* 162 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
-
-/***/ },
-/* 163 */
-/***/ function(module, exports) {
-
-	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
-
-/***/ },
+/* 157 */,
+/* 158 */,
+/* 159 */,
+/* 160 */,
+/* 161 */,
+/* 162 */,
+/* 163 */,
 /* 164 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -27680,6 +27486,232 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
+
+/***/ },
+/* 178 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var task = __webpack_require__(109);
+	var SelectPatientItem = __webpack_require__(179);
+
+	var tmplHtml = __webpack_require__(181);
+
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+	};
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=selectWrapper]");
+	};
+
+	function getSelectDom(dom){
+		return dom.find("[mc-name=selectWrapper] select");
+	}
+
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(event){
+			event.preventDefault();
+			var ws = getWorkspaceDom(dom);
+			if( ws.is(":visible") ){
+				getSelectDom(dom).html("");
+				ws.hide();
+			} else {
+				var list;
+				task.run(function(done){
+					service.listFullWqueueForExam(function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						list = result;
+						done();
+					});
+				}, function(err){
+					if( err ){
+						alert(err);
+						return;
+					}
+					var select = getSelectDom(dom).html("");
+					list.forEach(function(wq){
+						var e = $("<option></option>").val(wq.visit_id);
+						var e = SelectPatientItem.create(wq);
+						select.append(e);
+					});
+					ws.show();
+				})
+			}
+		});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(event){
+			var opt = $(this);
+			var values = opt.val().split(",");
+			var patientId = +values[0];
+			var visitId = +values[1];
+			opt.trigger("start-exam", [patientId, visitId]);
+		});
+		dom.listen("rx-start-page", function(){
+			getSelectDom(dom).html("");
+			getWorkspaceDom(dom).hide();
+		});
+	};
+
+
+
+/***/ },
+/* 179 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(3);
+
+	var tmplSrc = __webpack_require__(180);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(data){
+		data = mUtil.assign({}, data, {
+			state_label: mUtil.wqueueStateToKanji(data.wait_state)
+		});
+		var e = $(tmpl.render(data));
+		return e;
+	};
+
+
+
+/***/ },
+/* 180 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}},{{visit_id}}\">[{{state_label}}] {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 181 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
+
+/***/ },
+/* 182 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(111);
+	var task = __webpack_require__(109);
+	var mUtil = __webpack_require__(3);
+
+	var tmplHtml = __webpack_require__(183);
+
+	var itemTmplSrc = __webpack_require__(184);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindForm(dom);
+		bindOption(dom);
+	};
+
+	function hideWorkspace(dom){
+		getWorkspaceDom(dom).hide();
+		getInputDom(dom).val("");
+		getSelectDom(dom).html("");
+	};
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=workspace]");
+	};
+
+	function getInputDom(dom){
+		return dom.find("[mc-name=searchForm] input.search-patient-input");
+	};
+
+	function getSelectDom(dom){
+		return dom.find("select");
+	};
+
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(){
+			var ws = getWorkspaceDom(dom);
+			if( ws.is(":visible") ){
+				hideWorkspace(dom);
+			} else {
+				ws.show();
+				getInputDom(dom).focus();
+			}
+		});
+	};
+
+	function bindForm(dom){
+		dom.on("submit", "form", function(){
+			var text = getInputDom(dom).val();
+			if( text === "" ){
+				return;
+			}
+			var list;
+			task.run(function(done){
+				service.searchPatient(text, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					list = result;
+					done();
+				});
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = getSelectDom(dom).html("");
+				list.forEach(function(patient){
+					var data = mUtil.assign({}, patient, {
+						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
+					});
+					var opt = itemTmpl.render(data);
+					select.append(opt);
+				});
+			});
+		});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
+			var opt = $(this);
+			var patientId = +opt.val();
+			opt.trigger("start-patient", [patientId]);
+		});
+		dom.listen("rx-start-page", function(){
+			hideWorkspace(dom);
+		});
+	}
+
+
+
+/***/ },
+/* 183 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
+
+/***/ },
+/* 184 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
 
 /***/ }
 /******/ ]);

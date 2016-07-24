@@ -12,8 +12,8 @@ var CurrentManip = require("./current-manip/current-manip");
 var RecordNav = require("./record-nav/record-nav");
 var RecordList = require("./record-list");
 var Disease = require("./disease/disease");
-var SelectPatient = require("./select-patient");
-var SearchPatient = require("./search-patient");
+var SelectPatient = require("./select-patient/select-patient");
+var SearchPatient = require("./search-patient/search-patient");
 var RecentVisits = require("./recent-visits/recent-visits");
 var TodaysVisits = require("./todays-visits");
 var Reception = require("./reception");
@@ -25,6 +25,8 @@ $(".record-nav-wrapper").each(function(i){
 });
 RecordList.setup($("#record-list"));
 Disease.setup($("#disease-wrapper"));
+SelectPatient.setup($("#select-patient-wrapper"));
+SearchPatient.setup($("#search-patient-wrapper"));
 RecentVisits.setup($("#recent-visits-wrapper"));
 
 var appData = new AppData();
@@ -50,6 +52,10 @@ function startPage(patientId, visitId){
 
 $("body").on("start-patient", function(event, patientId){
 	startPage(patientId, 0);
+});
+
+$("body").on("start-exam", function(event, patientId, visitId){
+	startPage(patientId, visitId);
 });
 
 $("body").on("end-patient", function(event){

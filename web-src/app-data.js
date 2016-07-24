@@ -23,25 +23,15 @@ function adjustPage(page, numPages){
 	return page;
 }
 
-function makeCalcVisitsLoader(pageData){
-	var patientId = pageData.currentPatientId;
+function taskStartExam(pageData){
 	return function(done){
-		if( patientId > 0 ){
-			service.calcVisits(patientId, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				pageData.totalPages = calcNumberOfPages(result, pageData.itemsPerPage);
-				pageData.currentPage = adjustPage(1, pageData.totalPages);
-				done();
-			});
+		var visitId = pageData.currentVisitId;
+		if( visitId > 0 ){
+			service.startExam(visitId, done);
 		} else {
-			pageData.totalPages = 0;
-			pageData.currentPage = 0;
 			done();
 		}
-	}
+	};
 }
 
 function makePatientLoader(pageData){
@@ -61,6 +51,27 @@ function makePatientLoader(pageData){
 			done();
 		}
 	};
+}
+
+function makeCalcVisitsLoader(pageData){
+	var patientId = pageData.currentPatientId;
+	return function(done){
+		if( patientId > 0 ){
+			service.calcVisits(patientId, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				pageData.totalPages = calcNumberOfPages(result, pageData.itemsPerPage);
+				pageData.currentPage = adjustPage(1, pageData.totalPages);
+				done();
+			});
+		} else {
+			pageData.totalPages = 0;
+			pageData.currentPage = 0;
+			done();
+		}
+	}
 }
 
 function makeFullVisitsLoader(pageData){
@@ -105,6 +116,7 @@ function makeDiseasesLoader(pageData){
 function makeLoader(appData){
 	return function(done){
 		conti.exec([
+			taskStartExam(appData),
 			makePatientLoader(appData),
 			makeCalcVisitsLoader(appData),
 			makeFullVisitsLoader(appData),
