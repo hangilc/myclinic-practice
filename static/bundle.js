@@ -57,7 +57,7 @@
 	var CurrentManip = __webpack_require__(120);
 	var RecordNav = __webpack_require__(122);
 	var RecordList = __webpack_require__(124);
-	var Disease = __webpack_require__(151);
+	var Disease = __webpack_require__(176);
 	var SelectPatient = __webpack_require__(157);
 	var SearchPatient = __webpack_require__(161);
 	var RecentVisits = __webpack_require__(164);
@@ -70,6 +70,7 @@
 		RecordNav.setup($(this), i);
 	});
 	RecordList.setup($("#record-list"));
+	Disease.setup($("#disease-wrapper"));
 	RecentVisits.setup($("#recent-visits-wrapper"));
 
 	var appData = new AppData();
@@ -26349,7 +26350,6 @@
 	exports.setup = function(dom){
 		["rx-start-page", "rx-goto-page"].forEach(function(key){
 			dom.listen(key, function(appData){
-				console.log("record_list");
 				var currentVisitId = window.getCurrentVisitId();
 				var tempVisitId = window.getTempVisitId();
 				var records = appData.record_list;
@@ -26896,55 +26896,8 @@
 	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div class=\"record-text-menu\">\r\n                    <a mc-name=\"addTextLink\" \r\n                    \thref=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n                </div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n</table>\r\n"
 
 /***/ },
-/* 151 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-
-	var tmplSrc = __webpack_require__(152);
-	var tmpl = hogan.compile(tmplSrc);
-
-	var ListPane = __webpack_require__(153)
-
-	function Disease(dom){
-		this.dom = dom;
-		this.mode = "list";
-	}
-
-	Disease.prototype.render = function(){
-		return this;
-	};
-
-	Disease.prototype.update = function(diseaseList){
-		if( diseaseList === null || diseaseList === undefined ){
-			this.dom.html("");
-			return;
-		}
-		this.dom.hide();
-		this.dom.html(tmpl.render({}));
-		var wrapper = this.dom.find("[mc-name=workarea]");
-		switch(this.mode){
-			case "list": 
-				new ListPane(wrapper).render().update(diseaseList); break;
-			default: wrapper.text(this.mode); break;
-		}
-		this.dom.show();
-	};
-
-	module.exports = Disease;
-
-
-
-/***/ },
-/* 152 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
-
-/***/ },
+/* 151 */,
+/* 152 */,
 /* 153 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26958,28 +26911,16 @@
 
 	var DiseaseListItem = __webpack_require__(155);
 
-	function DiseaseListPane(dom){
-		this.dom = dom;
-	}
-
-	DiseaseListPane.prototype.render = function(){
-		return this;
-	};
-
-	DiseaseListPane.prototype.update = function(diseaseList){
-		var e = $("<div></div>");
-		e.html(tmpl.render({}));
-		var wrapper = e.find("[mc-name=list]");
-		diseaseList.forEach(function(disease){
-			var tr = $("<tr></tr>");
-			new DiseaseListItem(tr).update(disease);
+	exports.setup = function(dom, list){
+		dom.html(tmpl.render({}));
+		var wrapper = dom.find("[mc-name=list]");
+		list.forEach(function(disease){
+			var tr = DiseaseListItem.create(disease);
 			wrapper.append(tr);
 		});
-		this.dom.html("").append(e);
-		return this;
 	};
 
-	module.exports = DiseaseListPane;
+
 
 /***/ },
 /* 154 */
@@ -27001,26 +26942,21 @@
 	var tmplSrc = __webpack_require__(156);
 	var tmpl = hogan.compile(tmplSrc);
 
-	function DiseaseListItem(dom){
-		this.dom = dom;
-	}
-
-	DiseaseListItem.prototype.update = function(data){
+	exports.create = function(data){
 		data = mUtil.assign({}, data, {
 			label: mUtil.diseaseFullName(data),
 			start_date_label: kanjidate.format("{G:a}{N}.{M}.{D}.", data.start_date)
 		});
-		this.dom.html(tmpl.render(data));
-		return this;
-	};
+		return $(tmpl.render(data));
+	}
 
-	module.exports = DiseaseListItem;
+
 
 /***/ },
 /* 156 */
 /***/ function(module, exports) {
 
-	module.exports = "<td>\r\n\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t{{label}}\r\n\t</a>\r\n\t<span style=\"color:#999\">\r\n\t\t({{start_date_label}})\r\n\t</span>\r\n</td>\r\n"
+	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
 
 /***/ },
 /* 157 */
@@ -27708,6 +27644,42 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 176 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
+	var tmplHtml = __webpack_require__(177);
+
+	var ListPane = __webpack_require__(153)
+
+	exports.setup = function(dom){
+		dom.listen("rx-start-page", function(appData){
+			var patientId = appData.currentPatientId;
+			if( patientId > 0 ){
+				dom.html(tmplHtml);
+				var ws = dom.find("[mc-name=workarea]");
+				ListPane.setup(ws, appData.diseases);
+			} else {
+				dom.html("");
+			}
+		})
+	};
+
+
+
+
+
+/***/ },
+/* 177 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);

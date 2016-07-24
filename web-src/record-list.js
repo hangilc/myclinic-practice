@@ -22,7 +22,6 @@ var recordTmpl = hogan.compile(recordTmplSrc);
 exports.setup = function(dom){
 	["rx-start-page", "rx-goto-page"].forEach(function(key){
 		dom.listen(key, function(appData){
-			console.log("record_list");
 			var currentVisitId = window.getCurrentVisitId();
 			var tempVisitId = window.getTempVisitId();
 			var records = appData.record_list;

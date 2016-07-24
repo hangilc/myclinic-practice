@@ -11,7 +11,7 @@ var PatientInfo = require("./patient-info/patient-info");
 var CurrentManip = require("./current-manip/current-manip");
 var RecordNav = require("./record-nav/record-nav");
 var RecordList = require("./record-list");
-var Disease = require("./disease");
+var Disease = require("./disease/disease");
 var SelectPatient = require("./select-patient");
 var SearchPatient = require("./search-patient");
 var RecentVisits = require("./recent-visits/recent-visits");
@@ -24,6 +24,7 @@ $(".record-nav-wrapper").each(function(i){
 	RecordNav.setup($(this), i);
 });
 RecordList.setup($("#record-list"));
+Disease.setup($("#disease-wrapper"));
 RecentVisits.setup($("#recent-visits-wrapper"));
 
 var appData = new AppData();
