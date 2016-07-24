@@ -76,4 +76,15 @@ $("body").on("goto-page", function(event, page){
 		var data = mUtil.assign({}, appData);
 		$("body").broadcast("rx-goto-page", data);
 	})
+});
+
+$("body").on("delete-visit", function(event, visitId){
+	appData.deleteVisit(visitId, function(err){
+		if( err ){
+			alert(err);
+			return;
+		}
+		var data = mUtil.assign({}, appData);
+		$("body").broadcast("rx-delete-visit", data);
+	})	
 })

@@ -63,7 +63,7 @@ function makeCalcVisitsLoader(pageData){
 					return;
 				}
 				pageData.totalPages = calcNumberOfPages(result, pageData.itemsPerPage);
-				pageData.currentPage = adjustPage(1, pageData.totalPages);
+				pageData.currentPage = adjustPage(pageData.currentPage, pageData.totalPages);
 				done();
 			});
 		} else {
@@ -187,10 +187,31 @@ AppData.prototype.gotoPage = function(page, done){
 		}
 	} else if( page >= 1 && page <= this.totalPages ){
 		this.currentPage = page;
-		makeFullVisitsLoader(this)(done);
+		task.run(makeFullVisitsLoader(this), done);
 	} else {
 		done("invalid page");
 	}
-}
+};
+
+AppData.prototype.deleteVisit = function(visitId, done){
+	var self = this;
+	task.run(function(done){
+		conti.exec([
+			function(done){
+				service.deleteVisit(visitId, done);
+			},
+			function(done){
+				if( self.currentVisitId === visitId ){
+					self.currentVisitId = 0;
+				} else if( self.tempVisitId === visitId ){
+					self.tempVisitId = 0;
+				}
+				done();
+			},
+			makeCalcVisitsLoader(self),
+			makeFullVisitsLoader(self)
+		], done);
+	}, done);
+};
 
 module.exports = AppData;

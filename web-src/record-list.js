@@ -20,7 +20,7 @@ var recordTmplSrc = require("raw!./record/record.html");
 var recordTmpl = hogan.compile(recordTmplSrc);
 
 exports.setup = function(dom){
-	["rx-start-page", "rx-goto-page"].forEach(function(key){
+	["rx-start-page", "rx-goto-page", "rx-delete-visit"].forEach(function(key){
 		dom.listen(key, function(appData){
 			var currentVisitId = window.getCurrentVisitId();
 			var tempVisitId = window.getTempVisitId();

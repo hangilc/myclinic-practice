@@ -122,6 +122,17 @@
 			var data = mUtil.assign({}, appData);
 			$("body").broadcast("rx-goto-page", data);
 		})
+	});
+
+	$("body").on("delete-visit", function(event, visitId){
+		appData.deleteVisit(visitId, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var data = mUtil.assign({}, appData);
+			$("body").broadcast("rx-delete-visit", data);
+		})	
 	})
 
 /***/ },
@@ -24816,7 +24827,7 @@
 						return;
 					}
 					pageData.totalPages = calcNumberOfPages(result, pageData.itemsPerPage);
-					pageData.currentPage = adjustPage(1, pageData.totalPages);
+					pageData.currentPage = adjustPage(pageData.currentPage, pageData.totalPages);
 					done();
 				});
 			} else {
@@ -24940,11 +24951,32 @@
 			}
 		} else if( page >= 1 && page <= this.totalPages ){
 			this.currentPage = page;
-			makeFullVisitsLoader(this)(done);
+			task.run(makeFullVisitsLoader(this), done);
 		} else {
 			done("invalid page");
 		}
-	}
+	};
+
+	AppData.prototype.deleteVisit = function(visitId, done){
+		var self = this;
+		task.run(function(done){
+			conti.exec([
+				function(done){
+					service.deleteVisit(visitId, done);
+				},
+				function(done){
+					if( self.currentVisitId === visitId ){
+						self.currentVisitId = 0;
+					} else if( self.tempVisitId === visitId ){
+						self.tempVisitId = 0;
+					}
+					done();
+				},
+				makeCalcVisitsLoader(self),
+				makeFullVisitsLoader(self)
+			], done);
+		}, done);
+	};
 
 	module.exports = AppData;
 
@@ -26256,32 +26288,21 @@
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom){
-		dom.listen("rx-start-page", function(appData){
-			var totalPages = appData.totalPages;
-			var currentPage = appData.currentPage;
-			dom.data("number-of-pages", totalPages);
-			dom.data("page", currentPage);
-			if( totalPages <= 1 ){
-				dom.html("");
-			} else {
-				dom.html(tmpl.render({
-					page: currentPage,
-					total: totalPages
-				}));
-			}
-		});
-		dom.listen("rx-goto-page", function(appData){
-			var totalPages = dom.data("number-of-pages");
-			var currentPage = appData.currentPage;
-			dom.data("page", currentPage);
-			if( totalPages <= 1 ){
-				dom.html("");
-			} else {
-				dom.html(tmpl.render({
-					page: currentPage,
-					total: totalPages
-				}));
-			}
+		["rx-start-page", "rx-goto-page", "rx-delete-visit"].forEach(function(key){
+			dom.listen(key, function(appData){
+				var totalPages = appData.totalPages;
+				var currentPage = appData.currentPage;
+				dom.data("number-of-pages", totalPages);
+				dom.data("page", currentPage);
+				if( totalPages <= 1 ){
+					dom.html("");
+				} else {
+					dom.html(tmpl.render({
+						page: currentPage,
+						total: totalPages
+					}));
+				}
+			})
 		});
 		bindGotoFirst(dom);
 		bindGotoPrev(dom);
@@ -26371,7 +26392,7 @@
 	var recordTmpl = hogan.compile(recordTmplSrc);
 
 	exports.setup = function(dom){
-		["rx-start-page", "rx-goto-page"].forEach(function(key){
+		["rx-start-page", "rx-goto-page", "rx-delete-visit"].forEach(function(key){
 			dom.listen(key, function(appData){
 				var currentVisitId = window.getCurrentVisitId();
 				var tempVisitId = window.getTempVisitId();
@@ -26443,6 +26464,7 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(111);
+	var task = __webpack_require__(109);
 
 	var tmplSrc = __webpack_require__(127);
 	var tmpl = hogan.compile(tmplSrc);
@@ -26507,13 +26529,7 @@
 				alert("invalid visit_id");
 				return;
 			}
-			service.deleteVisit(visitId, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("visit-deleted", [visitId]);
-			})
+			dom.trigger("delete-visit", [visitId]);
 		});
 	}
 
@@ -27322,7 +27338,9 @@
 			e.find("." + key).each(function(){
 				var listener = $(this);
 				var cb = listener.data(key);
-				cb.apply(listener, args);
+				if( typeof cb === "function" ){
+					cb.apply(listener, args);
+				}
 			});
 		});
 	};

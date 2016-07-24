@@ -9,7 +9,9 @@ $.fn.broadcast = function(key, arg1){
 		e.find("." + key).each(function(){
 			var listener = $(this);
 			var cb = listener.data(key);
-			cb.apply(listener, args);
+			if( typeof cb === "function" ){
+				cb.apply(listener, args);
+			}
 		});
 	});
 };

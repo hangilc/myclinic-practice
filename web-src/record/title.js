@@ -4,6 +4,7 @@ var kanjidate = require("kanjidate");
 var $ = require("jquery");
 var hogan = require("hogan");
 var service = require("../service");
+var task = require("../task");
 
 var tmplSrc = require("raw!./title.html");
 var tmpl = hogan.compile(tmplSrc);
@@ -68,13 +69,7 @@ function bindDelete(dom){
 			alert("invalid visit_id");
 			return;
 		}
-		service.deleteVisit(visitId, function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			dom.trigger("visit-deleted", [visitId]);
-		})
+		dom.trigger("delete-visit", [visitId]);
 	});
 }
 
