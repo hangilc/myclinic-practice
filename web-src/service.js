@@ -71,3 +71,11 @@ exports.startVisit = function(patientId, at, done){
 exports.deleteVisit = function(visitId, done){
 	request("delete_visit", {visit_id: visitId}, "POST", done);
 };
+
+exports.getText = function(textId, cb){
+	request("get_text", {text_id: textId}, "GET", cb);
+};
+
+exports.updateText = function(text, done){
+	request("update_text", text, "POST", done);
+};

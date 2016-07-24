@@ -145,6 +145,10 @@
 		done();
 	});
 
+	$("body").on("cancel-edit", function(){
+		console.log("body cancel-edit");
+	})
+
 /***/ },
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
@@ -24655,7 +24659,16 @@
 	conti.enqueue = contiEnqueue.enqueue;
 
 	exports.run = function(fun, cb){
-		conti.enqueue(fun, cb);
+		var f;
+		if( fun instanceof Array ){
+			console.log(fun);
+			f = function(done){
+				conti.exec(fun, done);
+			};
+		} else {
+			f = fun;
+		}
+		conti.enqueue(f, cb);
 	};
 
 /***/ },
@@ -24765,6 +24778,14 @@
 
 	exports.deleteVisit = function(visitId, done){
 		request("delete_visit", {visit_id: visitId}, "POST", done);
+	};
+
+	exports.getText = function(textId, cb){
+		request("get_text", {text_id: textId}, "GET", cb);
+	};
+
+	exports.updateText = function(text, done){
+		request("update_text", text, "POST", done);
 	};
 
 
@@ -26587,6 +26608,8 @@
 
 	"use strict";
 
+	var TextForm = __webpack_require__(176);
+
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 
@@ -26594,8 +26617,39 @@
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(text){
+		var dom = $("<div></div>");
+		update(dom, text);
+		bindClick(dom);
+		return dom;
+	};
+
+	function update(dom, text){
 		var content = text.content.replace(/\n/g, "<br />\n");
-		return tmpl.render({content: content});
+		dom.html(tmpl.render({content: content}));
+		dom.data("text", text);
+	}
+
+	function bindClick(dom){
+		dom.on("click", "[mc-name=content]", function(){
+			var editor = TextForm.create(dom.data("text"));
+			bindEditor(dom, editor);
+			dom.hide();
+			dom.after(editor);
+		});
+	}
+
+	function bindEditor(dom, editor){
+		editor.on("text-updated", function(event, text){
+			event.stopPropagation();
+			update(dom, text);
+			editor.remove();
+			dom.show();
+		});
+		editor.on("cancel-edit", function(event){
+			event.stopPropagation();
+			editor.remove();
+			dom.show();
+		});
 	}
 
 
@@ -27753,6 +27807,79 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 176 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(177);
+	var tmpl = hogan.compile(tmplSrc);
+	var task = __webpack_require__(109);
+	var service = __webpack_require__(111);
+
+	exports.create = function(text){
+		var html = tmpl.render(text);
+		var dom = $(html);
+		bindEnter(dom, text.text_id);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindEnter(dom, textId){
+		dom.find("[mc-name=enterLink]").click(function(event){
+			var text;
+			task.run([
+				function(done){
+					service.getText(textId, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						text = result;
+						done();
+					})
+				},
+				function(done){
+					var content = dom.find("textarea[mc-name=content]").val().trim();
+					text.content = content;
+					service.updateText(text, done);
+				},
+				function(done){
+					service.getText(textId, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						text = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("text-updated", [text]);
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.find("[mc-name=cancelLink]").click(function(event){
+			event.preventDefault();
+			dom.trigger("cancel-edit");
+		})
+	}
+
+/***/ },
+/* 177 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" \r\n\t    \tstyle=\"display:none\">削除</a>\r\n\t    <a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);
