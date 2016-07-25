@@ -1,0 +1,84 @@
+<div mc-name="title" class="title"></div>
+<div class="error-box"></div>
+<div class="drug-area">
+    <table width="100%">
+        <tr>
+            <td style="width:3em;">名称</td>
+            <td mc-name="name"></td>
+        </tr>
+        <tr>
+            <td mc-name="amountLabel">用量</td>
+            <td>
+                <input mc-name="amount" class="alpha-only" style="width:4em"/>
+                <span mc-name="unit"></span>
+            </td>
+        </tr>
+        <tr>
+            <td>用法</td>
+            <td>
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td>
+                            <input mc-name="usage" class="kanji" style="width:100%"/>
+                        </td>
+                        <td>
+                            &nbsp;
+                            <a mc-name="usageExampleLink" href="javascript:void(0)" class="cmd-link"
+                               >例</a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr mc-name="usageExampleWrapper" style="display:none">
+            <td colspan="2">
+                <select name="usage-example" size="4">
+                    <option>分１　朝食後</option>
+                    <option>分２　朝夕食後</option>
+                    <option>分３　毎食後</option>
+                    <option>分１　寝る前</option>
+                </select>
+            </td>
+        </tr>
+        <tr mc-name="daysRow">
+            <td mc-name="daysLabel">日数</td>
+            <td>
+                <input mc-name="days" class="alpha-only" style="width:4em"/>
+                <span mc-name="daysUnit">日分</span>
+    		<span mc-name="fixedDaysWrapper" style="display:none">
+    			<input mc-name="fixedDaysCheck" type="checkbox"  checked="checked"/> 固定
+    		</span>
+            </td>
+        </tr>
+    </table>
+    <div>
+        <input type=radio mc-name="categoryNaifuku" name="category">内服
+        <input type=radio mc-name="categoryTonpuku" name="category">屯服
+        <input type=radio mc-name="categoryGaiyou"  name="category">外用
+    </div>
+    <div class="edit-only" style="display:none">
+        <input type="checkbox" mc-name="preserveUsage">用量・用法をそのままに
+    </div>
+    <div mc-name="comment" style="padding:6px;display:none;border:1px solid #ccc"></div>
+</div>
+<div class="workarea-commandbox">
+    <button mc-name="enterLink">入力</button>
+    <button mc-name="closeLink">閉じる</button>
+    <a mc-name="clearFormLink" href="javascript:void(0)" class="cmd-link">クリア</a>
+    <a mc-name="deleteLink" href="javascript:void(0)" class="cmd-link" style="display:none">削除</a>
+</div>
+<div class="drug-search-area">
+    <div style="margin:4px 0">
+        <input mc-name="searchText" type="text" class="kanji"/>
+        <button mc-name="searchLink">検索</button>
+    </div>
+    <div style="margin:4px 0">
+        <input type=radio name="search-mode" value="master">マスター
+        <input type=radio name="search-mode" value="stock" checked>約束処方
+        <input type=radio name="search-mode" value="prev">過去の処方
+    </div>
+    <div>
+        <select mc-name="searchResult" size=10 style="width:100%"></select>
+    </div>
+</div>
+
