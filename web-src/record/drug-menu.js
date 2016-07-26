@@ -9,9 +9,9 @@ var DrugForm = require("./drug-form/drug-form");
 
 var tmplHtml = require("raw!./drug-menu.html");
 
-exports.setup = function(dom){
+exports.setup = function(dom, visit){
 	dom.html(tmplHtml);
-	bindAddDrug(dom);
+	bindAddDrug(dom, visit);
 	bindSubmenu(dom);
 	bindSubmenuClick(dom);
 	Submenu.setup(getSubmenuDom(dom));
@@ -25,12 +25,15 @@ function getWorkareaDom(dom){
 	return dom.find(".workarea");
 }
 
-function bindAddDrug(dom){
+function bindAddDrug(dom, visit){
 	dom.find("[mc-name=addDrugLink]").click(function(event){
 		event.preventDefault();
 		var wa = getWorkareaDom(dom);
 		wa.html("");
-		var form = DrugForm.create();
+		var drug = {
+			visit_id: visit.visit_id
+		};
+		var form = DrugForm.create(drug, visit.v_datetime, visit.patient_id);
 		wa.append(form).show();
 	});
 }

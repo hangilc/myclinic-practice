@@ -44,7 +44,7 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	});
 	TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
 	Hoken.setup(e.find("[mc-name=hoken]"), visit);
-	DrugMenu.setup(e.find("[mc-name=drugMenu]"));
+	DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
 	var drugWrapper = e.find("[mc-name=drugs]").html("");
 	var drugIndex = 1;
 	if( visit.drugs.length > 0 ){

@@ -99,3 +99,16 @@ exports.updateVisit = function(visit, done){
 exports.getVisitWithFullHoken = function(visitId, cb){
 	request("get_visit_with_full_hoken", {visit_id: visitId}, "GET", cb);
 };
+
+exports.searchIyakuhinMaster = function(text, at, cb){
+	request("search_iyakuhin_master", {text: text, at: at}, "GET", cb);
+};
+
+exports.searchPrescExample = function(text, cb){
+	request("search_presc_example", {text: text}, "GET", cb);
+};
+
+exports.searchFullDrugForPatient = function(patientId, text, cb){
+	request("search_full_drug_for_patient", {patient_id: patientId, text: text}, "GET", cb);
+};
+
