@@ -63,6 +63,20 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	ConductMenu.setup(e.find("[mc-name=conductMenu]"));
 	ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
 	Charge.setup(e.find("[mc-name=charge]"), visit.charge);
+	bindDrugEntered(e);
 	return e;
+}
+
+function bindDrugEntered(dom){
+	dom.on("drug-entered", function(event, newDrug){
+		event.stopPropagation();
+		var drugWrapper = dom.find("[mc-name=drugs]");
+		var items = drugWrapper.find(".record-drug-item");
+		if( items.length === 0 ){
+			drugWrapper.append("<div>Rp)</div>");
+		}
+		var de = Drug.create(items.length+1, newDrug);
+		drugWrapper.append(de);
+	});
 }
 

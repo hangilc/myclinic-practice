@@ -1,6 +1,6 @@
 <div mc-name="title" class="title">{{title}}</div>
 <div class="error-box" style="display:none"></div>
-<div class="drug-area">
+<div class="drug-area"> <!-- should be at the top level -->
     <table width="100%">
         <tr>
             <td style="width:3em;">名称</td>
@@ -52,7 +52,7 @@
         </tr>
     </table>
     <div>
-        <input type=radio mc-name="categoryNaifuku" name="category" value="0">内服
+        <input type=radio mc-name="categoryNaifuku" name="category" value="0" checked>内服
         <input type=radio mc-name="categoryTonpuku" name="category" value="1">屯服
         <input type=radio mc-name="categoryGaiyou"  name="category" value="2">外用
     </div>

@@ -18,23 +18,32 @@ var Gaiyou = mConsts.DrugCategoryGaiyou;
 
 var ZaikeiGaiyou = mConsts.ZaikeiGaiyou;
 
-exports.create = function(drug, at, patientId){
-	var data;
-	if( drug.drug_id ){
-		data = {
-			title: "処方の編集"
-		}
-	} else {
-		data = {
-			title: "新規処方の入力"
-		}
-	}
+exports.createAddForm = function(visitId, at, patientId){
+	// var data;
+	// if( drug.drug_id ){
+	// 	data = {
+	// 		title: "処方の編集"
+	// 	}
+	// } else {
+	// 	data = {
+	// 		title: "新規処方の入力"
+	// 	}
+	// }
 	var dom = $("<div></div>");
-	dom.append(tmpl.render(data));
-	bindSearchForm(dom, drug.visit_id, at, patientId);
+	dom.append(tmpl.render({title: "新規処方の入力"}));
+	bindSearchForm(dom, visitId, at, patientId);
 	bindSearchResult(dom, at);
+	bindUsageExample(dom);
+	bindCategoryChange(dom);
+	bindClear(dom);
+	bindEnter(dom, visitId, at);
+	bindCancel(dom);
 	return dom;
 };
+
+function getErrorBox(dom){
+	return dom.find("> .error-box");
+}
 
 function getDisplayDom(dom){
 	return dom.find("> .drug-area");
@@ -92,8 +101,11 @@ function getSearchSelectDom(dom){
 	return dom.find("> .drug-search-area select[mc-name=searchResult]");
 }
 
-function updateDisplayCategory(dom, category){
-	dom.find("> .drug-area input[type=radio][name=category][value=" + category + "]").prop("checked", true);
+function getCheckedCategory(dom){
+	return dom.find("> .drug-area input[type=radio][name=category]:checked").val();
+}
+
+function adaptToCategory(dom, category){
 	var amountLabel, daysLabel, daysUnit;
 	switch(category){
 		case Naifuku: 
@@ -124,7 +136,13 @@ function updateDisplayCategory(dom, category){
 	getDisplayDaysUnitDom(dom).text(daysUnit);
 }
 
+function updateDisplayCategory(dom, category){
+	dom.find("> .drug-area input[type=radio][name=category][value=" + category + "]").prop("checked", true);
+	adaptToCategory(dom, category);
+}
+
 function updateDisplayDom(dom, data){
+	getDisplayDom(dom).data("iyakuhincode", data.iyakuhincode);
 	getDisplayNameDom(dom).text(data.name);
 	getDisplayAmountInputDom(dom).val(data.amount);
 	getDisplayUnitDom(dom).text(data.unit);
@@ -311,4 +329,128 @@ function bindSearchResult(dom, at){
 		var data = $(this).data("data");
 		updateDisplay(dom, data, at);
 	})
+}
+
+function bindUsageExample(dom){
+	var examples = dom.find("> .drug-area [mc-name=usageExampleWrapper]")
+	dom.on("click", "> .drug-area [mc-name=usageExampleLink]", function(event){
+		event.preventDefault();
+		event.stopPropagation();
+		examples.toggle();
+	});
+	dom.on("click", "> .drug-area select[name=usage-example] option", function(){
+		var value = $(this).val();
+		getDisplayUsageInputDom(dom).val(value);
+		examples.hide();
+	});
+}
+
+function bindCategoryChange(dom){
+	dom.on("change", "> .drug-area input[type=radio][name=category]", function(event){
+		var category = +$(this).val();
+		adaptToCategory(dom, category);
+	});
+}
+
+function bindClear(dom){
+	dom.on("click", "> .workarea-commandbox [mc-name=clearFormLink]", function(event){
+		event.preventDefault();
+		getErrorBox(dom).html("").hide();
+		getDisplayDom(dom).removeData("iyakuhincode");
+		getDisplayNameDom(dom).text("");
+		getDisplayAmountInputDom(dom).val("");
+		getDisplayUsageInputDom(dom).val("");
+		getDisplayDaysInputDom(dom).val("");
+	});
+}
+
+function bindCancel(dom){
+	dom.on("click", "> .workarea-commandbox [mc-name=closeLink]", function(event){
+		event.stopPropagation();
+		dom.trigger("cancel-form");
+	});
+}
+
+function collectFormInputs(dom, drug){
+	mUtil.assign(drug, {
+		d_amount: getDisplayAmountInputDom(dom).val(),
+		d_usage: getDisplayUsageInputDom(dom).val(),
+		d_category: +getCheckedCategory(dom),
+		d_days: +getDisplayDaysInputDom(dom).val()
+	});
+	if( drug.d_category === Gaiyou ){
+		drug.d_days = 1;
+	}
+}
+
+function validate(drug){
+	var errs = [];
+	if( !(drug.visit_id > 0) ){
+		errs.push("invalid visit_id: " + drug.visit_id);
+	}
+	if( !(drug.d_iyakuhincode > 0) ){
+		errs.push("invalid iyakuhincode: " + drug.d_iyakuhincode);
+	}
+	if( !drug.d_amount ){
+		errs.push("用量が指定されていません。");
+	}
+	var category = +drug.d_category;
+	if( !(category === Naifuku || category === Tonpuku || category === Gaiyou) ){
+		errs.push("invalid category: " + category);
+	}
+	if( !(drug.d_days && ("" + drug.d_days).match(/^\d+$/)) ){
+		errs.push("日数・回数の指定が不適切です。");
+	}
+	return errs;
+}
+
+function bindEnter(dom, visitId, at){
+	dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
+		event.stopPropagation();
+		var iyakuhincode = getDisplayDom(dom).data("iyakuhincode");
+		if( !iyakuhincode ){
+			alert("薬剤が設定されていません。");
+			return;
+		}
+		var drug = {
+			visit_id: visitId,
+			d_iyakuhincode: iyakuhincode,
+			d_prescribed: 0
+		};
+		collectFormInputs(dom, drug);
+		var errors = validate(drug);
+		if( errors.length > 0 ){
+			getErrorBox(dom).text(errors.join("")).show();
+			return;
+		}
+		var drugId, newDrug;
+		task.run([
+			function(done){
+				service.enterDrug(drug, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					drugId = result;
+					done();
+				})
+			},
+			function(done){
+				service.getFullDrug(drugId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newDrug = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("drug-entered", [newDrug]);
+		})
+	});
 }

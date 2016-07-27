@@ -25,16 +25,34 @@ function getWorkareaDom(dom){
 	return dom.find(".workarea");
 }
 
+function setWorkarea(dom, kind, content){
+	var wa = getWorkareaDom(dom);
+	wa.data("kind", kind);
+	wa.html("").append(content);
+	wa.show();
+}
+
+function clearWorkarea(dom){
+	var wa = getWorkareaDom(dom);
+	wa.data("kind", undefined);
+	wa.hide().html("");
+}
+
 function bindAddDrug(dom, visit){
 	dom.find("[mc-name=addDrugLink]").click(function(event){
 		event.preventDefault();
 		var wa = getWorkareaDom(dom);
 		wa.html("");
-		var drug = {
-			visit_id: visit.visit_id
-		};
-		var form = DrugForm.create(drug, visit.v_datetime, visit.patient_id);
-		wa.append(form).show();
+		var form = DrugForm.createAddForm(visit.visit_id, visit.v_datetime, visit.patient_id);
+		bindAddForm(dom, form);
+		setWorkarea(dom, "add-drug", form);
+	});
+}
+
+function bindAddForm(dom, form){
+	form.on("cancel-form", function(event){
+		event.stopPropagation();
+		clearWorkarea(dom);
 	});
 }
 
