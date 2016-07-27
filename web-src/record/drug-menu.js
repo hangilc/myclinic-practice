@@ -14,7 +14,7 @@ exports.setup = function(dom, visit){
 	bindAddDrug(dom, visit);
 	bindSubmenu(dom);
 	bindSubmenuClick(dom);
-	Submenu.setup(getSubmenuDom(dom));
+	Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 };
 
 function getSubmenuDom(dom){
@@ -34,14 +34,23 @@ function setWorkarea(dom, kind, content){
 
 function clearWorkarea(dom){
 	var wa = getWorkareaDom(dom);
-	wa.data("kind", undefined);
+	wa.removeData("kind");
 	wa.hide().html("");
 }
 
 function bindAddDrug(dom, visit){
 	dom.find("[mc-name=addDrugLink]").click(function(event){
 		event.preventDefault();
+		var submenu = getSubmenuDom(dom);
+		if( Submenu.isVisible(submenu) ){
+			return;
+		}
 		var wa = getWorkareaDom(dom);
+		var kind = wa.data("kind");
+		if( kind === "add-drug" ){
+			clearWorkarea(dom);
+			return;
+		}
 		wa.html("");
 		var form = DrugForm.createAddForm(visit.visit_id, visit.v_datetime, visit.patient_id);
 		bindAddForm(dom, form);
@@ -58,15 +67,15 @@ function bindAddForm(dom, form){
 
 function bindSubmenu(dom){
 	var submenu = getSubmenuDom(dom);
-	submenu.on("cancel-submenu", function(event){
-		event.stopPropagation();
-		Submenu.hide(submenu);
-	});
 }
 
 function bindSubmenuClick(dom){
 	dom.on("click", "[mc-name=drugSubmenuLink]", function(event){
 		event.preventDefault();
+		var wa = getWorkareaDom(dom);
+		if( wa.data("kind") ){
+			return;
+		}
 		var submenu = getSubmenuDom(dom);
 		if( Submenu.isVisible(submenu) ){
 			Submenu.hide(submenu);

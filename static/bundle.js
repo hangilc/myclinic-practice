@@ -24829,6 +24829,10 @@
 		request("get_full_drug", {drug_id: drugId, at: at}, "GET", cb);
 	};
 
+	exports.listFullDrugsForVisit = function(visitId, at, cb){
+		request("list_full_drugs_for_visit", {visit_id: visitId, at: at}, "GET", cb);
+	};
+
 
 /***/ },
 /* 112 */
@@ -27146,7 +27150,7 @@
 		bindAddDrug(dom, visit);
 		bindSubmenu(dom);
 		bindSubmenuClick(dom);
-		Submenu.setup(getSubmenuDom(dom));
+		Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 	};
 
 	function getSubmenuDom(dom){
@@ -27166,14 +27170,23 @@
 
 	function clearWorkarea(dom){
 		var wa = getWorkareaDom(dom);
-		wa.data("kind", undefined);
+		wa.removeData("kind");
 		wa.hide().html("");
 	}
 
 	function bindAddDrug(dom, visit){
 		dom.find("[mc-name=addDrugLink]").click(function(event){
 			event.preventDefault();
+			var submenu = getSubmenuDom(dom);
+			if( Submenu.isVisible(submenu) ){
+				return;
+			}
 			var wa = getWorkareaDom(dom);
+			var kind = wa.data("kind");
+			if( kind === "add-drug" ){
+				clearWorkarea(dom);
+				return;
+			}
 			wa.html("");
 			var form = DrugForm.createAddForm(visit.visit_id, visit.v_datetime, visit.patient_id);
 			bindAddForm(dom, form);
@@ -27190,15 +27203,15 @@
 
 	function bindSubmenu(dom){
 		var submenu = getSubmenuDom(dom);
-		submenu.on("cancel-submenu", function(event){
-			event.stopPropagation();
-			Submenu.hide(submenu);
-		});
 	}
 
 	function bindSubmenuClick(dom){
 		dom.on("click", "[mc-name=drugSubmenuLink]", function(event){
 			event.preventDefault();
+			var wa = getWorkareaDom(dom);
+			if( wa.data("kind") ){
+				return;
+			}
 			var submenu = getSubmenuDom(dom);
 			if( Submenu.isVisible(submenu) ){
 				Submenu.hide(submenu);
@@ -27218,9 +27231,17 @@
 
 	var $ = __webpack_require__(1);
 	var tmplHtml = __webpack_require__(141);
+	var task = __webpack_require__(109);
+	var service = __webpack_require__(111);
+	var mUtil = __webpack_require__(3);
+	var conti = __webpack_require__(2);
 
-	exports.setup = function(dom){
+	exports.setup = function(dom, visitId, at){
 		dom.data("visible", false);
+		bindCopyAll(dom, visitId, at);
+		bindCopySelected(dom);
+		bindModifyDays(dom);
+		bindDeleteSelected(dom);
 		bindCancel(dom);
 	};
 
@@ -27238,10 +27259,69 @@
 		dom.html("");
 	};
 
+	function bindCopyAll(dom, visitId, at){
+		dom.on("click", "[mc-name=copyAll]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var targetVisitId = window.getCurrentVisitId() || window.getTempVisitId();
+			if( targetVisitId === 0 ){
+				alert("現在（暫定）診察中でないため、コピーできません。");
+				return;
+			}
+			if( targetVisitId === visitId ){
+				alert("自分自身にはコピーできません。");
+				return;
+			}
+			var drugs;
+			task.run([
+				function(done){
+					service.listFullDrugsForVisit(visitId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						drugs = result;
+						done();
+					})
+				},
+				function(done){
+					conti.forEach(drugs, function(drug, done){
+						service.resolveIyakuhinMasterAt(drug.d_iyakuhincode, at, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							mUtil.assign(drug, result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				console.log(drugs);
+			})
+		});
+	}
+
+	function bindCopySelected(dom){
+
+	}
+
+	function bindModifyDays(dom){
+
+	}
+
+	function bindDeleteSelected(dom){
+
+	}
+
 	function bindCancel(dom){
 		dom.on("click", "[mc-name=cancel]", function(event){
 			event.preventDefault();
-			dom.trigger("cancel-submenu");
+			exports.hide(dom);
 		});
 	}
 

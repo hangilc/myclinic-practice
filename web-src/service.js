@@ -123,3 +123,7 @@ exports.enterDrug = function(drug, cb){
 exports.getFullDrug = function(drugId, at, cb){
 	request("get_full_drug", {drug_id: drugId, at: at}, "GET", cb);
 };
+
+exports.listFullDrugsForVisit = function(visitId, at, cb){
+	request("list_full_drugs_for_visit", {visit_id: visitId, at: at}, "GET", cb);
+};
