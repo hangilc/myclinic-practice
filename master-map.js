@@ -9,43 +9,47 @@ var smap_keys = {};
 var kmap = [];
 var kmap_keys = {};
 
-var content = fs.readFileSync("master-map.txt", {encoding: "UTF-8"});
-var lines = content.split(/\r\n|\r|\n/);
-var m;
-for(var i=0;i<lines.length;i++){
-	var line = lines[i];
-	if( line === "__END__" ){
-		break;
-	}
-	if( m = line.match(/^([YSK]),(\d{9}),(\d{4}-\d{2}-\d{2}),(\d{9})(\D|$)/) ){
-		var kind = m[1];
-		var entry = {
-			from: +m[2],
-			at: m[3],
-			to: +m[4],
-		};	
-		if( kind === "Y" ){
-			ymap.push(entry);
-			ymap_keys[entry.from] = true;
-		} else if( kind === "S" ){
-			smap.push(entry);
-			smap_keys[entry.from] = true;
-		} else if( kind === "K" ){
-			kmap.push(entry);
-			kmap_keys[entry.from] = true;
-		} else {
-			throw new Error("unknown kind: " + kind);
+exports.import = function(path){
+	console.log("master-map (import)", path);
+	var content = fs.readFileSync(path, {encoding: "UTF-8"});
+	var lines = content.split(/\r\n|\r|\n/);
+	var m;
+	for(var i=0;i<lines.length;i++){
+		var line = lines[i];
+		if( line === "__END__" ){
+			break;
 		}
-	} else if( line[0] === ";" ){
-		// nop
-	} else if( line.match(/^\s*$/) ){
-		// nop
-	} else {
-		throw new Error("invalid line in master_map:", line);
+		if( m = line.match(/^([YSK]),(\d{9}),(\d{4}-\d{2}-\d{2}),(\d{9})(\D|$)/) ){
+			var kind = m[1];
+			var entry = {
+				from: +m[2],
+				at: m[3],
+				to: +m[4],
+			};	
+			if( kind === "Y" ){
+				ymap.push(entry);
+				ymap_keys[entry.from] = true;
+			} else if( kind === "S" ){
+				smap.push(entry);
+				smap_keys[entry.from] = true;
+			} else if( kind === "K" ){
+				kmap.push(entry);
+				kmap_keys[entry.from] = true;
+			} else {
+				throw new Error("unknown kind: " + kind);
+			}
+		} else if( line[0] === ";" ){
+			// nop
+		} else if( line.match(/^\s*$/) ){
+			// nop
+		} else {
+			throw new Error("invalid line in master_map:", line);
+		}
 	}
-}
+	console.log("master-map (import)", ymap.length);
+};
 
-function mapIyakuhinMaster(iyakuhincode, at){
+exports.mapIyakuhinMaster = function(iyakuhincode, at){
 	iyakuhincode = +iyakuhincode;
 	at = at.slice(0, 10);
 	if( ymap_keys[iyakuhincode] ){
@@ -56,6 +60,22 @@ function mapIyakuhinMaster(iyakuhincode, at){
 		})
 	}
 	return iyakuhincode;
-}
+};
 
-console.log(mapIyakuhinMaster(611140694, "2016-07-25 19:41:12"));
+exports.mapShinryouMaster = function(shinryoucode, at){
+	shinryoucode = +shinryoucode;
+	at = at.slice(0, 10);
+	if( smap_keys[shinryoucode] ){
+		smap.forEach(function(entry){
+			if( entry.from === shinryoucode && entry.at <= at ){
+				shinryoucode = entry.to;
+			}
+		})
+	}
+	return shinryoucode;
+};
+
+
+
+
+

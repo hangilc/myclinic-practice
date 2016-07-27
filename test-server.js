@@ -1,5 +1,6 @@
 var app = require("express")();
-var practice = require("./index")();
+var config = require("./test-config");
+var practice = require("./index")(config);
 
 app.use("/practice", practice);
 

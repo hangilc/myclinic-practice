@@ -2,16 +2,12 @@ var express = require("express");
 var service = require("./lib/service");
 var mysql = require("mysql");
 var bodyParser = require("body-parser");
+var MasterMap = require("./master-map");
 
-var config = {
-	host: "127.0.0.1",
-    user: process.env.MYCLINIC_DB_USER,
-    password: process.env.MYCLINIC_DB_PASS,
-    database: "myclinic",
-    dateStrings: true
-};
-
-module.exports = function(){
+module.exports = function(config){
+	if( config.masterMap ){
+		MasterMap.import(config.masterMap);
+	}
 	var app = express();
 	app.use(bodyParser.urlencoded({extended: false}));
 	app.use(bodyParser.json());
@@ -19,7 +15,7 @@ module.exports = function(){
 		app.disable("etag");
 		var q = req.query._q;
 		if( q in service ){
-			var conn = mysql.createConnection(config);
+			var conn = mysql.createConnection(config.dbConfig);
 			conn.beginTransaction(function(err){
 				if( err ){
 					console.log(err);

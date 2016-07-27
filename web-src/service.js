@@ -112,3 +112,7 @@ exports.searchFullDrugForPatient = function(patientId, text, cb){
 	request("search_full_drug_for_patient", {patient_id: patientId, text: text}, "GET", cb);
 };
 
+exports.resolveIyakuhinMasterAt = function(iyakuhincode, at, cb){
+	request("resolve_iyakuhin_master_at", {iyakuhincode: iyakuhincode, at: at}, "GET", cb);
+};
+
