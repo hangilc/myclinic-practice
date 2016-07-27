@@ -3,8 +3,6 @@
 var task = require("./task");
 var service = require("./service");
 var conti = require("conti");
-var contiPara = require("../conti-para");
-conti.para = contiPara.para;
 
 function calcNumberOfPages(totalItems, itemsPerPage){
 	return Math.floor((totalItems + itemsPerPage - 1)/itemsPerPage);

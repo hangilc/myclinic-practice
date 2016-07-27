@@ -4,7 +4,6 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var service = require("./service");
 var mUtil = require("../myclinic-util");
-var registry = require("../hc-registry");
 var Title = require("./record/title");
 var Text = require("./record/text");
 var TextMenu = require("./record/text-menu");
