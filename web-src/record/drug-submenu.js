@@ -43,26 +43,60 @@ function bindCopyAll(dom, visitId, at){
 			alert("自分自身にはコピーできません。");
 			return;
 		}
-		var drugs;
+		var targetAt, drugs, enteredDrugIds, enteredDrugs = [];
 		task.run([
+			function(done){
+				service.getVisit(targetVisitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					targetAt = result.v_datetime;
+					done();
+				})
+			},
 			function(done){
 				service.listFullDrugsForVisit(visitId, at, function(err, result){
 					if( err ){
 						done(err);
 						return;
 					}
-					drugs = result;
+					drugs = result.map(function(item){
+						return mUtil.assign({}, item);
+					});
 					done();
 				})
 			},
 			function(done){
-				conti.forEach(drugs, function(drug, done){
-					service.resolveIyakuhinMasterAt(drug.d_iyakuhincode, at, function(err, result){
+				conti.forEachPara(drugs, function(drug, done){
+					service.resolveIyakuhinMasterAt(drug.d_iyakuhincode, targetAt, function(err, result){
 						if( err ){
 							done(err);
 							return;
 						}
-						mUtil.assign(drug, result);
+						mUtil.assign(drug, {visit_id: targetVisitId}, result);
+						done();
+					})
+				}, done);
+			},
+			function(done){
+				service.batchEnterDrugs(drugs, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					enteredDrugIds = result;
+					done();
+				});
+			},
+			function(done){
+				conti.forEach(enteredDrugIds, function(drugId, done){
+					service.getFullDrug(drugId, targetAt, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						enteredDrugs.push(result);
 						done();
 					})
 				}, done);
@@ -72,7 +106,8 @@ function bindCopyAll(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			console.log(drugs);
+			dom.trigger("drugs-batch-entered", [targetVisitId, enteredDrugs]);
+			exports.hide(dom);
 		})
 	});
 }

@@ -31,6 +31,7 @@ exports.setup = function(dom){
 			})
 		})
 	});
+	bindDrugsBatchEntered(dom);
 };
 
 function makeRecord(visit, currentVisitId, tempVisitId){
@@ -44,7 +45,7 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
 	Hoken.setup(e.find("[mc-name=hoken]"), visit);
 	DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
-	var drugWrapper = e.find("[mc-name=drugs]").html("");
+	var drugWrapper = e.find("[mc-name=drugs].record-drug-wrapper").html("");
 	var drugIndex = 1;
 	if( visit.drugs.length > 0 ){
 		drugWrapper.append("<div>Rp)</div>");
@@ -69,13 +70,34 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 function bindDrugEntered(dom){
 	dom.on("drug-entered", function(event, newDrug){
 		event.stopPropagation();
-		var drugWrapper = dom.find("[mc-name=drugs]");
+		var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
 		var items = drugWrapper.find(".record-drug-item");
 		if( items.length === 0 ){
 			drugWrapper.append("<div>Rp)</div>");
 		}
 		var de = Drug.create(items.length+1, newDrug);
 		drugWrapper.append(de);
+	});
+}
+
+function bindDrugsBatchEntered(recordListDom){
+	recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
+		event.stopPropagation();
+		if( drugs.length === 0 ){
+			return;
+		}
+		var dom = recordListDom.children(".visit-entry[visit-id=" + targetVisitId + "]");
+		var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
+		var items = drugWrapper.find(".record-drug-item");
+		if( items.length === 0 ){
+			drugWrapper.append("<div>Rp)</div>");
+		}
+		var index = items.length + 1;
+		drugs.forEach(function(drug){
+			console.log(drug);
+			var de = Drug.create(index++, drug);
+			drugWrapper.append(de);
+		})
 	});
 }
 

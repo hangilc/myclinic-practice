@@ -17,6 +17,9 @@ function request(service, data, method, cb){
 			cb(xhr.responseText);
 		}
 	};
+	if( method === "POST" && typeof data === "string" ){
+		config.contentType = "application/json";
+	}
 	$.ajax(config);
 }
 
@@ -126,4 +129,8 @@ exports.getFullDrug = function(drugId, at, cb){
 
 exports.listFullDrugsForVisit = function(visitId, at, cb){
 	request("list_full_drugs_for_visit", {visit_id: visitId, at: at}, "GET", cb);
+};
+
+exports.batchEnterDrugs = function(drugs, cb){
+	request("batch_enter_drugs", JSON.stringify(drugs), "POST", cb);
 };
