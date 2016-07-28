@@ -57,12 +57,12 @@
 	var CurrentManip = __webpack_require__(118);
 	var RecordNav = __webpack_require__(120);
 	var RecordList = __webpack_require__(122);
-	var Disease = __webpack_require__(160);
-	var SelectPatient = __webpack_require__(166);
-	var SearchPatient = __webpack_require__(170);
-	var RecentVisits = __webpack_require__(173);
-	var TodaysVisits = __webpack_require__(177);
-	var Reception = __webpack_require__(180);
+	var Disease = __webpack_require__(166);
+	var SelectPatient = __webpack_require__(172);
+	var SearchPatient = __webpack_require__(176);
+	var RecentVisits = __webpack_require__(179);
+	var TodaysVisits = __webpack_require__(183);
+	var Reception = __webpack_require__(186);
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 	CurrentManip.setup($("#current-manip-pane"));
@@ -144,7 +144,6 @@
 		$("body").broadcast("rx-set-temp-visit-id", appData);
 		done();
 	});
-
 
 
 /***/ },
@@ -26494,14 +26493,14 @@
 	var TextMenu = __webpack_require__(129);
 	var Hoken = __webpack_require__(131);
 	var DrugMenu = __webpack_require__(136);
-	var Drug = __webpack_require__(143);
-	var ShinryouMenu = __webpack_require__(145);
-	var Shinryou = __webpack_require__(147);
-	var ConductMenu = __webpack_require__(149);
-	var ConductList = __webpack_require__(151);
-	var Charge = __webpack_require__(157);
+	var Drug = __webpack_require__(149);
+	var ShinryouMenu = __webpack_require__(151);
+	var Shinryou = __webpack_require__(153);
+	var ConductMenu = __webpack_require__(155);
+	var ConductList = __webpack_require__(157);
+	var Charge = __webpack_require__(163);
 
-	var recordTmplSrc = __webpack_require__(159);
+	var recordTmplSrc = __webpack_require__(165);
 	var recordTmpl = hogan.compile(recordTmplSrc);
 
 	exports.setup = function(dom){
@@ -27187,9 +27186,9 @@
 
 	var tmplHtml = __webpack_require__(142);
 
-	var CopySelected = __webpack_require__(186);
-	var ModifyDays = __webpack_require__(187);
-	var DeleteSelected = __webpack_require__(189);
+	var CopySelected = __webpack_require__(143);
+	var ModifyDays = __webpack_require__(145);
+	var DeleteSelected = __webpack_require__(147);
 
 	exports.setup = function(dom, visit){
 		dom.html(tmplHtml);
@@ -27957,10 +27956,103 @@
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(113);
+	var tmplSrc = __webpack_require__(144);
+
+	exports.create = function(){
+		var dom = $("<div></div>");
+		dom.html(tmplSrc);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 144 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"title\">選択して処方をコピー</div>\r\n<table>\r\n\t<tbody mc-name=\"tbody\"></tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input mc-name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n"
+
+/***/ },
+/* 145 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(113);
+	var tmplSrc = __webpack_require__(146);
+
+	exports.create = function(){
+		var dom = $("<div></div>");
+		dom.html(tmplSrc);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 146 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">日数を変更</div>\r\n\t<div mc-name=\"list\"></div>\r\n\t<hr />\r\n\t<div>\r\n\t\t<input mc-name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<button mc-name=\"enter\">入力</button>\r\n\t\t<button mc-name=\"cancel\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n"
+
+/***/ },
+/* 147 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(113);
+	var tmplSrc = __webpack_require__(148);
+
+	exports.create = function(){
+		var dom = $("<div></div>");
+		dom.html(tmplSrc);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 148 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"title\">薬剤の複数削除</div>\r\n<div mc-name=\"list\"></div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n"
+
+/***/ },
+/* 149 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(113);
 	var kanjidate = __webpack_require__(116);
 	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(144);
+	var tmplSrc = __webpack_require__(150);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(index, drug){
@@ -27979,13 +28071,13 @@
 
 
 /***/ },
-/* 144 */
+/* 150 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"wrapper\" class=\"record-drug-item\"><span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span></div>\r\n"
 
 /***/ },
-/* 145 */
+/* 151 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27995,7 +28087,7 @@
 	var kanjidate = __webpack_require__(116);
 	var mUtil = __webpack_require__(3);
 
-	var tmplHtml = __webpack_require__(146);
+	var tmplHtml = __webpack_require__(152);
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -28004,13 +28096,13 @@
 
 
 /***/ },
-/* 146 */
+/* 152 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n"
 
 /***/ },
-/* 147 */
+/* 153 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28020,7 +28112,7 @@
 	var kanjidate = __webpack_require__(116);
 	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(148);
+	var tmplSrc = __webpack_require__(154);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryou){
@@ -28036,13 +28128,13 @@
 
 
 /***/ },
-/* 148 */
+/* 154 */
 /***/ function(module, exports) {
 
 	module.exports = "{{label}}"
 
 /***/ },
-/* 149 */
+/* 155 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28052,7 +28144,7 @@
 	var kanjidate = __webpack_require__(116);
 	var myclinicUtil = __webpack_require__(3);
 
-	var tmplHtml = __webpack_require__(150);
+	var tmplHtml = __webpack_require__(156);
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -28061,19 +28153,19 @@
 
 
 /***/ },
-/* 150 */
+/* 156 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n"
 
 /***/ },
-/* 151 */
+/* 157 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var Conduct = __webpack_require__(152);
+	var Conduct = __webpack_require__(158);
 
 	exports.setup = function(dom, conducts){
 		dom.html("");
@@ -28088,7 +28180,7 @@
 
 
 /***/ },
-/* 152 */
+/* 158 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28097,11 +28189,11 @@
 	var hogan = __webpack_require__(113);
 	var kanjidate = __webpack_require__(116);
 	var mUtil = __webpack_require__(3);
-	var ConductShinryouList = __webpack_require__(153);
-	var ConductDrugList = __webpack_require__(154);
-	var ConductKizaiList = __webpack_require__(155);
+	var ConductShinryouList = __webpack_require__(159);
+	var ConductDrugList = __webpack_require__(160);
+	var ConductKizaiList = __webpack_require__(161);
 
-	var tmplSrc = __webpack_require__(156);
+	var tmplSrc = __webpack_require__(162);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, conduct){
@@ -28118,7 +28210,7 @@
 
 
 /***/ },
-/* 153 */
+/* 159 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28137,7 +28229,7 @@
 
 
 /***/ },
-/* 154 */
+/* 160 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28157,7 +28249,7 @@
 
 
 /***/ },
-/* 155 */
+/* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28178,13 +28270,13 @@
 
 
 /***/ },
-/* 156 */
+/* 162 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n\r\n"
 
 /***/ },
-/* 157 */
+/* 163 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28193,7 +28285,7 @@
 	var hogan = __webpack_require__(113);
 	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(158);
+	var tmplSrc = __webpack_require__(164);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, charge){
@@ -28236,19 +28328,19 @@
 
 
 /***/ },
-/* 158 */
+/* 164 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
-/* 159 */
+/* 165 */
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"visit-entry\" width=\"100%\" visit-id=\"{{visit_id}}\">\r\n    <tbody>\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div mc-name=\"text-menu\" class=\"record-text-menu\"></div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n"
 
 /***/ },
-/* 160 */
+/* 166 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28256,9 +28348,9 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(113);
 
-	var tmplHtml = __webpack_require__(161);
+	var tmplHtml = __webpack_require__(167);
 
-	var ListPane = __webpack_require__(162)
+	var ListPane = __webpack_require__(168)
 
 	exports.setup = function(dom){
 		dom.listen("rx-start-page", function(appData){
@@ -28278,13 +28370,13 @@
 
 
 /***/ },
-/* 161 */
+/* 167 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
 
 /***/ },
-/* 162 */
+/* 168 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28292,10 +28384,10 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(113);
 
-	var tmplSrc = __webpack_require__(163);
+	var tmplSrc = __webpack_require__(169);
 	var tmpl = hogan.compile(tmplSrc);
 
-	var DiseaseListItem = __webpack_require__(164);
+	var DiseaseListItem = __webpack_require__(170);
 
 	exports.setup = function(dom, list){
 		dom.html(tmpl.render({}));
@@ -28309,13 +28401,13 @@
 
 
 /***/ },
-/* 163 */
+/* 169 */
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
 
 /***/ },
-/* 164 */
+/* 170 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28325,7 +28417,7 @@
 	var kanjidate = __webpack_require__(116);
 	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(165);
+	var tmplSrc = __webpack_require__(171);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(data){
@@ -28339,13 +28431,13 @@
 
 
 /***/ },
-/* 165 */
+/* 171 */
 /***/ function(module, exports) {
 
 	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
 
 /***/ },
-/* 166 */
+/* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28354,9 +28446,9 @@
 	var hogan = __webpack_require__(113);
 	var service = __webpack_require__(110);
 	var task = __webpack_require__(109);
-	var SelectPatientItem = __webpack_require__(167);
+	var SelectPatientItem = __webpack_require__(173);
 
-	var tmplHtml = __webpack_require__(169);
+	var tmplHtml = __webpack_require__(175);
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -28424,7 +28516,7 @@
 
 
 /***/ },
-/* 167 */
+/* 173 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28433,7 +28525,7 @@
 	var hogan = __webpack_require__(113);
 	var mUtil = __webpack_require__(3);
 
-	var tmplSrc = __webpack_require__(168);
+	var tmplSrc = __webpack_require__(174);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(data){
@@ -28447,19 +28539,19 @@
 
 
 /***/ },
-/* 168 */
+/* 174 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}},{{visit_id}}\">[{{state_label}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 169 */
+/* 175 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
 
 /***/ },
-/* 170 */
+/* 176 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28470,9 +28562,9 @@
 	var task = __webpack_require__(109);
 	var mUtil = __webpack_require__(3);
 
-	var tmplHtml = __webpack_require__(171);
+	var tmplHtml = __webpack_require__(177);
 
-	var itemTmplSrc = __webpack_require__(172);
+	var itemTmplSrc = __webpack_require__(178);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	exports.setup = function(dom){
@@ -28559,19 +28651,19 @@
 
 
 /***/ },
-/* 171 */
+/* 177 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
-/* 172 */
+/* 178 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 173 */
+/* 179 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28580,11 +28672,11 @@
 	var mUtil = __webpack_require__(3);
 	var service = __webpack_require__(110);
 	var $ = __webpack_require__(1);
-	__webpack_require__(174);
+	__webpack_require__(180);
 	var task = __webpack_require__(109)
 
-	var tmplHtml = __webpack_require__(175);
-	var optionTmpl = hogan.compile(__webpack_require__(176));
+	var tmplHtml = __webpack_require__(181);
+	var optionTmpl = hogan.compile(__webpack_require__(182));
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -28637,7 +28729,7 @@
 
 
 /***/ },
-/* 174 */
+/* 180 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28670,19 +28762,19 @@
 	};
 
 /***/ },
-/* 175 */
+/* 181 */
 /***/ function(module, exports) {
 
 	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 176 */
+/* 182 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ },
-/* 177 */
+/* 183 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28693,8 +28785,8 @@
 	var task = __webpack_require__(109);
 	var mUtil = __webpack_require__(3);
 
-	var tmplHtml = __webpack_require__(178);
-	var itemTmplSrc = __webpack_require__(179);
+	var tmplHtml = __webpack_require__(184);
+	var itemTmplSrc = __webpack_require__(185);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	exports.setup = function(dom){
@@ -28761,33 +28853,33 @@
 
 
 /***/ },
-/* 178 */
+/* 184 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 179 */
+/* 185 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ },
-/* 180 */
+/* 186 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var modal = __webpack_require__(181);
+	var modal = __webpack_require__(187);
 	var service = __webpack_require__(110);
 	var mUtil = __webpack_require__(3);
 	var hogan = __webpack_require__(113);
 	var kanjidate = __webpack_require__(116);
 
-	var mainTmpl = hogan.compile(__webpack_require__(182));
-	var optionTmpl = hogan.compile(__webpack_require__(183));
-	var dispTmpl = hogan.compile(__webpack_require__(184));
+	var mainTmpl = hogan.compile(__webpack_require__(188));
+	var optionTmpl = hogan.compile(__webpack_require__(189));
+	var dispTmpl = hogan.compile(__webpack_require__(190));
 
 	function getSearchTextDom(dom){
 		return dom.find("input[mc-name=searchText]");
@@ -28894,7 +28986,7 @@
 	}
 
 /***/ },
-/* 181 */
+/* 187 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var $ = __webpack_require__(1);
@@ -29029,115 +29121,22 @@
 
 
 /***/ },
-/* 182 */
+/* 188 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
 
 /***/ },
-/* 183 */
+/* 189 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 184 */
-/***/ function(module, exports) {
-
-	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
-
-/***/ },
-/* 185 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"title\">選択して処方をコピー</div>\r\n<table>\r\n\t<tbody mc-name=\"tbody\"></tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input mc-name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n"
-
-/***/ },
-/* 186 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(113);
-	var tmplSrc = __webpack_require__(185);
-
-	exports.create = function(){
-		var dom = $("<div></div>");
-		dom.html(tmplSrc);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function bindCancel(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel-workarea");
-		})
-	}
-
-/***/ },
-/* 187 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(113);
-	var tmplSrc = __webpack_require__(188);
-
-	exports.create = function(){
-		var dom = $("<div></div>");
-		dom.html(tmplSrc);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function bindCancel(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel-workarea");
-		})
-	}
-
-/***/ },
-/* 188 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">日数を変更</div>\r\n\t<div mc-name=\"list\"></div>\r\n\t<hr />\r\n\t<div>\r\n\t\t<input mc-name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<button mc-name=\"enter\">入力</button>\r\n\t\t<button mc-name=\"cancel\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n"
-
-/***/ },
-/* 189 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(113);
-	var tmplSrc = __webpack_require__(190);
-
-	exports.create = function(){
-		var dom = $("<div></div>");
-		dom.html(tmplSrc);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function bindCancel(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel-workarea");
-		})
-	}
-
-/***/ },
 /* 190 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"title\">薬剤の複数削除</div>\r\n<div mc-name=\"list\"></div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n"
+	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
 
 /***/ }
 /******/ ]);

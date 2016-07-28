@@ -98,4 +98,3 @@ $("body").on("set-temp-visit-id", function(event, visitId, done){
 	$("body").broadcast("rx-set-temp-visit-id", appData);
 	done();
 });
-
