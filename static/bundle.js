@@ -27188,6 +27188,8 @@
 	var tmplHtml = __webpack_require__(142);
 
 	var CopySelected = __webpack_require__(186);
+	var ModifyDays = __webpack_require__(187);
+	var DeleteSelected = __webpack_require__(189);
 
 	exports.setup = function(dom, visit){
 		dom.html(tmplHtml);
@@ -27195,6 +27197,8 @@
 		bindSubmenu(dom);
 		bindSubmenuClick(dom);
 		bindCopySelected(dom);
+		bindModifyDays(dom);
+		bindDeleteSelected(dom);
 		bindWorkareaCancel(dom);
 		Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 	};
@@ -27273,6 +27277,30 @@
 			event.stopPropagation();
 			var wa = getWorkareaDom(dom);
 			var form = CopySelected.create();
+			Submenu.hide(submenu);
+			wa.append(form);
+			wa.show();
+		})
+	}
+
+	function bindModifyDays(dom){
+		var submenu = getSubmenuDom(dom);
+		submenu.on("submenu-modify-days", function(event){
+			event.stopPropagation();
+			var wa = getWorkareaDom(dom);
+			var form = ModifyDays.create();
+			Submenu.hide(submenu);
+			wa.append(form);
+			wa.show();
+		})
+	}
+
+	function bindDeleteSelected(dom){
+		var submenu = getSubmenuDom(dom);
+		submenu.on("submenu-delete-selected", function(event){
+			event.stopPropagation();
+			var wa = getWorkareaDom(dom);
+			var form = DeleteSelected.create();
 			Submenu.hide(submenu);
 			wa.append(form);
 			wa.show();
@@ -27414,11 +27442,19 @@
 	}
 
 	function bindModifyDays(dom){
-
+		dom.on("click", "[mc-name=modifyDays]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("submenu-modify-days");
+		})
 	}
 
 	function bindDeleteSelected(dom){
-
+		dom.on("click", "[mc-name=deleteSelected]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("submenu-delete-selected");
+		})
 	}
 
 	function bindCancel(dom){
@@ -29040,6 +29076,68 @@
 			dom.trigger("cancel-workarea");
 		})
 	}
+
+/***/ },
+/* 187 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(113);
+	var tmplSrc = __webpack_require__(188);
+
+	exports.create = function(){
+		var dom = $("<div></div>");
+		dom.html(tmplSrc);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 188 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">日数を変更</div>\r\n\t<div mc-name=\"list\"></div>\r\n\t<hr />\r\n\t<div>\r\n\t\t<input mc-name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<button mc-name=\"enter\">入力</button>\r\n\t\t<button mc-name=\"cancel\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n"
+
+/***/ },
+/* 189 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(113);
+	var tmplSrc = __webpack_require__(190);
+
+	exports.create = function(){
+		var dom = $("<div></div>");
+		dom.html(tmplSrc);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 190 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"title\">薬剤の複数削除</div>\r\n<div mc-name=\"list\"></div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);

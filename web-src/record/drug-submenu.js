@@ -121,11 +121,19 @@ function bindCopySelected(dom){
 }
 
 function bindModifyDays(dom){
-
+	dom.on("click", "[mc-name=modifyDays]", function(event){
+		event.preventDefault();
+		event.stopPropagation();
+		dom.trigger("submenu-modify-days");
+	})
 }
 
 function bindDeleteSelected(dom){
-
+	dom.on("click", "[mc-name=deleteSelected]", function(event){
+		event.preventDefault();
+		event.stopPropagation();
+		dom.trigger("submenu-delete-selected");
+	})
 }
 
 function bindCancel(dom){

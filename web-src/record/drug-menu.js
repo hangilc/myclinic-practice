@@ -10,6 +10,8 @@ var DrugForm = require("./drug-form/drug-form");
 var tmplHtml = require("raw!./drug-menu.html");
 
 var CopySelected = require("./drug-copy-selected");
+var ModifyDays = require("./drug-modify-days");
+var DeleteSelected = require("./drug-delete-selected");
 
 exports.setup = function(dom, visit){
 	dom.html(tmplHtml);
@@ -17,6 +19,8 @@ exports.setup = function(dom, visit){
 	bindSubmenu(dom);
 	bindSubmenuClick(dom);
 	bindCopySelected(dom);
+	bindModifyDays(dom);
+	bindDeleteSelected(dom);
 	bindWorkareaCancel(dom);
 	Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 };
@@ -95,6 +99,30 @@ function bindCopySelected(dom){
 		event.stopPropagation();
 		var wa = getWorkareaDom(dom);
 		var form = CopySelected.create();
+		Submenu.hide(submenu);
+		wa.append(form);
+		wa.show();
+	})
+}
+
+function bindModifyDays(dom){
+	var submenu = getSubmenuDom(dom);
+	submenu.on("submenu-modify-days", function(event){
+		event.stopPropagation();
+		var wa = getWorkareaDom(dom);
+		var form = ModifyDays.create();
+		Submenu.hide(submenu);
+		wa.append(form);
+		wa.show();
+	})
+}
+
+function bindDeleteSelected(dom){
+	var submenu = getSubmenuDom(dom);
+	submenu.on("submenu-delete-selected", function(event){
+		event.stopPropagation();
+		var wa = getWorkareaDom(dom);
+		var form = DeleteSelected.create();
 		Submenu.hide(submenu);
 		wa.append(form);
 		wa.show();
