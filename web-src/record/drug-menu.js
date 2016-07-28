@@ -9,11 +9,15 @@ var DrugForm = require("./drug-form/drug-form");
 
 var tmplHtml = require("raw!./drug-menu.html");
 
+var CopySelected = require("./drug-copy-selected");
+
 exports.setup = function(dom, visit){
 	dom.html(tmplHtml);
 	bindAddDrug(dom, visit);
 	bindSubmenu(dom);
 	bindSubmenuClick(dom);
+	bindCopySelected(dom);
+	bindWorkareaCancel(dom);
 	Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 };
 
@@ -85,3 +89,22 @@ function bindSubmenuClick(dom){
 	});
 }
 
+function bindCopySelected(dom){
+	var submenu = getSubmenuDom(dom);
+	submenu.on("submenu-copy-selected", function(event){
+		event.stopPropagation();
+		var wa = getWorkareaDom(dom);
+		var form = CopySelected.create();
+		Submenu.hide(submenu);
+		wa.append(form);
+		wa.show();
+	})
+}
+
+function bindWorkareaCancel(dom){
+	dom.on("cancel-workarea", function(event){
+		event.stopPropagation();
+		var wa = getWorkareaDom(dom);
+		wa.html("").hide();
+	})
+}

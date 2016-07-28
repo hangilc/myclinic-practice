@@ -113,7 +113,11 @@ function bindCopyAll(dom, visitId, at){
 }
 
 function bindCopySelected(dom){
-
+	dom.on("click", "[mc-name=copySelected]", function(event){
+		event.preventDefault();
+		event.stopPropagation();
+		dom.trigger("submenu-copy-selected");
+	})
 }
 
 function bindModifyDays(dom){

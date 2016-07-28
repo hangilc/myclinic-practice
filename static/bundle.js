@@ -27187,11 +27187,15 @@
 
 	var tmplHtml = __webpack_require__(142);
 
+	var CopySelected = __webpack_require__(186);
+
 	exports.setup = function(dom, visit){
 		dom.html(tmplHtml);
 		bindAddDrug(dom, visit);
 		bindSubmenu(dom);
 		bindSubmenuClick(dom);
+		bindCopySelected(dom);
+		bindWorkareaCancel(dom);
 		Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 	};
 
@@ -27263,7 +27267,25 @@
 		});
 	}
 
+	function bindCopySelected(dom){
+		var submenu = getSubmenuDom(dom);
+		submenu.on("submenu-copy-selected", function(event){
+			event.stopPropagation();
+			var wa = getWorkareaDom(dom);
+			var form = CopySelected.create();
+			Submenu.hide(submenu);
+			wa.append(form);
+			wa.show();
+		})
+	}
 
+	function bindWorkareaCancel(dom){
+		dom.on("cancel-workarea", function(event){
+			event.stopPropagation();
+			var wa = getWorkareaDom(dom);
+			wa.html("").hide();
+		})
+	}
 
 /***/ },
 /* 137 */
@@ -27384,7 +27406,11 @@
 	}
 
 	function bindCopySelected(dom){
-
+		dom.on("click", "[mc-name=copySelected]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("submenu-copy-selected");
+		})
 	}
 
 	function bindModifyDays(dom){
@@ -28983,6 +29009,37 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 185 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"title\">選択して処方をコピー</div>\r\n<table>\r\n\t<tbody mc-name=\"tbody\"></tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input mc-name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n"
+
+/***/ },
+/* 186 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(113);
+	var tmplSrc = __webpack_require__(185);
+
+	exports.create = function(){
+		var dom = $("<div></div>");
+		dom.html(tmplSrc);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
 
 /***/ }
 /******/ ]);

@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack web-src/main.js static/bundle.js",
-    "test-server": "node test-server"
+    "test-server": "node test-server",
+    "dev": "start cmd /K npm run build -- --watch && start cmd /K node test-server"
   },
   "author": "Hangil Chang",
   "license": "MIT",
