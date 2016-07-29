@@ -1,6 +1,13 @@
 <div class="title">選択して処方をコピー</div>
 <table>
-	<tbody mc-name="tbody"></tbody>
+	<tbody mc-name="tbody">
+	{{#drugs}}
+		<tr>
+			<td><input type="checkbox" value="{{drug_id}}" /></td>
+			<td>{{label}}</td>
+		</tr>
+	{{/drugs}}
+	</tbody>
 </table>
 <hr/>
 <div>

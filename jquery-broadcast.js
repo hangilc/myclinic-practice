@@ -14,6 +14,7 @@ $.fn.broadcast = function(key, arg1){
 			}
 		});
 	});
+	return this;
 };
 
 $.fn.listen = function(key, cb){
@@ -25,4 +26,5 @@ $.fn.listen = function(key, cb){
 		}
 		e.data(key, cb);
 	});
+	return this;
 };

@@ -13,12 +13,15 @@ var CopySelected = require("./drug-copy-selected");
 var ModifyDays = require("./drug-modify-days");
 var DeleteSelected = require("./drug-delete-selected");
 
+var task = require("../task");
+var service = require("../service");
+
 exports.setup = function(dom, visit){
 	dom.html(tmplHtml);
 	bindAddDrug(dom, visit);
 	bindSubmenu(dom);
 	bindSubmenuClick(dom);
-	bindCopySelected(dom);
+	bindCopySelected(dom, visit.visit_id, visit.v_datetime);
 	bindModifyDays(dom);
 	bindDeleteSelected(dom);
 	bindWorkareaCancel(dom);
@@ -93,15 +96,23 @@ function bindSubmenuClick(dom){
 	});
 }
 
-function bindCopySelected(dom){
+function bindCopySelected(dom, visitId, at){
 	var submenu = getSubmenuDom(dom);
-	submenu.on("submenu-copy-selected", function(event){
+	submenu.on("submenu-copy-selected", function(event, targetVisitId){
 		event.stopPropagation();
-		var wa = getWorkareaDom(dom);
-		var form = CopySelected.create();
-		Submenu.hide(submenu);
-		wa.append(form);
-		wa.show();
+		task.run(function(done){
+			service.listFullDrugsForVisit(visitId, at, done);
+		}, function(err, drugs){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var wa = getWorkareaDom(dom);
+			var form = CopySelected.create(drugs);
+			Submenu.hide(submenu);
+			wa.append(form);
+			wa.show();
+		})
 	})
 }
 

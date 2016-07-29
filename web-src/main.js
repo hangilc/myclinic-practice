@@ -1,6 +1,8 @@
 "use strict";
 
 var $ = require("jquery");
+require("../jquery-broadcast");
+require("../jquery-inquire");
 var conti = require("conti");
 var mUtil = require("../myclinic-util");
 var task = require("./task");
@@ -98,3 +100,18 @@ $("body").on("set-temp-visit-id", function(event, visitId, done){
 	$("body").broadcast("rx-set-temp-visit-id", appData);
 	done();
 });
+
+$("body").reply("fn-get-target-visit-id", function(){
+	return appData.currentVisitId || appData.tempVisitId;
+});
+
+$("body").reply("fn-confirm-edit", function(visitId, what, how){
+	if( visitId === appData.currentVisitId || visitId === appData.tempVisitId ){
+		return true;
+	} else {
+		var message = "（暫定）診察中の項目ではありませんが、この" + msg + "を" + what + "しますか？";
+		return confirm(message);
+	}
+});
+
+

@@ -1,6 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
+require("../../jquery-inquire");
 var tmplHtml = require("raw!./drug-submenu.html");
 var task = require("../task");
 var service = require("../service");
@@ -10,7 +11,7 @@ var conti = require("conti");
 exports.setup = function(dom, visitId, at){
 	dom.data("visible", false);
 	bindCopyAll(dom, visitId, at);
-	bindCopySelected(dom);
+	bindCopySelected(dom, visitId, at);
 	bindModifyDays(dom);
 	bindDeleteSelected(dom);
 	bindCancel(dom);
@@ -112,11 +113,20 @@ function bindCopyAll(dom, visitId, at){
 	});
 }
 
-function bindCopySelected(dom){
+function bindCopySelected(dom, visitId, at){
 	dom.on("click", "[mc-name=copySelected]", function(event){
+		var targetVisitId = dom.inquire("fn-get-target-visit-id");
+		if( !targetVisitId ){
+			alert("現在（暫定）診察中でありません。");
+			return;
+		}
+		if( visitId === targetVisitId ){
+			alert("同じ診察にはコピーできません。");
+			return;
+		}
 		event.preventDefault();
 		event.stopPropagation();
-		dom.trigger("submenu-copy-selected");
+		dom.trigger("submenu-copy-selected", [targetVisitId]);
 	})
 }
 
