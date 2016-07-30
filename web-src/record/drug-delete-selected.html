@@ -1,6 +1,17 @@
 <div class="title">薬剤の複数削除</div>
-<div mc-name="list"></div>
+<form>
+<div mc-name="list">
+	<table>
+		{{#drugs}}
+			<tr>
+				<td><input type="checkbox" name="drug" value="{{drug_id}}" /></td>
+				<td>{{label}}</td>
+			</tr>
+		{{/drugs}}
+	</table>
+</div>
 <div class="workarea-commandbox">
 	<button mc-name="enter">削除</button>
 	<button mc-name="cancel">キャンセル</button>
 </div>
+</form>

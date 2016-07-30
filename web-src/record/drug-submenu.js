@@ -13,7 +13,7 @@ exports.setup = function(dom, visitId, at){
 	bindCopyAll(dom, visitId, at);
 	bindCopySelected(dom, visitId, at);
 	bindModifyDays(dom, visitId);
-	bindDeleteSelected(dom);
+	bindDeleteSelected(dom, visitId);
 	bindCancel(dom);
 };
 
@@ -133,7 +133,7 @@ function bindCopySelected(dom, visitId, at){
 function bindModifyDays(dom, visitId){
 	dom.on("click", "[mc-name=modifyDays]", function(event){
 		var ok = dom.inquire("fn-confirm-edit", visitId, 
-			"（暫定）診察中の項目ではありませんが、薬剤の日数を変更しますか？");
+			"（暫定）診察中の項目ではありませんが、薬剤を選択して日数を変更しますか？");
 		if( !ok ){
 			return;
 		}
@@ -143,8 +143,13 @@ function bindModifyDays(dom, visitId){
 	})
 }
 
-function bindDeleteSelected(dom){
+function bindDeleteSelected(dom, visitId){
 	dom.on("click", "[mc-name=deleteSelected]", function(event){
+		var ok = dom.inquire("fn-confirm-edit", visitId, 
+			"（暫定）診察中の項目ではありませんが、薬剤を選択して削除しますか？");
+		if( !ok ){
+			return;
+		}
 		event.preventDefault();
 		event.stopPropagation();
 		dom.trigger("submenu-delete-selected");

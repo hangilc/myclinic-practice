@@ -27279,7 +27279,7 @@
 		bindSubmenuClick(dom);
 		bindCopySelected(dom, visit.visit_id, visit.v_datetime);
 		bindModifyDays(dom, visit.visit_id, visit.v_datetime);
-		bindDeleteSelected(dom);
+		bindDeleteSelected(dom, visit.visit_id, visit.v_datetime);
 		bindWorkareaCancel(dom);
 		Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 	};
@@ -27392,15 +27392,23 @@
 		})
 	}
 
-	function bindDeleteSelected(dom){
+	function bindDeleteSelected(dom, visitId, at){
 		var submenu = getSubmenuDom(dom);
 		submenu.on("submenu-delete-selected", function(event){
 			event.stopPropagation();
-			var wa = getWorkareaDom(dom);
-			var form = DeleteSelected.create();
-			Submenu.hide(submenu);
-			wa.append(form);
-			wa.show();
+			task.run(function(done){
+				service.listFullDrugsForVisit(visitId, at, done);
+			}, function(err, drugs){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var wa = getWorkareaDom(dom);
+				var form = DeleteSelected.create(drugs, visitId, at);
+				Submenu.hide(submenu);
+				wa.append(form);
+				wa.show();
+			})
 		})
 	}
 
@@ -27431,7 +27439,7 @@
 		bindCopyAll(dom, visitId, at);
 		bindCopySelected(dom, visitId, at);
 		bindModifyDays(dom, visitId);
-		bindDeleteSelected(dom);
+		bindDeleteSelected(dom, visitId);
 		bindCancel(dom);
 	};
 
@@ -27551,7 +27559,7 @@
 	function bindModifyDays(dom, visitId){
 		dom.on("click", "[mc-name=modifyDays]", function(event){
 			var ok = dom.inquire("fn-confirm-edit", visitId, 
-				"（暫定）診察中の項目ではありませんが、薬剤の日数を変更しますか？");
+				"（暫定）診察中の項目ではありませんが、薬剤を選択して日数を変更しますか？");
 			if( !ok ){
 				return;
 			}
@@ -27561,8 +27569,13 @@
 		})
 	}
 
-	function bindDeleteSelected(dom){
+	function bindDeleteSelected(dom, visitId){
 		dom.on("click", "[mc-name=deleteSelected]", function(event){
+			var ok = dom.inquire("fn-confirm-edit", visitId, 
+				"（暫定）診察中の項目ではありませんが、薬剤を選択して削除しますか？");
+			if( !ok ){
+				return;
+			}
 			event.preventDefault();
 			event.stopPropagation();
 			dom.trigger("submenu-delete-selected");
@@ -28237,16 +28250,38 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var tmplSrc = __webpack_require__(149);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
 
-	exports.create = function(){
+	exports.create = function(drugs, visitId, at){
 		var dom = $("<div></div>");
-		dom.html(tmplSrc);
+		var data = {
+			drugs: drugs.map(function(drug){
+				return {
+					drug_id: drug.drug_id,
+					label: mUtil.drugRep(drug)
+				}
+			})
+		};
+		dom.html(tmpl.render(data));
+		bindEnter(dom, visitId);
 		bindCancel(dom);
 		return dom;
 	};
 
+	function bindEnter(dom, visitId){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
+				return +$(this).val();
+			}).get();
+			console.log(checked);
+		});
+	}
+
 	function bindCancel(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
 			event.preventDefault();
 			event.stopPropagation();
 			dom.trigger("cancel-workarea");
@@ -28257,7 +28292,7 @@
 /* 149 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"title\">薬剤の複数削除</div>\r\n<div mc-name=\"list\"></div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n"
+	module.exports = "<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n"
 
 /***/ },
 /* 150 */
