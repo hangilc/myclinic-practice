@@ -22,7 +22,7 @@ exports.setup = function(dom, visit){
 	bindSubmenu(dom);
 	bindSubmenuClick(dom);
 	bindCopySelected(dom, visit.visit_id, visit.v_datetime);
-	bindModifyDays(dom);
+	bindModifyDays(dom, visit.visit_id, visit.v_datetime);
 	bindDeleteSelected(dom);
 	bindWorkareaCancel(dom);
 	Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
@@ -116,15 +116,23 @@ function bindCopySelected(dom, visitId, at){
 	})
 }
 
-function bindModifyDays(dom){
+function bindModifyDays(dom, visitId, at){
 	var submenu = getSubmenuDom(dom);
 	submenu.on("submenu-modify-days", function(event){
 		event.stopPropagation();
-		var wa = getWorkareaDom(dom);
-		var form = ModifyDays.create();
-		Submenu.hide(submenu);
-		wa.append(form);
-		wa.show();
+		task.run(function(done){
+			service.listFullDrugsForVisit(visitId, at, done);
+		}, function(err, drugs){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var wa = getWorkareaDom(dom);
+			var form = ModifyDays.create(drugs, visitId, at);
+			Submenu.hide(submenu);
+			wa.append(form);
+			wa.show();
+		})
 	})
 }
 

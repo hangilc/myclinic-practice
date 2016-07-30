@@ -15,7 +15,7 @@ $.fn.reply = function(key, fn){
 };
 
 $.fn.inquire = function(key){
-	var args = [].slice(arguments, 1);
+	var args = [].slice.call(arguments, 1);
 	var t = makeToken(key);
 	var fn = this.closest("." + t).data(t);
 	return fn.apply(undefined, args);

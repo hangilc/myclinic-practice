@@ -1,12 +1,21 @@
-<div class="workarea">
-	<div class="title">日数を変更</div>
-	<div mc-name="list"></div>
-	<hr />
-	<div>
-		<input mc-name="days" size="6" class="alpha"/> 日分に変更
-	</div>
-	<div class="workarea-commandbox">
-		<button mc-name="enter">入力</button>
-		<button mc-name="cancel">キャンセル</button>
-	</div>
+<div class="title">日数を変更</div>
+<form onsubmit="return false">
+<div mc-name="list">
+	<table>
+		{{#drugs}}
+			<tr>
+				<td><input type="checkbox" name="drug" value="{{drug_id}}" /></td>
+				<td>{{label}}</td>
+			</tr>
+		{{/drugs}}
+	</table>
 </div>
+<hr />
+<div>
+	<input name="days" size="6" class="alpha"/> 日分に変更
+</div>
+<div class="workarea-commandbox">
+	<button mc-name="enter">入力</button>
+	<button mc-name="cancel">キャンセル</button>
+</div>
+</form>

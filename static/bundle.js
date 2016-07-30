@@ -151,11 +151,11 @@
 		return appData.currentVisitId || appData.tempVisitId;
 	});
 
-	$("body").reply("fn-confirm-edit", function(visitId, what, how){
+	$("body").reply("fn-confirm-edit", function(visitId, message){
+		console.log(visitId, message);
 		if( visitId === appData.currentVisitId || visitId === appData.tempVisitId ){
 			return true;
 		} else {
-			var message = "（暫定）診察中の項目ではありませんが、この" + msg + "を" + what + "しますか？";
 			return confirm(message);
 		}
 	});
@@ -10299,7 +10299,7 @@
 	};
 
 	$.fn.inquire = function(key){
-		var args = [].slice(arguments, 1);
+		var args = [].slice.call(arguments, 1);
 		var t = makeToken(key);
 		var fn = this.closest("." + t).data(t);
 		return fn.apply(undefined, args);
@@ -27278,7 +27278,7 @@
 		bindSubmenu(dom);
 		bindSubmenuClick(dom);
 		bindCopySelected(dom, visit.visit_id, visit.v_datetime);
-		bindModifyDays(dom);
+		bindModifyDays(dom, visit.visit_id, visit.v_datetime);
 		bindDeleteSelected(dom);
 		bindWorkareaCancel(dom);
 		Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
@@ -27372,15 +27372,23 @@
 		})
 	}
 
-	function bindModifyDays(dom){
+	function bindModifyDays(dom, visitId, at){
 		var submenu = getSubmenuDom(dom);
 		submenu.on("submenu-modify-days", function(event){
 			event.stopPropagation();
-			var wa = getWorkareaDom(dom);
-			var form = ModifyDays.create();
-			Submenu.hide(submenu);
-			wa.append(form);
-			wa.show();
+			task.run(function(done){
+				service.listFullDrugsForVisit(visitId, at, done);
+			}, function(err, drugs){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var wa = getWorkareaDom(dom);
+				var form = ModifyDays.create(drugs, visitId, at);
+				Submenu.hide(submenu);
+				wa.append(form);
+				wa.show();
+			})
 		})
 	}
 
@@ -27422,7 +27430,7 @@
 		dom.data("visible", false);
 		bindCopyAll(dom, visitId, at);
 		bindCopySelected(dom, visitId, at);
-		bindModifyDays(dom);
+		bindModifyDays(dom, visitId);
 		bindDeleteSelected(dom);
 		bindCancel(dom);
 	};
@@ -27540,8 +27548,13 @@
 		})
 	}
 
-	function bindModifyDays(dom){
+	function bindModifyDays(dom, visitId){
 		dom.on("click", "[mc-name=modifyDays]", function(event){
+			var ok = dom.inquire("fn-confirm-edit", visitId, 
+				"（暫定）診察中の項目ではありませんが、薬剤の日数を変更しますか？");
+			if( !ok ){
+				return;
+			}
 			event.preventDefault();
 			event.stopPropagation();
 			dom.trigger("submenu-modify-days");
@@ -28153,16 +28166,56 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var tmplSrc = __webpack_require__(147);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
 
-	exports.create = function(){
+	exports.create = function(drugs, visitId, at){
 		var dom = $("<div></div>");
-		dom.html(tmplSrc);
+		var data = {
+			drugs: drugs.map(function(drug){
+				return {
+					drug_id: drug.drug_id,
+					label: mUtil.drugRep(drug)
+				}
+			})
+		};
+		dom.html(tmpl.render(data));
+		bindEnter(dom, drugs, visitId);
 		bindCancel(dom);
 		return dom;
 	};
 
+	function bindEnter(dom, drugs, visitId){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
+				return +$(this).val();
+			}).get();
+			var selectedDrugs = drugs.filter(function(drug){
+				return checked.indexOf(drug.drug_id) >= 0;
+			});
+			var days = dom.find("input[name=days]").val().trim();
+			if( days === "" ){
+				alert("日数が入力されていません。");
+				return;
+			}
+			if( !/^\d+$/.test(days) ){
+				alert("日数の入力が適切でありません。");
+				return;
+			}
+			days = +days;
+			selectedDrugs = selectedDrugs.map(function(drug){
+				return mUtil.assign({}, drug, {
+					d_days: days
+				});
+			});
+			console.log(selectedDrugs);
+		});
+	}
+
 	function bindCancel(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=cancel]", function(event){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
 			event.preventDefault();
 			event.stopPropagation();
 			dom.trigger("cancel-workarea");
@@ -28173,7 +28226,7 @@
 /* 147 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">日数を変更</div>\r\n\t<div mc-name=\"list\"></div>\r\n\t<hr />\r\n\t<div>\r\n\t\t<input mc-name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<button mc-name=\"enter\">入力</button>\r\n\t\t<button mc-name=\"cancel\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"title\">日数を変更</div>\r\n<form onsubmit=\"return false\">\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<hr />\r\n<div>\r\n\t<input name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">入力</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n"
 
 /***/ },
 /* 148 */

@@ -105,11 +105,11 @@ $("body").reply("fn-get-target-visit-id", function(){
 	return appData.currentVisitId || appData.tempVisitId;
 });
 
-$("body").reply("fn-confirm-edit", function(visitId, what, how){
+$("body").reply("fn-confirm-edit", function(visitId, message){
+	console.log(visitId, message);
 	if( visitId === appData.currentVisitId || visitId === appData.tempVisitId ){
 		return true;
 	} else {
-		var message = "（暫定）診察中の項目ではありませんが、この" + msg + "を" + what + "しますか？";
 		return confirm(message);
 	}
 });
