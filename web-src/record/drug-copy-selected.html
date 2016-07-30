@@ -1,9 +1,10 @@
 <div class="title">選択して処方をコピー</div>
+<form onsubmit="return false">
 <table>
 	<tbody mc-name="tbody">
 	{{#drugs}}
 		<tr>
-			<td><input type="checkbox" value="{{drug_id}}" /></td>
+			<td><input type="checkbox" name="drug" value="{{drug_id}}" /></td>
 			<td>{{label}}</td>
 		</tr>
 	{{/drugs}}
@@ -21,3 +22,4 @@
     <button mc-name="enter">入力</button>
     <button mc-name="cancel">キャンセル</button>
 </div>
+</form>

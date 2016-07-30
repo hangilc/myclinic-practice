@@ -108,7 +108,7 @@ function bindCopySelected(dom, visitId, at){
 				return;
 			}
 			var wa = getWorkareaDom(dom);
-			var form = CopySelected.create(drugs);
+			var form = CopySelected.create(drugs, at);
 			Submenu.hide(submenu);
 			wa.append(form);
 			wa.show();
