@@ -9,7 +9,6 @@ var service = require("../service");
 var task = require("../task");
 
 exports.create = function(drugs, visitId, at){
-	var dom = $("<div></div>");
 	var data = {
 		drugs: drugs.map(function(drug){
 			return {
@@ -18,7 +17,7 @@ exports.create = function(drugs, visitId, at){
 			}
 		})
 	};
-	dom.html(tmpl.render(data));
+	var dom = $(tmpl.render(data));
 	bindEnter(dom, visitId);
 	bindCancel(dom);
 	return dom;

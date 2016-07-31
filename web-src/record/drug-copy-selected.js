@@ -10,11 +10,10 @@ var task = require("../task");
 var conti = require("conti");
 
 exports.create = function(drugs){
-	var dom = $("<div></div>");
 	var data = {
 		drugs: drugs.map(drugToData)
 	};
-	dom.html(tmpl.render(data));
+	var dom = $(tmpl.render(data));
 	bindEnter(dom, drugs);
 	bindCancel(dom);
 	return dom;

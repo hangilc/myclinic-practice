@@ -19,18 +19,7 @@ var Gaiyou = mConsts.DrugCategoryGaiyou;
 var ZaikeiGaiyou = mConsts.ZaikeiGaiyou;
 
 exports.createAddForm = function(visitId, at, patientId){
-	// var data;
-	// if( drug.drug_id ){
-	// 	data = {
-	// 		title: "処方の編集"
-	// 	}
-	// } else {
-	// 	data = {
-	// 		title: "新規処方の入力"
-	// 	}
-	// }
-	var dom = $("<div></div>");
-	dom.append(tmpl.render({title: "新規処方の入力"}));
+	var dom = $(tmpl.render({isCreating: true, title: "新規処方の入力"}));
 	bindSearchForm(dom, visitId, at, patientId);
 	bindSearchResult(dom, at);
 	bindUsageExample(dom);
@@ -40,6 +29,30 @@ exports.createAddForm = function(visitId, at, patientId){
 	bindCancel(dom);
 	return dom;
 };
+
+exports.createEditForm = function(drug, at, patientId){
+	var data = {
+		isEditing: true,
+		title: "処方の編集",
+		name: drug.name,
+		iyakuhincode: drug.d_iyakuhincode,
+		amount: drug.d_amount,
+		unit: drug.unit,
+		usage: drug.d_usage,
+		days: drug.d_days,
+		category: drug.d_category
+	}
+	var dom = $(tmpl.render(data));
+	updateDisplayDom(dom, data);
+	bindSearchForm(dom, drug.visit_id, at, patientId);
+	bindSearchResult(dom, at);
+	bindUsageExample(dom);
+	bindCategoryChange(dom);
+	bindClear(dom);
+	bindModify(dom, drug.drug_id, at);
+	bindCancel(dom);
+	return dom;
+}
 
 function getErrorBox(dom){
 	return dom.find("> .error-box");
@@ -385,9 +398,6 @@ function collectFormInputs(dom, drug){
 
 function validate(drug){
 	var errs = [];
-	if( !(drug.visit_id > 0) ){
-		errs.push("invalid visit_id: " + drug.visit_id);
-	}
 	if( !(drug.d_iyakuhincode > 0) ){
 		errs.push("invalid iyakuhincode: " + drug.d_iyakuhincode);
 	}
@@ -451,6 +461,49 @@ function bindEnter(dom, visitId, at){
 				return;
 			}
 			dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
+		})
+	});
+}
+
+function bindModify(dom, drugId, at){
+	dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
+		event.stopPropagation();
+		var iyakuhincode = getDisplayDom(dom).data("iyakuhincode");
+		if( !iyakuhincode ){
+			alert("薬剤が設定されていません。");
+			return;
+		}
+		var drug = {
+			drug_id: drugId,
+			d_iyakuhincode: iyakuhincode
+		};
+		collectFormInputs(dom, drug);
+		var errors = validate(drug);
+		if( errors.length > 0 ){
+			getErrorBox(dom).text(errors.join("")).show();
+			return;
+		}
+		var newDrug;
+		task.run([
+			function(done){
+				service.modifyDrug(drug, done);
+			},
+			function(done){
+				service.getFullDrug(drug.drug_id, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newDrug = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("drug-modified", newDrug);
 		})
 	});
 }

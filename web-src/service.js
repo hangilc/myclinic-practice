@@ -146,3 +146,7 @@ exports.batchUpdateDrugsDays = function(drugIds, days, done){
 	};
 	request("batch_update_drugs_days", JSON.stringify(data), "POST", done);
 };
+
+exports.modifyDrug = function(drug, done){
+	request("modify_drug", JSON.stringify(drug), "POST", done);
+};

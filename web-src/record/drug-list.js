@@ -4,13 +4,13 @@ var $ = require("jquery");
 var tmplHtml = require("raw!./drug-list.html");
 var Drug = require("./drug");
 
-exports.setup = function(dom, drugs, visitId){
+exports.setup = function(dom, drugs, visitId, at, patientId){
 	dom.html(tmplHtml);
 	var listDom = getListDom(dom);
 	updateRp(dom, drugs.length);
 	var index = 1;
 	drugs.forEach(function(drug){
-		var e = Drug.create(index++, drug);
+		var e = Drug.create(index++, drug, at, patientId);
 		listDom.append(e);
 	});
 	respondToDrugsBatchEntered(dom, visitId);

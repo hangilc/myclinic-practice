@@ -19,7 +19,6 @@ var service = require("../service");
 exports.setup = function(dom, visit){
 	dom.html(tmplHtml);
 	bindAddDrug(dom, visit);
-	bindSubmenu(dom);
 	bindSubmenuClick(dom);
 	bindCopySelected(dom, visit.visit_id, visit.v_datetime);
 	bindModifyDays(dom, visit.visit_id, visit.v_datetime);
@@ -34,20 +33,19 @@ function getSubmenuDom(dom){
 }
 
 function getWorkareaDom(dom){
-	return dom.find(".workarea");
+	return dom.find("> [mc-name=workarea]");
 }
 
 function setWorkarea(dom, kind, content){
 	var wa = getWorkareaDom(dom);
 	wa.data("kind", kind);
 	wa.html("").append(content);
-	wa.show();
 }
 
 function clearWorkarea(dom){
 	var wa = getWorkareaDom(dom);
 	wa.removeData("kind");
-	wa.hide().html("");
+	wa.html("");
 }
 
 function bindAddDrug(dom, visit){
@@ -61,6 +59,8 @@ function bindAddDrug(dom, visit){
 		var kind = wa.data("kind");
 		if( kind === "add-drug" ){
 			clearWorkarea(dom);
+			return;
+		} else if( kind ){
 			return;
 		}
 		var msg = "（暫定）診察中ではありませんが、薬剤を追加しますか？";
@@ -79,10 +79,6 @@ function bindAddForm(dom, form){
 		event.stopPropagation();
 		clearWorkarea(dom);
 	});
-}
-
-function bindSubmenu(dom){
-	var submenu = getSubmenuDom(dom);
 }
 
 function bindSubmenuClick(dom){
@@ -112,11 +108,9 @@ function bindCopySelected(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			var wa = getWorkareaDom(dom);
 			var form = CopySelected.create(drugs, at);
 			Submenu.hide(submenu);
-			wa.append(form);
-			wa.show();
+			setWorkarea(dom, "copy-selected", form);
 		})
 	})
 }
@@ -132,11 +126,9 @@ function bindModifyDays(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			var wa = getWorkareaDom(dom);
 			var form = ModifyDays.create(drugs, visitId, at);
 			Submenu.hide(submenu);
-			wa.append(form);
-			wa.show();
+			setWorkarea(dom, "modify-days", form);
 		})
 	})
 }
@@ -152,11 +144,9 @@ function bindDeleteSelected(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			var wa = getWorkareaDom(dom);
 			var form = DeleteSelected.create(drugs, visitId, at);
 			Submenu.hide(submenu);
-			wa.append(form);
-			wa.show();
+			setWorkarea(dom, "delete-selected", form);
 		})
 	})
 }
@@ -164,15 +154,13 @@ function bindDeleteSelected(dom, visitId, at){
 function bindWorkareaCancel(dom){
 	dom.on("cancel-workarea", function(event){
 		event.stopPropagation();
-		var wa = getWorkareaDom(dom);
-		wa.html("").hide();
+		clearWorkarea(dom);
 	});
 }
 
 function bindWorkareaClose(dom){
 	dom.on("close-workarea", function(event){
 		event.stopPropagation();
-		var wa = getWorkareaDom(dom);
-		wa.html("").hide();
+		clearWorkarea(dom);
 	})
 }

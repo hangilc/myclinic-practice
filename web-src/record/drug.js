@@ -4,11 +4,12 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
+var DrugForm = require("./drug-form/drug-form");
 
 var tmplSrc = require("raw!./drug.html");
 var tmpl = hogan.compile(tmplSrc);
 
-exports.create = function(index, drug){
+exports.create = function(index, drug, at, patientId){
 	drug = mUtil.assign({}, drug);
 	var e = $("<div></div>");
 	var html = tmpl.render({
@@ -27,10 +28,52 @@ exports.create = function(index, drug){
 		}
 		drug.d_days = days;
 		e.find("> [mc-name=disp] [mc-name=label]").text(mUtil.drugRep(drug));
-	})
+	});
+	bindClick(e, drug, at, patientId);
 	return e;
 }
 
+function getDispDom(dom){
+	return dom.find("> [mc-name=disp]");
+}
+
+function getFormAreaDom(dom){
+	return dom.find("> [mc-name=form-area]");
+}
+
+function bindClick(dom, drug, at, patientId){
+	dom.on("click", "[mc-name=disp]", function(event){
+		event.stopPropagation();
+		var message = "（暫定）診察中でありませんが、この薬剤を編集しますか？";
+		if( !dom.inquire("fn-confirm-edit", drug.visit_id, message) ){
+			return;
+		}
+		var form = DrugForm.createEditForm(drug, at, patientId);
+		bindFormModified(dom, form);
+		bindFormCancel(dom, form);
+		var formArea = getFormAreaDom(dom).html("");
+		formArea.append(form);
+		getDispDom(dom).hide();
+	});
+}
+
+function bindFormModified(dom, form){
+	form.on("drug-modified", function(event, newDrug){
+		event.stopPropagation();
+		form.remove();
+		var dispDom = getDispDom(dom);
+		dispDom.find("[mc-name=label]").text(mUtil.drugRep(newDrug));
+		dispDom.show();
+	});
+}
+
+function bindFormCancel(dom, form){
+	form.on("cancel-form", function(event){
+		event.stopPropagation();
+		form.remove();
+		getDispDom(dom).show();
+	});
+}
 
 
 

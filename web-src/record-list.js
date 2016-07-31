@@ -46,7 +46,8 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
 	Hoken.setup(e.find("[mc-name=hoken]"), visit);
 	DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
-	DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), visit.drugs, visit.visit_id);
+	DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), 
+		visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
 	ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"));
 	var shinryouWrapper = e.find("[mc-name=shinryouList]");
 	visit.shinryou_list.forEach(function(shinryou){

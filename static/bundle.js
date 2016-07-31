@@ -25021,6 +25021,10 @@
 		request("batch_update_drugs_days", JSON.stringify(data), "POST", done);
 	};
 
+	exports.modifyDrug = function(drug, done){
+		request("modify_drug", JSON.stringify(drug), "POST", done);
+	};
+
 
 /***/ },
 /* 113 */
@@ -26647,7 +26651,8 @@
 		TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
 		Hoken.setup(e.find("[mc-name=hoken]"), visit);
 		DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
-		DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), visit.drugs, visit.visit_id);
+		DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), 
+			visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
 		ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"));
 		var shinryouWrapper = e.find("[mc-name=shinryouList]");
 		visit.shinryou_list.forEach(function(shinryou){
@@ -27307,7 +27312,6 @@
 	exports.setup = function(dom, visit){
 		dom.html(tmplHtml);
 		bindAddDrug(dom, visit);
-		bindSubmenu(dom);
 		bindSubmenuClick(dom);
 		bindCopySelected(dom, visit.visit_id, visit.v_datetime);
 		bindModifyDays(dom, visit.visit_id, visit.v_datetime);
@@ -27322,20 +27326,19 @@
 	}
 
 	function getWorkareaDom(dom){
-		return dom.find(".workarea");
+		return dom.find("> [mc-name=workarea]");
 	}
 
 	function setWorkarea(dom, kind, content){
 		var wa = getWorkareaDom(dom);
 		wa.data("kind", kind);
 		wa.html("").append(content);
-		wa.show();
 	}
 
 	function clearWorkarea(dom){
 		var wa = getWorkareaDom(dom);
 		wa.removeData("kind");
-		wa.hide().html("");
+		wa.html("");
 	}
 
 	function bindAddDrug(dom, visit){
@@ -27349,6 +27352,8 @@
 			var kind = wa.data("kind");
 			if( kind === "add-drug" ){
 				clearWorkarea(dom);
+				return;
+			} else if( kind ){
 				return;
 			}
 			var msg = "（暫定）診察中ではありませんが、薬剤を追加しますか？";
@@ -27367,10 +27372,6 @@
 			event.stopPropagation();
 			clearWorkarea(dom);
 		});
-	}
-
-	function bindSubmenu(dom){
-		var submenu = getSubmenuDom(dom);
 	}
 
 	function bindSubmenuClick(dom){
@@ -27400,11 +27401,9 @@
 					alert(err);
 					return;
 				}
-				var wa = getWorkareaDom(dom);
 				var form = CopySelected.create(drugs, at);
 				Submenu.hide(submenu);
-				wa.append(form);
-				wa.show();
+				setWorkarea(dom, "copy-selected", form);
 			})
 		})
 	}
@@ -27420,11 +27419,9 @@
 					alert(err);
 					return;
 				}
-				var wa = getWorkareaDom(dom);
 				var form = ModifyDays.create(drugs, visitId, at);
 				Submenu.hide(submenu);
-				wa.append(form);
-				wa.show();
+				setWorkarea(dom, "modify-days", form);
 			})
 		})
 	}
@@ -27440,11 +27437,9 @@
 					alert(err);
 					return;
 				}
-				var wa = getWorkareaDom(dom);
 				var form = DeleteSelected.create(drugs, visitId, at);
 				Submenu.hide(submenu);
-				wa.append(form);
-				wa.show();
+				setWorkarea(dom, "delete-selected", form);
 			})
 		})
 	}
@@ -27452,16 +27447,14 @@
 	function bindWorkareaCancel(dom){
 		dom.on("cancel-workarea", function(event){
 			event.stopPropagation();
-			var wa = getWorkareaDom(dom);
-			wa.html("").hide();
+			clearWorkarea(dom);
 		});
 	}
 
 	function bindWorkareaClose(dom){
 		dom.on("close-workarea", function(event){
 			event.stopPropagation();
-			var wa = getWorkareaDom(dom);
-			wa.html("").hide();
+			clearWorkarea(dom);
 		})
 	}
 
@@ -27665,18 +27658,7 @@
 	var ZaikeiGaiyou = mConsts.ZaikeiGaiyou;
 
 	exports.createAddForm = function(visitId, at, patientId){
-		// var data;
-		// if( drug.drug_id ){
-		// 	data = {
-		// 		title: "処方の編集"
-		// 	}
-		// } else {
-		// 	data = {
-		// 		title: "新規処方の入力"
-		// 	}
-		// }
-		var dom = $("<div></div>");
-		dom.append(tmpl.render({title: "新規処方の入力"}));
+		var dom = $(tmpl.render({isCreating: true, title: "新規処方の入力"}));
 		bindSearchForm(dom, visitId, at, patientId);
 		bindSearchResult(dom, at);
 		bindUsageExample(dom);
@@ -27686,6 +27668,30 @@
 		bindCancel(dom);
 		return dom;
 	};
+
+	exports.createEditForm = function(drug, at, patientId){
+		var data = {
+			isEditing: true,
+			title: "処方の編集",
+			name: drug.name,
+			iyakuhincode: drug.d_iyakuhincode,
+			amount: drug.d_amount,
+			unit: drug.unit,
+			usage: drug.d_usage,
+			days: drug.d_days,
+			category: drug.d_category
+		}
+		var dom = $(tmpl.render(data));
+		updateDisplayDom(dom, data);
+		bindSearchForm(dom, drug.visit_id, at, patientId);
+		bindSearchResult(dom, at);
+		bindUsageExample(dom);
+		bindCategoryChange(dom);
+		bindClear(dom);
+		bindModify(dom, drug.drug_id, at);
+		bindCancel(dom);
+		return dom;
+	}
 
 	function getErrorBox(dom){
 		return dom.find("> .error-box");
@@ -28031,9 +28037,6 @@
 
 	function validate(drug){
 		var errs = [];
-		if( !(drug.visit_id > 0) ){
-			errs.push("invalid visit_id: " + drug.visit_id);
-		}
 		if( !(drug.d_iyakuhincode > 0) ){
 			errs.push("invalid iyakuhincode: " + drug.d_iyakuhincode);
 		}
@@ -28101,11 +28104,54 @@
 		});
 	}
 
+	function bindModify(dom, drugId, at){
+		dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
+			event.stopPropagation();
+			var iyakuhincode = getDisplayDom(dom).data("iyakuhincode");
+			if( !iyakuhincode ){
+				alert("薬剤が設定されていません。");
+				return;
+			}
+			var drug = {
+				drug_id: drugId,
+				d_iyakuhincode: iyakuhincode
+			};
+			collectFormInputs(dom, drug);
+			var errors = validate(drug);
+			if( errors.length > 0 ){
+				getErrorBox(dom).text(errors.join("")).show();
+				return;
+			}
+			var newDrug;
+			task.run([
+				function(done){
+					service.modifyDrug(drug, done);
+				},
+				function(done){
+					service.getFullDrug(drug.drug_id, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newDrug = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drug-modified", newDrug);
+			})
+		});
+	}
+
 /***/ },
 /* 142 */
 /***/ function(module, exports) {
 
-	module.exports = "<div mc-name=\"title\" class=\"title\">{{title}}</div>\r\n<div class=\"error-box\" style=\"display:none\"></div>\r\n<div class=\"drug-area\"> <!-- should be at the top level -->\r\n    <table width=\"100%\">\r\n        <tr>\r\n            <td style=\"width:3em;\">名称</td>\r\n            <td mc-name=\"name\"></td>\r\n        </tr>\r\n        <tr>\r\n            <td mc-name=\"amountLabel\">用量</td>\r\n            <td>\r\n                <input mc-name=\"amount\" class=\"alpha-only\" style=\"width:4em\"/>\r\n                <span mc-name=\"unit\"></span>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td>用法</td>\r\n            <td>\r\n                <table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\r\n                    <tr>\r\n                        <td>\r\n                            <input mc-name=\"usage\" class=\"kanji\" style=\"width:100%\"/>\r\n                        </td>\r\n                        <td>\r\n                            &nbsp;\r\n                            <a mc-name=\"usageExampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                               >例</a>\r\n                        </td>\r\n                    </tr>\r\n                </table>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"usageExampleWrapper\" style=\"display:none\">\r\n            <td colspan=\"2\">\r\n                <select name=\"usage-example\" size=\"4\">\r\n                    <option>分１　朝食後</option>\r\n                    <option>分２　朝夕食後</option>\r\n                    <option>分３　毎食後</option>\r\n                    <option>分１　寝る前</option>\r\n                </select>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"daysRow\">\r\n            <td mc-name=\"daysLabel\">日数</td>\r\n            <td>\r\n                <input mc-name=\"days\" class=\"alpha-only\" style=\"width:4em\"/>\r\n                <span mc-name=\"daysUnit\">日分</span>\r\n    \t\t<span mc-name=\"fixedDaysWrapper\" style=\"display:none\">\r\n    \t\t\t<input mc-name=\"fixedDaysCheck\" type=\"checkbox\"  checked=\"checked\"/> 固定\r\n    \t\t</span>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <div>\r\n        <input type=radio mc-name=\"categoryNaifuku\" name=\"category\" value=\"0\" checked>内服\r\n        <input type=radio mc-name=\"categoryTonpuku\" name=\"category\" value=\"1\">屯服\r\n        <input type=radio mc-name=\"categoryGaiyou\"  name=\"category\" value=\"2\">外用\r\n    </div>\r\n    <div class=\"edit-only\" style=\"display:none\">\r\n        <input type=\"checkbox\" mc-name=\"preserveUsage\">用量・用法をそのままに\r\n    </div>\r\n    <div mc-name=\"comment\" style=\"padding:6px;display:none;border:1px solid #ccc\"></div>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enterLink\">入力</button>\r\n    <button mc-name=\"closeLink\">閉じる</button>\r\n    <a mc-name=\"clearFormLink\" href=\"javascript:void(0)\" class=\"cmd-link\">クリア</a>\r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" style=\"display:none\">削除</a>\r\n</div>\r\n<div class=\"drug-search-area\">\r\n    <form style=\"margin:4px 0\" mc-name=\"searchForm\">\r\n        <input mc-name=\"searchText\" type=\"text\" class=\"kanji\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div style=\"margin:4px 0\">\r\n        <input type=radio name=\"search-mode\" value=\"master\">マスター\r\n        <input type=radio name=\"search-mode\" value=\"stock\" checked>約束処方\r\n        <input type=radio name=\"search-mode\" value=\"prev\">過去の処方\r\n    </div>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=10 style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n\r\n"
+	module.exports = "<div class=\"workarea\">\r\n<div mc-name=\"title\" class=\"title\">{{title}}</div>\r\n<div class=\"error-box\" style=\"display:none\"></div>\r\n<div class=\"drug-area\"> <!-- should be at the top level -->\r\n    <table width=\"100%\">\r\n        <tr>\r\n            <td style=\"width:3em;\">名称</td>\r\n            <td mc-name=\"name\"></td>\r\n        </tr>\r\n        <tr>\r\n            <td mc-name=\"amountLabel\">用量</td>\r\n            <td>\r\n                <input mc-name=\"amount\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"unit\"></span>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td>用法</td>\r\n            <td>\r\n                <table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\r\n                    <tr>\r\n                        <td>\r\n                            <input mc-name=\"usage\" class=\"kanji\" style=\"width:100%\" />\r\n                        </td>\r\n                        <td>\r\n                            &nbsp;\r\n                            <a mc-name=\"usageExampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                               >例</a>\r\n                        </td>\r\n                    </tr>\r\n                </table>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"usageExampleWrapper\" style=\"display:none\">\r\n            <td colspan=\"2\">\r\n                <select name=\"usage-example\" size=\"4\">\r\n                    <option>分１　朝食後</option>\r\n                    <option>分２　朝夕食後</option>\r\n                    <option>分３　毎食後</option>\r\n                    <option>分１　寝る前</option>\r\n                </select>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"daysRow\">\r\n            <td mc-name=\"daysLabel\">日数</td>\r\n            <td>\r\n                <input mc-name=\"days\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"daysUnit\">日分</span>\r\n    \t\t<span mc-name=\"fixedDaysWrapper\" style=\"display:none\">\r\n    \t\t\t<input mc-name=\"fixedDaysCheck\" type=\"checkbox\"  checked=\"checked\"/> 固定\r\n    \t\t</span>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <div>\r\n        <input type=radio mc-name=\"categoryNaifuku\" name=\"category\" value=\"0\" checked>内服\r\n        <input type=radio mc-name=\"categoryTonpuku\" name=\"category\" value=\"1\">屯服\r\n        <input type=radio mc-name=\"categoryGaiyou\"  name=\"category\" value=\"2\">外用\r\n    </div>\r\n    <div class=\"edit-only\" style=\"display:none\">\r\n        <input type=\"checkbox\" mc-name=\"preserveUsage\">用量・用法をそのままに\r\n    </div>\r\n    <div mc-name=\"comment\" style=\"padding:6px;display:none;border:1px solid #ccc\"></div>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enterLink\">入力</button>\r\n    <button mc-name=\"closeLink\">閉じる</button>\r\n    <a mc-name=\"clearFormLink\" href=\"javascript:void(0)\" class=\"cmd-link\">クリア</a>\r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" style=\"display:none\">削除</a>\r\n</div>\r\n<div class=\"drug-search-area\">\r\n    <form style=\"margin:4px 0\" mc-name=\"searchForm\">\r\n        <input mc-name=\"searchText\" type=\"text\" class=\"kanji\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div style=\"margin:4px 0\">\r\n        <input type=radio name=\"search-mode\" value=\"master\">マスター\r\n        <input type=radio name=\"search-mode\" value=\"stock\" checked>約束処方\r\n        <input type=radio name=\"search-mode\" value=\"prev\">過去の処方\r\n    </div>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=10 style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n</div>\r\n\r\n"
 
 /***/ },
 /* 143 */
@@ -28117,7 +28163,7 @@
 /* 144 */
 /***/ function(module, exports) {
 
-	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div class=\"drug-submenu\" />\r\n<div class=\"workarea\" style=\"display:none\" />\r\n"
+	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div class=\"drug-submenu\" />\r\n<div mc-name=\"workarea\" />\r\n"
 
 /***/ },
 /* 145 */
@@ -28135,11 +28181,10 @@
 	var conti = __webpack_require__(4);
 
 	exports.create = function(drugs){
-		var dom = $("<div></div>");
 		var data = {
 			drugs: drugs.map(drugToData)
 		};
-		dom.html(tmpl.render(data));
+		var dom = $(tmpl.render(data));
 		bindEnter(dom, drugs);
 		bindCancel(dom);
 		return dom;
@@ -28249,7 +28294,7 @@
 /* 146 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"title\">選択して処方をコピー</div>\r\n<form onsubmit=\"return false\">\r\n<table>\r\n\t<tbody mc-name=\"tbody\">\r\n\t{{#drugs}}\r\n\t\t<tr>\r\n\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t<td>{{label}}</td>\r\n\t\t</tr>\r\n\t{{/drugs}}\r\n\t</tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">選択して処方をコピー</div>\r\n<form onsubmit=\"return false\">\r\n<table>\r\n\t<tbody mc-name=\"tbody\">\r\n\t{{#drugs}}\r\n\t\t<tr>\r\n\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t<td>{{label}}</td>\r\n\t\t</tr>\r\n\t{{/drugs}}\r\n\t</tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
 /* 147 */
@@ -28327,7 +28372,7 @@
 /* 148 */
 /***/ function(module, exports) {
 
-	module.exports = "<div>\r\n<div class=\"title\">日数を変更</div>\r\n<form onsubmit=\"return false\">\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<hr />\r\n<div>\r\n\t<input name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">入力</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">日数を変更</div>\r\n<form onsubmit=\"return false\">\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<hr />\r\n<div>\r\n\t<input name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">入力</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
 /* 149 */
@@ -28344,7 +28389,6 @@
 	var task = __webpack_require__(111);
 
 	exports.create = function(drugs, visitId, at){
-		var dom = $("<div></div>");
 		var data = {
 			drugs: drugs.map(function(drug){
 				return {
@@ -28353,7 +28397,7 @@
 				}
 			})
 		};
-		dom.html(tmpl.render(data));
+		var dom = $(tmpl.render(data));
 		bindEnter(dom, visitId);
 		bindCancel(dom);
 		return dom;
@@ -28392,7 +28436,7 @@
 /* 150 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
 /* 151 */
@@ -28404,13 +28448,13 @@
 	var tmplHtml = __webpack_require__(152);
 	var Drug = __webpack_require__(153);
 
-	exports.setup = function(dom, drugs, visitId){
+	exports.setup = function(dom, drugs, visitId, at, patientId){
 		dom.html(tmplHtml);
 		var listDom = getListDom(dom);
 		updateRp(dom, drugs.length);
 		var index = 1;
 		drugs.forEach(function(drug){
-			var e = Drug.create(index++, drug);
+			var e = Drug.create(index++, drug, at, patientId);
 			listDom.append(e);
 		});
 		respondToDrugsBatchEntered(dom, visitId);
@@ -28473,11 +28517,12 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
+	var DrugForm = __webpack_require__(141);
 
 	var tmplSrc = __webpack_require__(154);
 	var tmpl = hogan.compile(tmplSrc);
 
-	exports.create = function(index, drug){
+	exports.create = function(index, drug, at, patientId){
 		drug = mUtil.assign({}, drug);
 		var e = $("<div></div>");
 		var html = tmpl.render({
@@ -28496,10 +28541,52 @@
 			}
 			drug.d_days = days;
 			e.find("> [mc-name=disp] [mc-name=label]").text(mUtil.drugRep(drug));
-		})
+		});
+		bindClick(e, drug, at, patientId);
 		return e;
 	}
 
+	function getDispDom(dom){
+		return dom.find("> [mc-name=disp]");
+	}
+
+	function getFormAreaDom(dom){
+		return dom.find("> [mc-name=form-area]");
+	}
+
+	function bindClick(dom, drug, at, patientId){
+		dom.on("click", "[mc-name=disp]", function(event){
+			event.stopPropagation();
+			var message = "（暫定）診察中でありませんが、この薬剤を編集しますか？";
+			if( !dom.inquire("fn-confirm-edit", drug.visit_id, message) ){
+				return;
+			}
+			var form = DrugForm.createEditForm(drug, at, patientId);
+			bindFormModified(dom, form);
+			bindFormCancel(dom, form);
+			var formArea = getFormAreaDom(dom).html("");
+			formArea.append(form);
+			getDispDom(dom).hide();
+		});
+	}
+
+	function bindFormModified(dom, form){
+		form.on("drug-modified", function(event, newDrug){
+			event.stopPropagation();
+			form.remove();
+			var dispDom = getDispDom(dom);
+			dispDom.find("[mc-name=label]").text(mUtil.drugRep(newDrug));
+			dispDom.show();
+		});
+	}
+
+	function bindFormCancel(dom, form){
+		form.on("cancel-form", function(event){
+			event.stopPropagation();
+			form.remove();
+			getDispDom(dom).show();
+		});
+	}
 
 
 
