@@ -5,9 +5,14 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./drug-modify-days.html");
 var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
+var mConst = require("myclinic-consts");
+var service = require("../service");
+var task = require("../task");
 
 exports.create = function(drugs, visitId, at){
-	var dom = $("<div></div>");
+	drugs = drugs.filter(function(drug){
+		return drug.d_category === mConst.DrugCategoryNaifuku;
+	});
 	var data = {
 		drugs: drugs.map(function(drug){
 			return {
@@ -16,7 +21,7 @@ exports.create = function(drugs, visitId, at){
 			}
 		})
 	};
-	dom.html(tmpl.render(data));
+	var dom = $(tmpl.render(data));
 	bindEnter(dom, drugs, visitId);
 	bindCancel(dom);
 	return dom;
@@ -29,9 +34,6 @@ function bindEnter(dom, drugs, visitId){
 		var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
 			return +$(this).val();
 		}).get();
-		var selectedDrugs = drugs.filter(function(drug){
-			return checked.indexOf(drug.drug_id) >= 0;
-		});
 		var days = dom.find("input[name=days]").val().trim();
 		if( days === "" ){
 			alert("日数が入力されていません。");
@@ -41,13 +43,18 @@ function bindEnter(dom, drugs, visitId){
 			alert("日数の入力が適切でありません。");
 			return;
 		}
-		days = +days;
-		selectedDrugs = selectedDrugs.map(function(drug){
-			return mUtil.assign({}, drug, {
-				d_days: days
-			});
-		});
-		console.log(selectedDrugs);
+		task.run([
+			function(done){
+				service.batchUpdateDrugsDays(checked, +days, done);
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("drugs-batch-modified-days", [visitId, checked, days]);
+			dom.trigger("close-workarea");
+		})
 	});
 }
 

@@ -138,3 +138,11 @@ exports.batchEnterDrugs = function(drugs, cb){
 exports.batchDeleteDrugs = function(drugIds, done){
 	request("batch_delete_drugs", JSON.stringify(drugIds), "POST", done);
 };
+
+exports.batchUpdateDrugsDays = function(drugIds, days, done){
+	var data = {
+		drug_ids: drugIds,
+		days: days
+	};
+	request("batch_update_drugs_days", JSON.stringify(data), "POST", done);
+};
