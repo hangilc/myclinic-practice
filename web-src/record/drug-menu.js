@@ -25,6 +25,7 @@ exports.setup = function(dom, visit){
 	bindModifyDays(dom, visit.visit_id, visit.v_datetime);
 	bindDeleteSelected(dom, visit.visit_id, visit.v_datetime);
 	bindWorkareaCancel(dom);
+	bindWorkareaClose(dom);
 	Submenu.setup(getSubmenuDom(dom), visit.visit_id, visit.v_datetime);
 };
 
@@ -158,6 +159,14 @@ function bindDeleteSelected(dom, visitId, at){
 
 function bindWorkareaCancel(dom){
 	dom.on("cancel-workarea", function(event){
+		event.stopPropagation();
+		var wa = getWorkareaDom(dom);
+		wa.html("").hide();
+	});
+}
+
+function bindWorkareaClose(dom){
+	dom.on("close-workarea", function(event){
 		event.stopPropagation();
 		var wa = getWorkareaDom(dom);
 		wa.html("").hide();

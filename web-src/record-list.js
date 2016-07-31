@@ -94,7 +94,6 @@ function bindDrugsBatchEntered(recordListDom){
 		}
 		var index = items.length + 1;
 		drugs.forEach(function(drug){
-			console.log(drug);
 			var de = Drug.create(index++, drug);
 			drugWrapper.append(de);
 		})

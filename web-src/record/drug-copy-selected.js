@@ -46,8 +46,10 @@ function bindEnter(dom, drugs){
 			alert("コピー先の（暫定）診察がみつかりません。");
 			return;
 		}
+		var newDays = dom.find("> form input[name=days]").val();
 		var targetVisitAt;
-		console.log("targetVisitId", targetVisitId);
+		var enteredDrugIds;
+		var newlyEnteredDrugs = [];
 		task.run([
 			function(done){
 				service.getVisit(targetVisitId, function(err, result){
@@ -60,14 +62,41 @@ function bindEnter(dom, drugs){
 				})
 			},
 			function(done){
-				console.log(targetVisitAt);
 				conti.forEachPara(selectedDrugs, function(drug, done){
 					service.resolveIyakuhinMasterAt(drug.d_iyakuhincode, targetVisitAt, function(err, result){
 						if( err ){
 							done(err);
 							return;
 						}
-						mUtil.assign(drug, result);
+						var modify = {
+							visit_id: targetVisitId
+						};
+						if( newDays !== "" ){
+							modify.d_days = newDays;
+						}
+						mUtil.assign(drug, result, modify);
+						done();
+					})
+				}, done);
+			},
+			function(done){
+				service.batchEnterDrugs(selectedDrugs, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					enteredDrugIds = result;
+					done();
+				});
+			},
+			function(done){
+				conti.forEach(enteredDrugIds, function(drugId, done){
+					service.getFullDrug(drugId, targetVisitAt, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newlyEnteredDrugs.push(result);
 						done();
 					})
 				}, done);
@@ -77,7 +106,8 @@ function bindEnter(dom, drugs){
 				alert(err);
 				return;
 			}
-			console.log(selectedDrugs);
+			dom.trigger("drugs-batch-entered", [targetVisitId, newlyEnteredDrugs]);
+			dom.trigger("close-workarea");
 		})
 	})
 }
