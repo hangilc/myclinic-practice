@@ -38,7 +38,7 @@ function bindEnter(dom, visitId){
 				alert(err);
 				return;
 			}
-			dom.trigger("drugs-batch-deleted", [visitId, checked]);
+			dom.trigger("drugs-batch-deleted", [checked]);
 			dom.trigger("number-of-drugs-changed", [visitId]);
 			dom.trigger("close-workarea");
 		})

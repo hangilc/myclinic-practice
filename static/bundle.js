@@ -26633,7 +26633,6 @@
 			})
 		});
 		bindDrugsBatchEntered(dom);
-		bindDrugsBatchDeleted(dom);
 		bindNumberOfDrugsChanged(dom);
 	};
 
@@ -26659,6 +26658,7 @@
 		ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
 		Charge.setup(e.find("[mc-name=charge]"), visit.charge);
 		bindDrugsBatchModifiedDays(e, visit.visit_id);
+		bindDrugsBatchDeleted(e);
 		return e;
 	}
 
@@ -26673,19 +26673,19 @@
 		});
 	}
 
+	function bindDrugsBatchDeleted(recordDom){
+		recordDom.on("drugs-batch-deleted", function(event, drugIds){
+			event.stopPropagation();
+			drugIds.forEach(function(drugId){
+				recordDom.broadcast("rx-drug-deleted", drugId);
+			})
+		});
+	}
+
 	function bindDrugsBatchEntered(recordListDom){
 		recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
 			event.stopPropagation();
 			recordListDom.broadcast("rx-drugs-batch-entered", targetVisitId, drugs);
-		});
-	}
-
-	function bindDrugsBatchDeleted(recordListDom){
-		recordListDom.on("drugs-batch-deleted", function(event, visitId, drugIds){
-			event.stopPropagation();
-			drugIds.forEach(function(drugId){
-				recordListDom.broadcast("rx-drug-deleted", drugId);
-			})
 		});
 	}
 
@@ -28373,7 +28373,7 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drugs-batch-deleted", [visitId, checked]);
+				dom.trigger("drugs-batch-deleted", [checked]);
 				dom.trigger("number-of-drugs-changed", [visitId]);
 				dom.trigger("close-workarea");
 			})
