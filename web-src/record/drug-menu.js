@@ -63,6 +63,10 @@ function bindAddDrug(dom, visit){
 			clearWorkarea(dom);
 			return;
 		}
+		var msg = "（暫定）診察中ではありませんが、薬剤を追加しますか？";
+		if( !dom.inquire("fn-confirm-edit", visit.visit_id, msg) ){
+			return;
+		}
 		wa.html("");
 		var form = DrugForm.createAddForm(visit.visit_id, visit.v_datetime, visit.patient_id);
 		bindAddForm(dom, form);
