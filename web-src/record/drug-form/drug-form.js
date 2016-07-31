@@ -51,6 +51,7 @@ exports.createEditForm = function(drug, at, patientId){
 	bindClear(dom);
 	bindModify(dom, drug.drug_id, at);
 	bindCancel(dom);
+	bindDelete(dom, drug.drug_id);
 	return dom;
 }
 
@@ -516,6 +517,25 @@ function bindModify(dom, drugId, at){
 				return;
 			}
 			dom.trigger("drug-modified", newDrug);
+		})
+	});
+}
+
+function bindDelete(dom, drugId){
+	dom.on("click", "> .workarea-commandbox [mc-name=deleteLink]", function(event){
+		event.preventDefault();
+		event.stopPropagation();
+		if( !confirm("本当にこの薬剤を削除しますか？") ){
+			return;
+		}
+		task.run(function(done){
+			service.batchDeleteDrugs([drugId], done);
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("drug-deleted");
 		})
 	});
 }

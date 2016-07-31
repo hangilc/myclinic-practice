@@ -51,6 +51,7 @@ function bindClick(dom, drug, at, patientId){
 		var form = DrugForm.createEditForm(drug, at, patientId);
 		bindFormModified(dom, form);
 		bindFormCancel(dom, form);
+		bindFormDelete(dom, form, drug.visit_id);
 		var formArea = getFormAreaDom(dom).html("");
 		formArea.append(form);
 		getDispDom(dom).hide();
@@ -72,6 +73,15 @@ function bindFormCancel(dom, form){
 		event.stopPropagation();
 		form.remove();
 		getDispDom(dom).show();
+	});
+}
+
+function bindFormDelete(dom, form, visitId){
+	form.on("drug-deleted", function(event){
+		event.stopPropagation();
+		var parent = dom.parent();
+		dom.remove();
+		parent.trigger("number-of-drugs-changed", [visitId]);
 	});
 }
 

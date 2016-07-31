@@ -68,7 +68,9 @@
     <button mc-name="enterLink">入力</button>
     <button mc-name="closeLink">閉じる</button>
     <a mc-name="clearFormLink" href="javascript:void(0)" class="cmd-link">クリア</a>
-    <a mc-name="deleteLink" href="javascript:void(0)" class="cmd-link" style="display:none">削除</a>
+    {{#isEditing}}
+    <a mc-name="deleteLink" href="javascript:void(0)" class="cmd-link">削除</a>
+    {{/isEditing}}
 </div>
 <div class="drug-search-area">
     <form style="margin:4px 0" mc-name="searchForm">
