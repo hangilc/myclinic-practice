@@ -26664,6 +26664,7 @@
 		Charge.setup(e.find("[mc-name=charge]"), visit.charge);
 		bindDrugsBatchModifiedDays(e, visit.visit_id);
 		bindDrugsBatchDeleted(e);
+		bindDrugsNeedRenumbering(e);
 		return e;
 	}
 
@@ -26687,6 +26688,13 @@
 		});
 	}
 
+	function bindDrugsNeedRenumbering(recordDom){
+		recordDom.on("drugs-need-renumbering", function(event){
+			event.stopPropagation();
+			recordDom.broadcast("rx-drugs-need-renumbering");
+		})
+	}
+
 	function bindDrugsBatchEntered(recordListDom){
 		recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
 			event.stopPropagation();
@@ -26700,6 +26708,7 @@
 			recordListDom.broadcast("rx-number-of-drugs-changed", visitId);
 		});
 	}
+
 
 
 
@@ -28472,6 +28481,7 @@
 				}
 				dom.trigger("drugs-batch-deleted", [checked]);
 				dom.trigger("number-of-drugs-changed", [visitId]);
+				dom.trigger("drugs-need-renumbering");
 				dom.trigger("close-workarea");
 			})
 		});
@@ -28512,6 +28522,7 @@
 		});
 		respondToDrugsBatchEntered(dom, visitId);
 		respondToNumberOfDrugsChanged(dom, visitId);
+		respondToDrugsNeedRenumbering(dom);
 	};
 
 	function getRpDom(dom){
@@ -28522,8 +28533,12 @@
 		return dom.find("[mc-name=list]");
 	}
 
+	function listDrugDoms(dom){
+		return dom.find(".record-drug-item");
+	}
+
 	function countDrugs(dom){
-		return dom.find(".record-drug-item").length;
+		return listDrugDoms(dom).length;
 	}
 
 	function updateRp(dom, numDrugs){
@@ -28551,6 +28566,17 @@
 				return;
 			}
 			updateRp(dom, countDrugs(dom));
+		});
+	}
+
+	function respondToDrugsNeedRenumbering(dom){
+		dom.listen("rx-drugs-need-renumbering", function(){
+			var drugDoms = listDrugDoms(dom);
+			var index = 1;
+			drugDoms.each(function(){
+				var de = $(this);
+				Drug.updateIndex(de, index++);
+			});
 		});
 	}
 
@@ -28599,8 +28625,16 @@
 		return e;
 	}
 
+	exports.updateIndex = function(dom, index){
+		getDispIndexDom(dom).text(index);
+	}
+
 	function getDispDom(dom){
 		return dom.find("> [mc-name=disp]");
+	}
+
+	function getDispIndexDom(dom){
+		return getDispDom(dom).find("[mc-name=index]");
 	}
 
 	function getFormAreaDom(dom){
@@ -28648,6 +28682,7 @@
 			var parent = dom.parent();
 			dom.remove();
 			parent.trigger("number-of-drugs-changed", [visitId]);
+			parent.trigger("drugs-need-renumbering");
 		});
 	}
 

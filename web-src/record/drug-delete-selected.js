@@ -39,6 +39,7 @@ function bindEnter(dom, visitId){
 			}
 			dom.trigger("drugs-batch-deleted", [checked]);
 			dom.trigger("number-of-drugs-changed", [visitId]);
+			dom.trigger("drugs-need-renumbering");
 			dom.trigger("close-workarea");
 		})
 	});

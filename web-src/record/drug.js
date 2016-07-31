@@ -33,8 +33,16 @@ exports.create = function(index, drug, at, patientId){
 	return e;
 }
 
+exports.updateIndex = function(dom, index){
+	getDispIndexDom(dom).text(index);
+}
+
 function getDispDom(dom){
 	return dom.find("> [mc-name=disp]");
+}
+
+function getDispIndexDom(dom){
+	return getDispDom(dom).find("[mc-name=index]");
 }
 
 function getFormAreaDom(dom){
@@ -82,6 +90,7 @@ function bindFormDelete(dom, form, visitId){
 		var parent = dom.parent();
 		dom.remove();
 		parent.trigger("number-of-drugs-changed", [visitId]);
+		parent.trigger("drugs-need-renumbering");
 	});
 }
 

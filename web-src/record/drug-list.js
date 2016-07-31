@@ -15,6 +15,7 @@ exports.setup = function(dom, drugs, visitId, at, patientId){
 	});
 	respondToDrugsBatchEntered(dom, visitId);
 	respondToNumberOfDrugsChanged(dom, visitId);
+	respondToDrugsNeedRenumbering(dom);
 };
 
 function getRpDom(dom){
@@ -25,8 +26,12 @@ function getListDom(dom){
 	return dom.find("[mc-name=list]");
 }
 
+function listDrugDoms(dom){
+	return dom.find(".record-drug-item");
+}
+
 function countDrugs(dom){
-	return dom.find(".record-drug-item").length;
+	return listDrugDoms(dom).length;
 }
 
 function updateRp(dom, numDrugs){
@@ -54,5 +59,16 @@ function respondToNumberOfDrugsChanged(dom, visitId){
 			return;
 		}
 		updateRp(dom, countDrugs(dom));
+	});
+}
+
+function respondToDrugsNeedRenumbering(dom){
+	dom.listen("rx-drugs-need-renumbering", function(){
+		var drugDoms = listDrugDoms(dom);
+		var index = 1;
+		drugDoms.each(function(){
+			var de = $(this);
+			Drug.updateIndex(de, index++);
+		});
 	});
 }

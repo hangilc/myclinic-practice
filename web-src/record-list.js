@@ -59,6 +59,7 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	Charge.setup(e.find("[mc-name=charge]"), visit.charge);
 	bindDrugsBatchModifiedDays(e, visit.visit_id);
 	bindDrugsBatchDeleted(e);
+	bindDrugsNeedRenumbering(e);
 	return e;
 }
 
@@ -82,6 +83,13 @@ function bindDrugsBatchDeleted(recordDom){
 	});
 }
 
+function bindDrugsNeedRenumbering(recordDom){
+	recordDom.on("drugs-need-renumbering", function(event){
+		event.stopPropagation();
+		recordDom.broadcast("rx-drugs-need-renumbering");
+	})
+}
+
 function bindDrugsBatchEntered(recordListDom){
 	recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
 		event.stopPropagation();
@@ -95,4 +103,5 @@ function bindNumberOfDrugsChanged(recordListDom){
 		recordListDom.broadcast("rx-number-of-drugs-changed", visitId);
 	});
 }
+
 
