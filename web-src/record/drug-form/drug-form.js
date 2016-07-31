@@ -165,6 +165,11 @@ function updateDisplayDom(dom, data){
 	updateDisplayCategory(dom, data.category);
 }
 
+function fixedDays(dom){
+	var input = dom.find("> .drug-area input[mc-name=fixedDaysCheck]:visible");
+	return input.length > 0 ? input.prop("checked") : false;
+}
+
 function preserveUsageEtc(dom){
 	var input = dom.find("> .drug-area input[mc-name=preserveUsage]:visible");
 	return input.length > 0 ? input.prop("checked") : false;
@@ -200,6 +205,9 @@ function updateDisplay(dom, data, at){
 			days: data.days,
 			category: data.category
 		};
+		if( fixedDays(dom) && getDisplayDaysInputDom(dom).val() !== "" ){
+			dispData.days = getDisplayDaysInputDom(dom).val();
+		}
 		if( preserveUsageEtc(dom) ){
 			mUtil.assign(dispData, {
 				amount: getDisplayAmountInputDom(dom).val(),
@@ -209,6 +217,15 @@ function updateDisplay(dom, data, at){
 		}
 		updateDisplayDom(dom, dispData);
 	});
+}
+
+function clearDisplay(dom){
+	getErrorBox(dom).html("").hide();
+	getDisplayDom(dom).removeData("iyakuhincode");
+	getDisplayNameDom(dom).text("");
+	getDisplayAmountInputDom(dom).val("");
+	getDisplayUsageInputDom(dom).val("");
+	getDisplayDaysInputDom(dom).val("");
 }
 
 function updateSearchResult(dom, dataList){
@@ -381,12 +398,7 @@ function bindCategoryChange(dom){
 function bindClear(dom){
 	dom.on("click", "> .workarea-commandbox [mc-name=clearFormLink]", function(event){
 		event.preventDefault();
-		getErrorBox(dom).html("").hide();
-		getDisplayDom(dom).removeData("iyakuhincode");
-		getDisplayNameDom(dom).text("");
-		getDisplayAmountInputDom(dom).val("");
-		getDisplayUsageInputDom(dom).val("");
-		getDisplayDaysInputDom(dom).val("");
+		clearDisplay(dom);
 	});
 }
 
@@ -425,6 +437,14 @@ function validate(drug){
 		errs.push("日数・回数の指定が不適切です。");
 	}
 	return errs;
+}
+
+function clearDisplayConsideringFixedDays(dom){
+	var days = getDisplayDaysInputDom(dom).val();
+	clearDisplay(dom);
+	if( fixedDays(dom) ){
+		getDisplayDaysInputDom(dom).val(days);
+	}
 }
 
 function bindEnter(dom, visitId, at){
@@ -474,6 +494,7 @@ function bindEnter(dom, visitId, at){
 				return;
 			}
 			dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
+			clearDisplayConsideringFixedDays(dom);
 		})
 	});
 }
