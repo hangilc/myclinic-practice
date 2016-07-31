@@ -106,7 +106,6 @@ $("body").reply("fn-get-target-visit-id", function(){
 });
 
 $("body").reply("fn-confirm-edit", function(visitId, message){
-	console.log(visitId, message);
 	if( visitId === appData.currentVisitId || visitId === appData.tempVisitId ){
 		return true;
 	} else {

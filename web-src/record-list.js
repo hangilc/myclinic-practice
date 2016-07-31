@@ -32,6 +32,8 @@ exports.setup = function(dom){
 		})
 	});
 	bindDrugsBatchEntered(dom);
+	bindDrugsBatchDeleted(dom);
+	bindNumberOfDrugsChanged(dom);
 };
 
 function makeRecord(visit, currentVisitId, tempVisitId){
@@ -48,7 +50,7 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	var drugWrapper = e.find("[mc-name=drugs].record-drug-wrapper").html("");
 	var drugIndex = 1;
 	if( visit.drugs.length > 0 ){
-		drugWrapper.append("<div>Rp)</div>");
+		drugWrapper.find("[mc-name=rp]").text("Rp)");
 	}
 	visit.drugs.forEach(function(drug){
 		var de = Drug.create(drugIndex++, drug);
@@ -64,6 +66,7 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
 	Charge.setup(e.find("[mc-name=charge]"), visit.charge);
 	bindDrugEntered(e);
+	respondToNumberOfDrugsChanged(e, visit.visit_id);
 	return e;
 }
 
@@ -73,11 +76,23 @@ function bindDrugEntered(dom){
 		var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
 		var items = drugWrapper.find(".record-drug-item");
 		if( items.length === 0 ){
-			drugWrapper.append("<div>Rp)</div>");
+			drugWrapper.find("[mc-name=rp]").text("Rp)");
 		}
 		var de = Drug.create(items.length+1, newDrug);
 		drugWrapper.append(de);
 	});
+}
+
+function respondToNumberOfDrugsChanged(dom, visitId){
+	dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
+		console.log("rx-numberof-drugs,changed", targetVisitId);
+		if( visitId === targetVisitId ){
+			var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
+			var items = drugWrapper.find(".record-drug-item");
+			var text = items.length === 0 ? "" : "Rp)";
+			drugWrapper.find("[mc-name=rp]").text(text);
+		}
+	})
 }
 
 function bindDrugsBatchEntered(recordListDom){
@@ -97,6 +112,22 @@ function bindDrugsBatchEntered(recordListDom){
 			var de = Drug.create(index++, drug);
 			drugWrapper.append(de);
 		})
+	});
+}
+
+function bindDrugsBatchDeleted(recordListDom){
+	recordListDom.on("drugs-batch-deleted", function(event, visitId, drugIds){
+		event.stopPropagation();
+		drugIds.forEach(function(drugId){
+			recordListDom.broadcast("rx-drug-deleted", drugId);
+		})
+	});
+}
+
+function bindNumberOfDrugsChanged(recordListDom){
+	recordListDom.on("number-of-drugs-changed", function(event, visitId){
+		event.stopPropagation();
+		recordListDom.broadcast("rx-number-of-drugs-changed", visitId);
 	});
 }
 

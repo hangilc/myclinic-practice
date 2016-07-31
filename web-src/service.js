@@ -134,3 +134,7 @@ exports.listFullDrugsForVisit = function(visitId, at, cb){
 exports.batchEnterDrugs = function(drugs, cb){
 	request("batch_enter_drugs", JSON.stringify(drugs), "POST", cb);
 };
+
+exports.batchDeleteDrugs = function(drugIds, done){
+	request("batch_delete_drugs", JSON.stringify(drugIds), "POST", done);
+};

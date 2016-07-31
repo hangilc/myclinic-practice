@@ -152,7 +152,6 @@
 	});
 
 	$("body").reply("fn-confirm-edit", function(visitId, message){
-		console.log(visitId, message);
 		if( visitId === appData.currentVisitId || visitId === appData.tempVisitId ){
 			return true;
 		} else {
@@ -24983,6 +24982,10 @@
 		request("batch_enter_drugs", JSON.stringify(drugs), "POST", cb);
 	};
 
+	exports.batchDeleteDrugs = function(drugIds, done){
+		request("batch_delete_drugs", JSON.stringify(drugIds), "POST", done);
+	};
+
 
 /***/ },
 /* 113 */
@@ -26595,6 +26598,8 @@
 			})
 		});
 		bindDrugsBatchEntered(dom);
+		bindDrugsBatchDeleted(dom);
+		bindNumberOfDrugsChanged(dom);
 	};
 
 	function makeRecord(visit, currentVisitId, tempVisitId){
@@ -26611,7 +26616,7 @@
 		var drugWrapper = e.find("[mc-name=drugs].record-drug-wrapper").html("");
 		var drugIndex = 1;
 		if( visit.drugs.length > 0 ){
-			drugWrapper.append("<div>Rp)</div>");
+			drugWrapper.find("[mc-name=rp]").text("Rp)");
 		}
 		visit.drugs.forEach(function(drug){
 			var de = Drug.create(drugIndex++, drug);
@@ -26627,6 +26632,7 @@
 		ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
 		Charge.setup(e.find("[mc-name=charge]"), visit.charge);
 		bindDrugEntered(e);
+		respondToNumberOfDrugsChanged(e, visit.visit_id);
 		return e;
 	}
 
@@ -26636,11 +26642,23 @@
 			var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
 			var items = drugWrapper.find(".record-drug-item");
 			if( items.length === 0 ){
-				drugWrapper.append("<div>Rp)</div>");
+				drugWrapper.find("[mc-name=rp]").text("Rp)");
 			}
 			var de = Drug.create(items.length+1, newDrug);
 			drugWrapper.append(de);
 		});
+	}
+
+	function respondToNumberOfDrugsChanged(dom, visitId){
+		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
+			console.log("rx-numberof-drugs,changed", targetVisitId);
+			if( visitId === targetVisitId ){
+				var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
+				var items = drugWrapper.find(".record-drug-item");
+				var text = items.length === 0 ? "" : "Rp)";
+				drugWrapper.find("[mc-name=rp]").text(text);
+			}
+		})
 	}
 
 	function bindDrugsBatchEntered(recordListDom){
@@ -26660,6 +26678,22 @@
 				var de = Drug.create(index++, drug);
 				drugWrapper.append(de);
 			})
+		});
+	}
+
+	function bindDrugsBatchDeleted(recordListDom){
+		recordListDom.on("drugs-batch-deleted", function(event, visitId, drugIds){
+			event.stopPropagation();
+			drugIds.forEach(function(drugId){
+				recordListDom.broadcast("rx-drug-deleted", drugId);
+			})
+		});
+	}
+
+	function bindNumberOfDrugsChanged(recordListDom){
+		recordListDom.on("number-of-drugs-changed", function(event, visitId){
+			event.stopPropagation();
+			recordListDom.broadcast("rx-number-of-drugs-changed", visitId);
 		});
 	}
 
@@ -28296,6 +28330,8 @@
 	var tmplSrc = __webpack_require__(150);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
 
 	exports.create = function(drugs, visitId, at){
 		var dom = $("<div></div>");
@@ -28320,7 +28356,17 @@
 			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
 				return +$(this).val();
 			}).get();
-			console.log(checked);
+			task.run(function(done){
+				service.batchDeleteDrugs(checked, done);
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drugs-batch-deleted", [visitId, checked]);
+				dom.trigger("number-of-drugs-changed", [visitId]);
+				dom.trigger("close-workarea");
+			})
 		});
 	}
 
@@ -28358,7 +28404,13 @@
 			index: index,
 			label: mUtil.drugRep(drug)
 		});
-		e.html(html);
+		e = $(html);
+		e.listen("rx-drug-deleted", function(drugId){
+			console.log("rx-drug-deleted", drugId);
+			if( drugId === drug.drug_id ){
+				e.remove();
+			}
+		})
 		return e;
 	}
 
@@ -28371,7 +28423,7 @@
 /* 152 */
 /***/ function(module, exports) {
 
-	module.exports = "<div mc-name=\"wrapper\" class=\"record-drug-item\"><span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span></div>\r\n"
+	module.exports = "<div mc-name=\"wrapper\" class=\"record-drug-item\">\r\n\t<div>\r\n\t\t<span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
 /* 153 */
@@ -28634,7 +28686,7 @@
 /* 167 */
 /***/ function(module, exports) {
 
-	module.exports = "<table class=\"visit-entry\" width=\"100%\" visit-id=\"{{visit_id}}\">\r\n    <tbody>\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div mc-name=\"text-menu\" class=\"record-text-menu\"></div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\"></div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n"
+	module.exports = "<table class=\"visit-entry\" width=\"100%\" visit-id=\"{{visit_id}}\">\r\n    <tbody>\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div mc-name=\"text-menu\" class=\"record-text-menu\"></div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\">\r\n                    <div mc-name=\"rp\"></div>\r\n                </div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n"
 
 /***/ },
 /* 168 */

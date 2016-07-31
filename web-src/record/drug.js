@@ -14,7 +14,13 @@ exports.create = function(index, drug){
 		index: index,
 		label: mUtil.drugRep(drug)
 	});
-	e.html(html);
+	e = $(html);
+	e.listen("rx-drug-deleted", function(drugId){
+		console.log("rx-drug-deleted", drugId);
+		if( drugId === drug.drug_id ){
+			e.remove();
+		}
+	})
 	return e;
 }
 

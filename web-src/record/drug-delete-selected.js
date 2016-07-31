@@ -5,6 +5,8 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./drug-delete-selected.html");
 var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
+var service = require("../service");
+var task = require("../task");
 
 exports.create = function(drugs, visitId, at){
 	var dom = $("<div></div>");
@@ -29,7 +31,17 @@ function bindEnter(dom, visitId){
 		var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
 			return +$(this).val();
 		}).get();
-		console.log(checked);
+		task.run(function(done){
+			service.batchDeleteDrugs(checked, done);
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("drugs-batch-deleted", [visitId, checked]);
+			dom.trigger("number-of-drugs-changed", [visitId]);
+			dom.trigger("close-workarea");
+		})
 	});
 }
 
