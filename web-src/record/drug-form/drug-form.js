@@ -164,6 +164,11 @@ function updateDisplayDom(dom, data){
 	updateDisplayCategory(dom, data.category);
 }
 
+function preserveUsageEtc(dom){
+	var input = dom.find("> .drug-area input[mc-name=preserveUsage]:visible");
+	return input.length > 0 ? input.prop("checked") : false;
+}
+
 function updateDisplay(dom, data, at){
 	var iyakuhincode = +data.iyakuhincode;
 	var master;
@@ -194,6 +199,13 @@ function updateDisplay(dom, data, at){
 			days: data.days,
 			category: data.category
 		};
+		if( preserveUsageEtc(dom) ){
+			mUtil.assign(dispData, {
+				amount: getDisplayAmountInputDom(dom).val(),
+				usage: getDisplayUsageInputDom(dom).val(),
+				days: getDisplayDaysInputDom(dom).val()
+			});
+		}
 		updateDisplayDom(dom, dispData);
 	});
 }

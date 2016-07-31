@@ -57,9 +57,11 @@
         <input type=radio mc-name="categoryTonpuku" name="category" value="1">屯服
         <input type=radio mc-name="categoryGaiyou"  name="category" value="2">外用
     </div>
-    <div class="edit-only" style="display:none">
-        <input type="checkbox" mc-name="preserveUsage">用量・用法をそのままに
+    {{#isEditing}}
+    <div>
+        <input type="checkbox" mc-name="preserveUsage" />用量・用法・日数をそのままに
     </div>
+    {{/isEditing}}
     <div mc-name="comment" style="padding:6px;display:none;border:1px solid #ccc"></div>
 </div>
 <div class="workarea-commandbox">
