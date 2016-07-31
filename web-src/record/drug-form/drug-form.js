@@ -450,7 +450,7 @@ function bindEnter(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			dom.trigger("drug-entered", [newDrug]);
+			dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
 		})
 	});
 }

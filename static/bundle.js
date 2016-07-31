@@ -26575,7 +26575,7 @@
 	var TextMenu = __webpack_require__(131);
 	var Hoken = __webpack_require__(133);
 	var DrugMenu = __webpack_require__(138);
-	var Drug = __webpack_require__(151);
+	var DrugList = __webpack_require__(192);
 	var ShinryouMenu = __webpack_require__(153);
 	var Shinryou = __webpack_require__(155);
 	var ConductMenu = __webpack_require__(157);
@@ -26613,15 +26613,7 @@
 		TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
 		Hoken.setup(e.find("[mc-name=hoken]"), visit);
 		DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
-		var drugWrapper = e.find("[mc-name=drugs].record-drug-wrapper").html("");
-		var drugIndex = 1;
-		if( visit.drugs.length > 0 ){
-			drugWrapper.find("[mc-name=rp]").text("Rp)");
-		}
-		visit.drugs.forEach(function(drug){
-			var de = Drug.create(drugIndex++, drug);
-			drugWrapper.append(de);
-		});
+		DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), visit.drugs, visit.visit_id);
 		ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"));
 		var shinryouWrapper = e.find("[mc-name=shinryouList]");
 		visit.shinryou_list.forEach(function(shinryou){
@@ -26631,53 +26623,13 @@
 		ConductMenu.setup(e.find("[mc-name=conductMenu]"));
 		ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
 		Charge.setup(e.find("[mc-name=charge]"), visit.charge);
-		bindDrugEntered(e);
-		respondToNumberOfDrugsChanged(e, visit.visit_id);
 		return e;
-	}
-
-	function bindDrugEntered(dom){
-		dom.on("drug-entered", function(event, newDrug){
-			event.stopPropagation();
-			var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
-			var items = drugWrapper.find(".record-drug-item");
-			if( items.length === 0 ){
-				drugWrapper.find("[mc-name=rp]").text("Rp)");
-			}
-			var de = Drug.create(items.length+1, newDrug);
-			drugWrapper.append(de);
-		});
-	}
-
-	function respondToNumberOfDrugsChanged(dom, visitId){
-		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
-			console.log("rx-numberof-drugs,changed", targetVisitId);
-			if( visitId === targetVisitId ){
-				var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
-				var items = drugWrapper.find(".record-drug-item");
-				var text = items.length === 0 ? "" : "Rp)";
-				drugWrapper.find("[mc-name=rp]").text(text);
-			}
-		})
 	}
 
 	function bindDrugsBatchEntered(recordListDom){
 		recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
 			event.stopPropagation();
-			if( drugs.length === 0 ){
-				return;
-			}
-			var dom = recordListDom.children(".visit-entry[visit-id=" + targetVisitId + "]");
-			var drugWrapper = dom.find("[mc-name=drugs].record-drug-wrapper");
-			var items = drugWrapper.find(".record-drug-item");
-			if( items.length === 0 ){
-				drugWrapper.append("<div>Rp)</div>");
-			}
-			var index = items.length + 1;
-			drugs.forEach(function(drug){
-				var de = Drug.create(index++, drug);
-				drugWrapper.append(de);
-			})
+			recordListDom.broadcast("rx-drugs-batch-entered", targetVisitId, drugs);
 		});
 	}
 
@@ -28093,7 +28045,7 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drug-entered", [newDrug]);
+				dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
 			})
 		});
 	}
@@ -29453,6 +29405,75 @@
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 192 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplHtml = __webpack_require__(193);
+	var Drug = __webpack_require__(151);
+
+	exports.setup = function(dom, drugs, visitId){
+		dom.html(tmplHtml);
+		var listDom = getListDom(dom);
+		updateRp(dom, drugs.length);
+		var index = 1;
+		drugs.forEach(function(drug){
+			var e = Drug.create(index++, drug);
+			listDom.append(e);
+		});
+		respondToDrugsBatchEntered(dom, visitId);
+		respondToNumberOfDrugsChanged(dom, visitId);
+	};
+
+	function getRpDom(dom){
+		return dom.find("[mc-name=rp]");
+	}
+
+	function getListDom(dom){
+		return dom.find("[mc-name=list]");
+	}
+
+	function countDrugs(dom){
+		return dom.find(".record-drug-item").length;
+	}
+
+	function updateRp(dom, numDrugs){
+		var text = numDrugs > 0 ? "Rp)" : "";
+		getRpDom(dom).text(text);
+	}
+
+	function respondToDrugsBatchEntered(dom, visitId){
+		dom.listen("rx-drugs-batch-entered", function(targetVisitId, drugs){
+			if( visitId === targetVisitId ){
+				var index = countDrugs(dom) + 1;
+				var listDom = getListDom(dom);
+				drugs.forEach(function(drug){
+					var e = Drug.create(index++, drug);
+					listDom.append(e);
+				});
+				updateRp(dom, countDrugs(dom));
+			}
+		});
+	}
+
+	function respondToNumberOfDrugsChanged(dom, visitId){
+		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
+			if( visitId !== targetVisitId ){
+				return;
+			}
+			updateRp(dom, countDrugs(dom));
+		});
+	}
+
+/***/ },
+/* 193 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"rp\"></div>\r\n<div mc-name=\"list\"></div>\r\n"
 
 /***/ }
 /******/ ]);
