@@ -11,7 +11,8 @@ var Hoken = require("./record/hoken");
 var DrugMenu = require("./record/drug-menu");
 var DrugList = require("./record/drug-list");
 var ShinryouMenu = require("./record/shinryou-menu");
-var Shinryou = require("./record/shinryou");
+var ShinryouList = require("./record/shinryou-list");
+//var Shinryou = require("./record/shinryou");
 var ConductMenu = require("./record/conduct-menu");
 var ConductList = require("./record/conduct-list");
 var Charge = require("./record/charge");
@@ -49,11 +50,8 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), 
 		visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
 	ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"));
-	var shinryouWrapper = e.find("[mc-name=shinryouList]");
-	visit.shinryou_list.forEach(function(shinryou){
-		var se = Shinryou.create(shinryou);
-		shinryouWrapper.append(se);
-	});
+	ShinryouList.setup(e.find("[mc-name=shinryouList]"), visit.shinryou_list,
+		visit.visit_id, visit.v_datetime, visit.patient_id);
 	ConductMenu.setup(e.find("[mc-name=conductMenu]"));
 	ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
 	Charge.setup(e.find("[mc-name=charge]"), visit.charge);
