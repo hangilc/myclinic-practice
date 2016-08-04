@@ -49,7 +49,7 @@ function makeRecord(visit, currentVisitId, tempVisitId){
 	DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
 	DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), 
 		visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
-	ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"));
+	ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
 	ShinryouList.setup(e.find("[mc-name=shinryouList]"), visit.shinryou_list,
 		visit.visit_id, visit.v_datetime, visit.patient_id);
 	ConductMenu.setup(e.find("[mc-name=conductMenu]"));

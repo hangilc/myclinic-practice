@@ -2,7 +2,7 @@
 
 var $ = require("jquery");
 var hogan = require("hogan");
-var Shinryou = require("shinryou");
+var Shinryou = require("./shinryou");
 
 exports.setup = function(dom, shinryouList, visitId, at, patientId){
 	dom.html("");
