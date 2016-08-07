@@ -75,6 +75,19 @@ exports.mapShinryouMaster = function(shinryoucode, at){
 	return shinryoucode;
 };
 
+exports.mapKizaiMaster = function(kizaicode, at){
+	kizaicode = +kizaicode;
+	at = at.slice(0, 10);
+	if( kmap_keys[kizaicode] ){
+		kmap.forEach(function(entry){
+			if( entry.from === kizaicode && entry.at <= at ){
+				kizaicode = entry.to;
+			}
+		})
+	}
+	return kizaicode;
+};
+
 
 
 

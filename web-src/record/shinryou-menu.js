@@ -4,6 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
+var AddRegularForm = require("./shinryou-add-regular");
 var ShinryouAddForm = require("./shinryou-add-form");
 var ShinryouSubmenu = require("./shinryou-submenu");
 
@@ -11,8 +12,10 @@ var tmplHtml = require("raw!./shinryou-menu.html");
 
 exports.setup = function(dom, visitId, at){
 	dom.html(tmplHtml);
-	bindAddShinryou(dom, visitId, at);
+	bindAddRegular(dom, visitId, at);
 	bindSubmenu(dom, visitId, at);
+	bindSubmenuAddForm(dom);
+	bindCloseWorkarea(dom);
 	setState(dom, "init");
 }
 
@@ -21,14 +24,14 @@ var submenuLinkSelector = "> [mc-name=submenuLink]";
 var submenuAreaSelector = "> [mc-name=submenu-area]";
 var workAreaSelector = "> [mc-name=work-area]";
 
-function bindAddShinryou(dom, visitId, at){
+function bindAddRegular(dom, visitId, at){
 	dom.on("click", addShinryouSelector, function(event){
 		event.preventDefault();
 		event.stopPropagation();
 		var state = getState(dom);
 		if( state === "submenu" ){
 			return;
-		} else if( state === "add" ){
+		} else if( state === "add-regular" ){
 			endWork(dom);
 		} else {
 			var ok = dom.inquire("fn-confirm-edit", visitId, 
@@ -36,8 +39,8 @@ function bindAddShinryou(dom, visitId, at){
 			if( !ok ){
 				return;
 			}
-			var form = ShinryouAddForm.create();
-			startWork(dom, "add", form);
+			var form = AddRegularForm.create(visitId, at);
+			startWork(dom, "add-regular", form);
 		}
 
 	})
@@ -51,10 +54,17 @@ function bindSubmenu(dom, visitId, at){
 		if( state === "submenu" ){
 			closeSubmenu(dom);
 			setState(dom, "init");
-		} else {
-			ShinryouSubmenu.setup(dom.find(submenuAreaSelector));
+		} else if( state === "init" ) {
+			ShinryouSubmenu.setup(dom.find(submenuAreaSelector), visitId, at);
 			setState(dom, "submenu");
 		}
+	})
+}
+
+function bindSubmenuAddForm(dom){
+	dom.on("submenu-add-form", function(event){
+		event.stopPropagation();
+		console.log("add-form");
 	})
 }
 
@@ -78,6 +88,13 @@ function endWork(dom){
 
 function closeSubmenu(dom){
 	dom.find(submenuAreaSelector).html("");
+}
+
+function bindCloseWorkarea(dom){
+	dom.on("close-workarea", function(event){
+		event.stopPropagation();
+		endWork(dom);
+	})
 }
 
 

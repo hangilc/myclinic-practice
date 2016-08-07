@@ -150,3 +150,11 @@ exports.batchUpdateDrugsDays = function(drugIds, days, done){
 exports.modifyDrug = function(drug, done){
 	request("modify_drug", JSON.stringify(drug), "POST", done);
 };
+
+exports.batchResolveShinryouNamesAt = function(names, at, cb){
+	var body = JSON.stringify({
+		names: names,
+		at: at
+	});
+	request("batch_resolve_shinryou_names_at", body, "POST", cb);
+};

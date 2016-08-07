@@ -6,5 +6,6 @@ module.exports = {
 	    database: "myclinic",
 	    dateStrings: true
 	},
-	masterMap: "./master-map.txt"
+	masterMap: "./master-map.txt",
+	nameMap: "./master-name.txt"
 };
