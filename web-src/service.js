@@ -158,3 +158,12 @@ exports.batchResolveShinryouNamesAt = function(names, at, cb){
 	});
 	request("batch_resolve_shinryou_names_at", body, "POST", cb);
 };
+
+exports.batchEnterShinryou = function(shinryouList, cb){
+	var body = JSON.stringify(shinryouList);
+	request("batch_enter_shinryou", body, "POST", cb);
+};
+
+exports.getShinryou = function(shinryouId, cb){
+	request("get_shinryou", {shinryou_id: shinryouId}, "GET", cb);
+};

@@ -16,6 +16,7 @@ exports.setup = function(dom, visitId, at){
 	bindSubmenu(dom, visitId, at);
 	bindSubmenuAddForm(dom);
 	bindCloseWorkarea(dom);
+	bindShinryouBatchEntered(dom);
 	setState(dom, "init");
 }
 
@@ -42,7 +43,6 @@ function bindAddRegular(dom, visitId, at){
 			var form = AddRegularForm.create(visitId, at);
 			startWork(dom, "add-regular", form);
 		}
-
 	})
 }
 
@@ -97,5 +97,10 @@ function bindCloseWorkarea(dom){
 	})
 }
 
+function bindShinryouBatchEntered(dom){
+	dom.on("shiryou-batch-entered", function(event){
+		endWork(dom);
+	});
+}
 
 

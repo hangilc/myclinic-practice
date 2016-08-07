@@ -25033,6 +25033,15 @@
 		request("batch_resolve_shinryou_names_at", body, "POST", cb);
 	};
 
+	exports.batchEnterShinryou = function(shinryouList, cb){
+		var body = JSON.stringify(shinryouList);
+		request("batch_enter_shinryou", body, "POST", cb);
+	};
+
+	exports.getShinryou = function(shinryouId, cb){
+		request("get_shinryou", {shinryou_id: shinryouId}, "GET", cb);
+	};
+
 
 /***/ },
 /* 113 */
@@ -28724,6 +28733,7 @@
 		bindSubmenu(dom, visitId, at);
 		bindSubmenuAddForm(dom);
 		bindCloseWorkarea(dom);
+		bindShinryouBatchEntered(dom);
 		setState(dom, "init");
 	}
 
@@ -28750,7 +28760,6 @@
 				var form = AddRegularForm.create(visitId, at);
 				startWork(dom, "add-regular", form);
 			}
-
 		})
 	}
 
@@ -28805,6 +28814,11 @@
 		})
 	}
 
+	function bindShinryouBatchEntered(dom){
+		dom.on("shiryou-batch-entered", function(event){
+			endWork(dom);
+		});
+	}
 
 
 
@@ -29900,6 +29914,8 @@
 	var hogan = __webpack_require__(115);
 	var tmplSrc = __webpack_require__(200);
 	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
 
 	exports.create = function(visitId, at){
 		var dom = $(tmplSrc);
@@ -29909,13 +29925,59 @@
 	}
 
 	function bindEnter(dom, visitId, at){
-		var names = ["初診"];
-		service.batchResolveShinryouNamesAt(names, at, function(err, result){
-			if( err ){
-				alert(err);
-				return;
-			}
-			console.log(result);
+		dom.on("click", "> form .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var names = dom.find("> form input[name=item]:checked").map(function(){
+				return $(this).val();
+			}).get();
+			var shinryouList, newShinryouIds, newShinryouList = [];
+			task.run([
+				function(done){
+					service.batchResolveShinryouNamesAt(names, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						var nameCodeMap = result;
+						shinryouList = names.map(function(name){
+							return {
+								visit_id: visitId,
+								shinryoucode: nameCodeMap[name]
+							}
+						});
+						done();
+					});
+				},
+				function(done){
+					service.batchEnterShinryou(shinryouList, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouIds = result;
+						done();
+					})
+				},
+				function(done){
+					conti.forEachPara(newShinryouIds, function(shinryouId, done){
+						service.getShinryou(shinryouId, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newShinryouList.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("shinryou-batch-entered", [newShinryouList]);
+			})
 		})
 	}
 
@@ -29931,7 +29993,7 @@
 /* 200 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" class=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" class=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" class=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" class=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" class=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" class=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" class=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" class=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ }
 /******/ ]);
