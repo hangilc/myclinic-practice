@@ -38,13 +38,13 @@ $("#reception-link").click(function(event){
 
 var appData = new AppData();
 
-window.getCurrentVisitId = function(){
-	return appData.currentVisitId;
-};
+// window.getCurrentVisitId = function(){
+// 	return appData.currentVisitId;
+// };
 
-window.getTempVisitId = function(){
-	return appData.tempVisitId;
-};
+// window.getTempVisitId = function(){
+// 	return appData.tempVisitId;
+// };
 
 function startPage(patientId, visitId){
 	appData.startPage(patientId, visitId, function(err){
@@ -53,7 +53,7 @@ function startPage(patientId, visitId){
 			return;
 		}
 		var data = mUtil.assign({}, appData);
-		$("body").broadcast("rx-start-page", data);
+		$("body").broadcast("rx-start-page", [data]);
 	});
 }
 
@@ -76,7 +76,7 @@ $("body").on("goto-page", function(event, page){
 			return;
 		}
 		var data = mUtil.assign({}, appData);
-		$("body").broadcast("rx-goto-page", data);
+		$("body").broadcast("rx-goto-page", [data]);
 	})
 });
 
@@ -87,7 +87,7 @@ $("body").on("delete-visit", function(event, visitId){
 			return;
 		}
 		var data = mUtil.assign({}, appData);
-		$("body").broadcast("rx-delete-visit", data);
+		$("body").broadcast("rx-delete-visit", [data]);
 	})	
 });
 
@@ -97,7 +97,7 @@ $("body").on("set-temp-visit-id", function(event, visitId, done){
 		return;
 	}
 	appData.tempVisitId = visitId;
-	$("body").broadcast("rx-set-temp-visit-id", appData);
+	$("body").broadcast("rx-set-temp-visit-id", [appData]);
 	done();
 });
 

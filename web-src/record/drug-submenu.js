@@ -35,7 +35,7 @@ function bindCopyAll(dom, visitId, at){
 	dom.on("click", "[mc-name=copyAll]", function(event){
 		event.preventDefault();
 		event.stopPropagation();
-		var targetVisitId = window.getCurrentVisitId() || window.getTempVisitId();
+		var targetVisitId = dom.inquire("fn-get-target-visit-id");
 		if( targetVisitId === 0 ){
 			alert("現在（暫定）診察中でないため、コピーできません。");
 			return;

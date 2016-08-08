@@ -59,12 +59,12 @@
 	var CurrentManip = __webpack_require__(120);
 	var RecordNav = __webpack_require__(122);
 	var RecordList = __webpack_require__(124);
-	var Disease = __webpack_require__(175);
-	var SelectPatient = __webpack_require__(181);
-	var SearchPatient = __webpack_require__(185);
-	var RecentVisits = __webpack_require__(188);
-	var TodaysVisits = __webpack_require__(191);
-	var Reception = __webpack_require__(194);
+	var Disease = __webpack_require__(177);
+	var SelectPatient = __webpack_require__(183);
+	var SearchPatient = __webpack_require__(187);
+	var RecentVisits = __webpack_require__(190);
+	var TodaysVisits = __webpack_require__(193);
+	var Reception = __webpack_require__(196);
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 	CurrentManip.setup($("#current-manip-pane"));
@@ -84,13 +84,13 @@
 
 	var appData = new AppData();
 
-	window.getCurrentVisitId = function(){
-		return appData.currentVisitId;
-	};
+	// window.getCurrentVisitId = function(){
+	// 	return appData.currentVisitId;
+	// };
 
-	window.getTempVisitId = function(){
-		return appData.tempVisitId;
-	};
+	// window.getTempVisitId = function(){
+	// 	return appData.tempVisitId;
+	// };
 
 	function startPage(patientId, visitId){
 		appData.startPage(patientId, visitId, function(err){
@@ -99,7 +99,7 @@
 				return;
 			}
 			var data = mUtil.assign({}, appData);
-			$("body").broadcast("rx-start-page", data);
+			$("body").broadcast("rx-start-page", [data]);
 		});
 	}
 
@@ -122,7 +122,7 @@
 				return;
 			}
 			var data = mUtil.assign({}, appData);
-			$("body").broadcast("rx-goto-page", data);
+			$("body").broadcast("rx-goto-page", [data]);
 		})
 	});
 
@@ -133,7 +133,7 @@
 				return;
 			}
 			var data = mUtil.assign({}, appData);
-			$("body").broadcast("rx-delete-visit", data);
+			$("body").broadcast("rx-delete-visit", [data]);
 		})	
 	});
 
@@ -143,7 +143,7 @@
 			return;
 		}
 		appData.tempVisitId = visitId;
-		$("body").broadcast("rx-set-temp-visit-id", appData);
+		$("body").broadcast("rx-set-temp-visit-id", [appData]);
 		done();
 	});
 
@@ -157,6 +157,14 @@
 		} else {
 			return confirm(message);
 		}
+	});
+
+	$("body").reply("fn-get-current-visit-id", function(){
+		return appData.currentVisitId;
+	});
+
+	$("body").reply("fn-get-temp-visit-id", function(){
+		return appData.tempVisitId;
 	});
 
 
@@ -10250,19 +10258,31 @@
 
 	var $ = __webpack_require__(1);
 
-	$.fn.broadcast = function(key, arg1){
-		var args = [].slice.call(arguments, 1);
-		this.each(function(){
+	$.fn.broadcast = function(key, args){
+		console.log("enter broadcast", key);
+		if( args === undefined ){
+			args = [];
+		}
+		var retval = this.map(function(){
 			var e = $(this);
-			e.find("." + key).each(function(){
+			console.log("listeners", e.find("." + key).length);
+			var iterReturn = e.find("." + key).map(function(){
 				var listener = $(this);
 				var cb = listener.data(key);
 				if( typeof cb === "function" ){
-					cb.apply(listener, args);
+					var listenReturn = cb.apply(listener, args);
+					console.log("listen returns", listenReturn);
+					listenReturn = 1;
+					return listenReturn;
+				} else {
+					throw new Exception("cannot find function while broadcasting: " + key);
 				}
-			});
-		});
-		return this;
+			}).get();
+			console.log("iter returns", iterReturn);
+			return iterReturn;
+		}).get();
+		console.log("leave braodcast", key, retval);
+		return retval;
 	};
 
 	$.fn.listen = function(key, cb){
@@ -26626,31 +26646,17 @@
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(112);
 	var mUtil = __webpack_require__(5);
-	var Title = __webpack_require__(125);
-	var Text = __webpack_require__(127);
-	var TextMenu = __webpack_require__(131);
-	var Hoken = __webpack_require__(133);
-	var DrugMenu = __webpack_require__(138);
-	var DrugList = __webpack_require__(151);
-	var ShinryouMenu = __webpack_require__(155);
-	var ShinryouList = __webpack_require__(161);
-	//var Shinryou = require("./record/shinryou");
-	var ConductMenu = __webpack_require__(164);
-	var ConductList = __webpack_require__(166);
-	var Charge = __webpack_require__(172);
-
-	var recordTmplSrc = __webpack_require__(174);
-	var recordTmpl = hogan.compile(recordTmplSrc);
+	var Record = __webpack_require__(201);
 
 	exports.setup = function(dom){
 		["rx-start-page", "rx-goto-page", "rx-delete-visit"].forEach(function(key){
 			dom.listen(key, function(appData){
-				var currentVisitId = window.getCurrentVisitId();
-				var tempVisitId = window.getTempVisitId();
+				var currentVisitId = dom.inquire("fn-get-current-visit-id");
+				var tempVisitId = dom.inquire("fn-get-temp-visit-id");
 				var records = appData.record_list;
 				dom.html("");
 				records.forEach(function(data){
-					dom.append(makeRecord(data, currentVisitId, tempVisitId));
+					dom.append(Record.create(data, currentVisitId, tempVisitId));
 				})
 			})
 		});
@@ -26658,38 +26664,13 @@
 		bindNumberOfDrugsChanged(dom);
 	};
 
-	function makeRecord(visit, currentVisitId, tempVisitId){
-		var e = $(recordTmpl.render(visit));
-		Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
-		var textWrapper = e.find("[mc-name=texts]");
-		visit.texts.forEach(function(text){
-			var te = Text.create(text);
-			textWrapper.append(te);
-		});
-		TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
-		Hoken.setup(e.find("[mc-name=hoken]"), visit);
-		DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
-		DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), 
-			visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
-		ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
-		ShinryouList.setup(e.find("[mc-name=shinryouList]"), visit.shinryou_list,
-			visit.visit_id, visit.v_datetime, visit.patient_id);
-		ConductMenu.setup(e.find("[mc-name=conductMenu]"));
-		ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
-		Charge.setup(e.find("[mc-name=charge]"), visit.charge);
-		bindDrugsBatchModifiedDays(e, visit.visit_id);
-		bindDrugsBatchDeleted(e);
-		bindDrugsNeedRenumbering(e);
-		return e;
-	}
-
 	function bindDrugsBatchModifiedDays(recordDom, visitId){
 		recordDom.on("drugs-batch-modified-days", function(event, targetVisitId, drugIds, days){
 			if( visitId !== targetVisitId ){
 				return;
 			}
 			drugIds.forEach(function(drugId){
-				recordDom.broadcast("rx-drug-modified-days", drugId, days);
+				recordDom.broadcast("rx-drug-modified-days", [drugId, days]);
 			});
 		});
 	}
@@ -26698,7 +26679,7 @@
 		recordDom.on("drugs-batch-deleted", function(event, drugIds){
 			event.stopPropagation();
 			drugIds.forEach(function(drugId){
-				recordDom.broadcast("rx-drug-deleted", drugId);
+				recordDom.broadcast("rx-drug-deleted", [drugId]);
 			})
 		});
 	}
@@ -26713,14 +26694,14 @@
 	function bindDrugsBatchEntered(recordListDom){
 		recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
 			event.stopPropagation();
-			recordListDom.broadcast("rx-drugs-batch-entered", targetVisitId, drugs);
+			recordListDom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
 		});
 	}
 
 	function bindNumberOfDrugsChanged(recordListDom){
 		recordListDom.on("number-of-drugs-changed", function(event, visitId){
 			event.stopPropagation();
-			recordListDom.broadcast("rx-number-of-drugs-changed", visitId);
+			recordListDom.broadcast("rx-number-of-drugs-changed", [visitId]);
 		});
 	}
 
@@ -27523,7 +27504,7 @@
 		dom.on("click", "[mc-name=copyAll]", function(event){
 			event.preventDefault();
 			event.stopPropagation();
-			var targetVisitId = window.getCurrentVisitId() || window.getTempVisitId();
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
 			if( targetVisitId === 0 ){
 				alert("現在（暫定）診察中でないため、コピーできません。");
 				return;
@@ -28721,11 +28702,11 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
-	var AddRegularForm = __webpack_require__(199);
-	var ShinryouAddForm = __webpack_require__(156);
-	var ShinryouSubmenu = __webpack_require__(158);
+	var AddRegularForm = __webpack_require__(156);
+	var ShinryouAddForm = __webpack_require__(158);
+	var ShinryouSubmenu = __webpack_require__(160);
 
-	var tmplHtml = __webpack_require__(160);
+	var tmplHtml = __webpack_require__(162);
 
 	exports.setup = function(dom, visitId, at){
 		dom.html(tmplHtml);
@@ -28831,19 +28812,88 @@
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-
 	var tmplSrc = __webpack_require__(157);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
 
-	exports.create = function(){
+	exports.create = function(visitId, at){
 		var dom = $(tmplSrc);
+		bindEnter(dom, visitId, at);
+		bindCancel(dom);
 		return dom;
+	}
+
+	function bindEnter(dom, visitId, at){
+		dom.on("click", "> form .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var names = dom.find("> form input[name=item]:checked").map(function(){
+				return $(this).val();
+			}).get();
+			var shinryouList, newShinryouIds, newShinryouList = [];
+			task.run([
+				function(done){
+					service.batchResolveShinryouNamesAt(names, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						var nameCodeMap = result;
+						shinryouList = names.map(function(name){
+							return {
+								visit_id: visitId,
+								shinryoucode: nameCodeMap[name]
+							}
+						});
+						done();
+					});
+				},
+				function(done){
+					service.batchEnterShinryou(shinryouList, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouIds = result;
+						done();
+					})
+				},
+				function(done){
+					conti.forEachPara(newShinryouIds, function(shinryouId, done){
+						service.getShinryou(shinryouId, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newShinryouList.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("shinryou-batch-entered", [newShinryouList]);
+			})
+		})
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("close-workarea");
+		});
 	}
 
 /***/ },
 /* 157 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div>\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ },
 /* 158 */
@@ -28852,7 +28902,29 @@
 	"use strict";
 
 	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+
 	var tmplSrc = __webpack_require__(159);
+
+	exports.create = function(){
+		var dom = $(tmplSrc);
+		return dom;
+	}
+
+/***/ },
+/* 159 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div>\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</div>\r\n"
+
+/***/ },
+/* 160 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplSrc = __webpack_require__(161);
 
 	exports.setup = function(dom, visitId, at){
 		dom.html(tmplSrc);
@@ -28871,26 +28943,26 @@
 	}
 
 /***/ },
-/* 159 */
+/* 161 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n"
 
 /***/ },
-/* 160 */
+/* 162 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"work-area\"></div>\r\n"
 
 /***/ },
-/* 161 */
+/* 163 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var Shinryou = __webpack_require__(162);
+	var Shinryou = __webpack_require__(164);
 
 	exports.setup = function(dom, shinryouList, visitId, at, patientId){
 		dom.html("");
@@ -28901,7 +28973,7 @@
 	};
 
 /***/ },
-/* 162 */
+/* 164 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28911,7 +28983,7 @@
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
 
-	var tmplSrc = __webpack_require__(163);
+	var tmplSrc = __webpack_require__(165);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryou){
@@ -28927,13 +28999,13 @@
 
 
 /***/ },
-/* 163 */
+/* 165 */
 /***/ function(module, exports) {
 
 	module.exports = "{{label}}"
 
 /***/ },
-/* 164 */
+/* 166 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28943,7 +29015,7 @@
 	var kanjidate = __webpack_require__(118);
 	var myclinicUtil = __webpack_require__(5);
 
-	var tmplHtml = __webpack_require__(165);
+	var tmplHtml = __webpack_require__(167);
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -28952,19 +29024,19 @@
 
 
 /***/ },
-/* 165 */
+/* 167 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n"
 
 /***/ },
-/* 166 */
+/* 168 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var Conduct = __webpack_require__(167);
+	var Conduct = __webpack_require__(169);
 
 	exports.setup = function(dom, conducts){
 		dom.html("");
@@ -28979,7 +29051,7 @@
 
 
 /***/ },
-/* 167 */
+/* 169 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -28988,11 +29060,11 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
-	var ConductShinryouList = __webpack_require__(168);
-	var ConductDrugList = __webpack_require__(169);
-	var ConductKizaiList = __webpack_require__(170);
+	var ConductShinryouList = __webpack_require__(170);
+	var ConductDrugList = __webpack_require__(171);
+	var ConductKizaiList = __webpack_require__(172);
 
-	var tmplSrc = __webpack_require__(171);
+	var tmplSrc = __webpack_require__(173);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, conduct){
@@ -29009,7 +29081,7 @@
 
 
 /***/ },
-/* 168 */
+/* 170 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29028,7 +29100,7 @@
 
 
 /***/ },
-/* 169 */
+/* 171 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29048,7 +29120,7 @@
 
 
 /***/ },
-/* 170 */
+/* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29069,13 +29141,13 @@
 
 
 /***/ },
-/* 171 */
+/* 173 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n\r\n"
 
 /***/ },
-/* 172 */
+/* 174 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29084,7 +29156,7 @@
 	var hogan = __webpack_require__(115);
 	var mUtil = __webpack_require__(5);
 
-	var tmplSrc = __webpack_require__(173);
+	var tmplSrc = __webpack_require__(175);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, charge){
@@ -29127,19 +29199,19 @@
 
 
 /***/ },
-/* 173 */
+/* 175 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
-/* 174 */
+/* 176 */
 /***/ function(module, exports) {
 
-	module.exports = "<table class=\"visit-entry\" width=\"100%\" visit-id=\"{{visit_id}}\">\r\n    <tbody>\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div mc-name=\"text-menu\" class=\"record-text-menu\"></div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\">\r\n                    <div mc-name=\"rp\"></div>\r\n                </div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n"
+	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tbody>\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div mc-name=\"text-menu\" class=\"record-text-menu\"></div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\">\r\n                    <div mc-name=\"rp\"></div>\r\n                </div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n"
 
 /***/ },
-/* 175 */
+/* 177 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29147,9 +29219,9 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 
-	var tmplHtml = __webpack_require__(176);
+	var tmplHtml = __webpack_require__(178);
 
-	var ListPane = __webpack_require__(177)
+	var ListPane = __webpack_require__(179)
 
 	exports.setup = function(dom){
 		dom.listen("rx-start-page", function(appData){
@@ -29169,13 +29241,13 @@
 
 
 /***/ },
-/* 176 */
+/* 178 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
 
 /***/ },
-/* 177 */
+/* 179 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29183,10 +29255,10 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 
-	var tmplSrc = __webpack_require__(178);
+	var tmplSrc = __webpack_require__(180);
 	var tmpl = hogan.compile(tmplSrc);
 
-	var DiseaseListItem = __webpack_require__(179);
+	var DiseaseListItem = __webpack_require__(181);
 
 	exports.setup = function(dom, list){
 		dom.html(tmpl.render({}));
@@ -29200,13 +29272,13 @@
 
 
 /***/ },
-/* 178 */
+/* 180 */
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
 
 /***/ },
-/* 179 */
+/* 181 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29216,7 +29288,7 @@
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
 
-	var tmplSrc = __webpack_require__(180);
+	var tmplSrc = __webpack_require__(182);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(data){
@@ -29230,13 +29302,13 @@
 
 
 /***/ },
-/* 180 */
+/* 182 */
 /***/ function(module, exports) {
 
 	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
 
 /***/ },
-/* 181 */
+/* 183 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29245,9 +29317,9 @@
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(112);
 	var task = __webpack_require__(111);
-	var SelectPatientItem = __webpack_require__(182);
+	var SelectPatientItem = __webpack_require__(184);
 
-	var tmplHtml = __webpack_require__(184);
+	var tmplHtml = __webpack_require__(186);
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -29315,7 +29387,7 @@
 
 
 /***/ },
-/* 182 */
+/* 184 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29324,7 +29396,7 @@
 	var hogan = __webpack_require__(115);
 	var mUtil = __webpack_require__(5);
 
-	var tmplSrc = __webpack_require__(183);
+	var tmplSrc = __webpack_require__(185);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(data){
@@ -29338,19 +29410,19 @@
 
 
 /***/ },
-/* 183 */
+/* 185 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}},{{visit_id}}\">[{{state_label}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 184 */
+/* 186 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
 
 /***/ },
-/* 185 */
+/* 187 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29361,9 +29433,9 @@
 	var task = __webpack_require__(111);
 	var mUtil = __webpack_require__(5);
 
-	var tmplHtml = __webpack_require__(186);
+	var tmplHtml = __webpack_require__(188);
 
-	var itemTmplSrc = __webpack_require__(187);
+	var itemTmplSrc = __webpack_require__(189);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	exports.setup = function(dom){
@@ -29450,19 +29522,19 @@
 
 
 /***/ },
-/* 186 */
+/* 188 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
-/* 187 */
+/* 189 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 188 */
+/* 190 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29474,8 +29546,8 @@
 	__webpack_require__(2);
 	var task = __webpack_require__(111)
 
-	var tmplHtml = __webpack_require__(189);
-	var optionTmpl = hogan.compile(__webpack_require__(190));
+	var tmplHtml = __webpack_require__(191);
+	var optionTmpl = hogan.compile(__webpack_require__(192));
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -29528,19 +29600,19 @@
 
 
 /***/ },
-/* 189 */
+/* 191 */
 /***/ function(module, exports) {
 
 	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 190 */
+/* 192 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ },
-/* 191 */
+/* 193 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29551,8 +29623,8 @@
 	var task = __webpack_require__(111);
 	var mUtil = __webpack_require__(5);
 
-	var tmplHtml = __webpack_require__(192);
-	var itemTmplSrc = __webpack_require__(193);
+	var tmplHtml = __webpack_require__(194);
+	var itemTmplSrc = __webpack_require__(195);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	exports.setup = function(dom){
@@ -29619,33 +29691,33 @@
 
 
 /***/ },
-/* 192 */
+/* 194 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 193 */
+/* 195 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ },
-/* 194 */
+/* 196 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var modal = __webpack_require__(195);
+	var modal = __webpack_require__(197);
 	var service = __webpack_require__(112);
 	var mUtil = __webpack_require__(5);
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 
-	var mainTmpl = hogan.compile(__webpack_require__(196));
-	var optionTmpl = hogan.compile(__webpack_require__(197));
-	var dispTmpl = hogan.compile(__webpack_require__(198));
+	var mainTmpl = hogan.compile(__webpack_require__(198));
+	var optionTmpl = hogan.compile(__webpack_require__(199));
+	var dispTmpl = hogan.compile(__webpack_require__(200));
 
 	function getSearchTextDom(dom){
 		return dom.find("input[mc-name=searchText]");
@@ -29752,7 +29824,7 @@
 	}
 
 /***/ },
-/* 195 */
+/* 197 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var $ = __webpack_require__(1);
@@ -29887,113 +29959,66 @@
 
 
 /***/ },
-/* 196 */
+/* 198 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
 
 /***/ },
-/* 197 */
+/* 199 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 198 */
+/* 200 */
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
 
 /***/ },
-/* 199 */
+/* 201 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(200);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var conti = __webpack_require__(4);
+	var tmplSrc = __webpack_require__(176);
+	var Title = __webpack_require__(125);
+	var Text = __webpack_require__(127);
+	var TextMenu = __webpack_require__(131);
+	var Hoken = __webpack_require__(133);
+	var DrugMenu = __webpack_require__(138);
+	var DrugList = __webpack_require__(151);
+	var ShinryouMenu = __webpack_require__(155);
+	var ShinryouList = __webpack_require__(163);
+	var ConductMenu = __webpack_require__(166);
+	var ConductList = __webpack_require__(168);
+	var Charge = __webpack_require__(174);
 
-	exports.create = function(visitId, at){
+	exports.create = function(visit, currentVisitId, tempVisitId){
 		var dom = $(tmplSrc);
-		bindEnter(dom, visitId, at);
-		bindCancel(dom);
+		Title.setup(dom.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
+		var textWrapper = dom.find("[mc-name=texts]");
+		visit.texts.forEach(function(text){
+			var te = Text.create(text);
+			textWrapper.append(te);
+		});
+		TextMenu.setup(dom.find("[mc-name=text-menu]"), visit.visit_id);
+		Hoken.setup(dom.find("[mc-name=hoken]"), visit);
+		DrugMenu.setup(dom.find("[mc-name=drugMenu]"), visit);
+		DrugList.setup(dom.find("[mc-name=drugs].record-drug-wrapper"), 
+			visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
+		ShinryouMenu.setup(dom.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
+		ShinryouList.setup(dom.find("[mc-name=shinryouList]"), visit.shinryou_list,
+			visit.visit_id, visit.v_datetime, visit.patient_id);
+		ConductMenu.setup(dom.find("[mc-name=conductMenu]"));
+		ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
+		Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 		return dom;
 	}
 
-	function bindEnter(dom, visitId, at){
-		dom.on("click", "> form .workarea-commandbox [mc-name=enter]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var names = dom.find("> form input[name=item]:checked").map(function(){
-				return $(this).val();
-			}).get();
-			var shinryouList, newShinryouIds, newShinryouList = [];
-			task.run([
-				function(done){
-					service.batchResolveShinryouNamesAt(names, at, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						var nameCodeMap = result;
-						shinryouList = names.map(function(name){
-							return {
-								visit_id: visitId,
-								shinryoucode: nameCodeMap[name]
-							}
-						});
-						done();
-					});
-				},
-				function(done){
-					service.batchEnterShinryou(shinryouList, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newShinryouIds = result;
-						done();
-					})
-				},
-				function(done){
-					conti.forEachPara(newShinryouIds, function(shinryouId, done){
-						service.getShinryou(shinryouId, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							newShinryouList.push(result);
-							done();
-						})
-					}, done);
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("shinryou-batch-entered", [newShinryouList]);
-			})
-		})
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("close-workarea");
-		});
-	}
-
-/***/ },
-/* 200 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ }
 /******/ ]);

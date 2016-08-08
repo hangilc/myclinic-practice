@@ -2,19 +2,31 @@
 
 var $ = require("jquery");
 
-$.fn.broadcast = function(key, arg1){
-	var args = [].slice.call(arguments, 1);
-	this.each(function(){
+$.fn.broadcast = function(key, args){
+	console.log("enter broadcast", key);
+	if( args === undefined ){
+		args = [];
+	}
+	var retval = this.map(function(){
 		var e = $(this);
-		e.find("." + key).each(function(){
+		console.log("listeners", e.find("." + key).length);
+		var iterReturn = e.find("." + key).map(function(){
 			var listener = $(this);
 			var cb = listener.data(key);
 			if( typeof cb === "function" ){
-				cb.apply(listener, args);
+				var listenReturn = cb.apply(listener, args);
+				console.log("listen returns", listenReturn);
+				listenReturn = 1;
+				return listenReturn;
+			} else {
+				throw new Exception("cannot find function while broadcasting: " + key);
 			}
-		});
-	});
-	return this;
+		}).get();
+		console.log("iter returns", iterReturn);
+		return iterReturn;
+	}).get();
+	console.log("leave braodcast", key, retval);
+	return retval;
 };
 
 $.fn.listen = function(key, cb){
