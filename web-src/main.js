@@ -113,4 +113,12 @@ $("body").reply("fn-confirm-edit", function(visitId, message){
 	}
 });
 
+$("body").reply("fn-get-current-visit-id", function(){
+	return appData.currentVisitId;
+});
+
+$("body").reply("fn-get-temp-visit-id", function(){
+	return appData.tempVisitId;
+});
+
 

@@ -4,6 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var service = require("./service");
 var mUtil = require("../myclinic-util");
+var Record = require("./record/recotd");
 var Title = require("./record/title");
 var Text = require("./record/text");
 var TextMenu = require("./record/text-menu");
@@ -28,7 +29,7 @@ exports.setup = function(dom){
 			var records = appData.record_list;
 			dom.html("");
 			records.forEach(function(data){
-				dom.append(makeRecord(data, currentVisitId, tempVisitId));
+				dom.append(Record.create(data, currentVisitId, tempVisitId));
 			})
 		})
 	});
@@ -36,30 +37,30 @@ exports.setup = function(dom){
 	bindNumberOfDrugsChanged(dom);
 };
 
-function makeRecord(visit, currentVisitId, tempVisitId){
-	var e = $(recordTmpl.render(visit));
-	Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
-	var textWrapper = e.find("[mc-name=texts]");
-	visit.texts.forEach(function(text){
-		var te = Text.create(text);
-		textWrapper.append(te);
-	});
-	TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
-	Hoken.setup(e.find("[mc-name=hoken]"), visit);
-	DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
-	DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), 
-		visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
-	ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
-	ShinryouList.setup(e.find("[mc-name=shinryouList]"), visit.shinryou_list,
-		visit.visit_id, visit.v_datetime, visit.patient_id);
-	ConductMenu.setup(e.find("[mc-name=conductMenu]"));
-	ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
-	Charge.setup(e.find("[mc-name=charge]"), visit.charge);
-	bindDrugsBatchModifiedDays(e, visit.visit_id);
-	bindDrugsBatchDeleted(e);
-	bindDrugsNeedRenumbering(e);
-	return e;
-}
+// function makeRecord(visit, currentVisitId, tempVisitId){
+// 	var e = $(recordTmpl.render(visit));
+// 	Title.setup(e.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
+// 	var textWrapper = e.find("[mc-name=texts]");
+// 	visit.texts.forEach(function(text){
+// 		var te = Text.create(text);
+// 		textWrapper.append(te);
+// 	});
+// 	TextMenu.setup(e.find("[mc-name=text-menu]"), visit.visit_id);
+// 	Hoken.setup(e.find("[mc-name=hoken]"), visit);
+// 	DrugMenu.setup(e.find("[mc-name=drugMenu]"), visit);
+// 	DrugList.setup(e.find("[mc-name=drugs].record-drug-wrapper"), 
+// 		visit.drugs, visit.visit_id, visit.v_datetime, visit.patient_id);
+// 	ShinryouMenu.setup(e.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
+// 	ShinryouList.setup(e.find("[mc-name=shinryouList]"), visit.shinryou_list,
+// 		visit.visit_id, visit.v_datetime, visit.patient_id);
+// 	ConductMenu.setup(e.find("[mc-name=conductMenu]"));
+// 	ConductList.setup(e.find("[mc-name=conducts]"), visit.conducts);
+// 	Charge.setup(e.find("[mc-name=charge]"), visit.charge);
+// 	bindDrugsBatchModifiedDays(e, visit.visit_id);
+// 	bindDrugsBatchDeleted(e);
+// 	bindDrugsNeedRenumbering(e);
+// 	return e;
+// }
 
 function bindDrugsBatchModifiedDays(recordDom, visitId){
 	recordDom.on("drugs-batch-modified-days", function(event, targetVisitId, drugIds, days){
