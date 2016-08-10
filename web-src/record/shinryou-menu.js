@@ -17,7 +17,7 @@ exports.setup = function(dom, visitId, at){
 	dom.html(tmplHtml);
 	bindAddRegular(dom, visitId, at);
 	bindSubmenu(dom, visitId, at);
-	bindSubmenuAddForm(dom);
+	bindSubmenuAddForm(dom, visitId, at);
 	bindSubmenuDeleteSelectedForm(dom, visitId, at);
 	bindSubmenuCancel(dom);
 	bindCloseWorkarea(dom);
@@ -66,10 +66,19 @@ function bindSubmenu(dom, visitId, at){
 	})
 }
 
-function bindSubmenuAddForm(dom){
+function bindSubmenuAddForm(dom, visitId, at){
 	dom.on("submenu-add-form", function(event){
 		event.stopPropagation();
-		console.log("add-form");
+		if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を追加しますか？"]) ){
+			return;
+		}
+		var form = ShinryouAddForm.create(visitId, at);
+		form.on("cancel", function(event){
+			event.stopPropagation();
+			endWork(dom);
+		})
+		closeSubmenu(dom);
+		startWork(dom, "add-search", form);
 	})
 }
 
@@ -96,9 +105,14 @@ function bindSubmenuDeleteSelectedForm(dom, visitId, at){
 			}
 			var form = ShinryouDeleteSelectedForm.create(shinryouList);
 			form.on("shinryou-deleted", function(event, deletedShinryouIds){
+				evnt.stopPropagation();
 				dom.trigger("shinryou-batch-deleted", [visitId, deletedShinryouIds]);
 				endWork(dom);
 			});
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				endWork(dom);
+			})
 			closeSubmenu(dom);
 			startWork(dom, "delete-selected", form);
 		})

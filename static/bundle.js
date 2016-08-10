@@ -28000,7 +28000,7 @@
 		dom.html(tmplHtml);
 		bindAddRegular(dom, visitId, at);
 		bindSubmenu(dom, visitId, at);
-		bindSubmenuAddForm(dom);
+		bindSubmenuAddForm(dom, visitId, at);
 		bindSubmenuDeleteSelectedForm(dom, visitId, at);
 		bindSubmenuCancel(dom);
 		bindCloseWorkarea(dom);
@@ -28049,10 +28049,19 @@
 		})
 	}
 
-	function bindSubmenuAddForm(dom){
+	function bindSubmenuAddForm(dom, visitId, at){
 		dom.on("submenu-add-form", function(event){
 			event.stopPropagation();
-			console.log("add-form");
+			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を追加しますか？"]) ){
+				return;
+			}
+			var form = ShinryouAddForm.create(visitId, at);
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				endWork(dom);
+			})
+			closeSubmenu(dom);
+			startWork(dom, "add-search", form);
 		})
 	}
 
@@ -28079,9 +28088,14 @@
 				}
 				var form = ShinryouDeleteSelectedForm.create(shinryouList);
 				form.on("shinryou-deleted", function(event, deletedShinryouIds){
+					evnt.stopPropagation();
 					dom.trigger("shinryou-batch-deleted", [visitId, deletedShinryouIds]);
 					endWork(dom);
 				});
+				form.on("cancel", function(event){
+					event.stopPropagation();
+					endWork(dom);
+				})
 				closeSubmenu(dom);
 				startWork(dom, "delete-selected", form);
 			})
@@ -28237,16 +28251,37 @@
 
 	var tmplSrc = __webpack_require__(161);
 
-	exports.create = function(){
+	exports.create = function(visitId, at){
 		var dom = $(tmplSrc);
+		bindCancel(dom);
+		bindSearch(dom, at);
 		return dom;
+	}
+
+	var searchTextInputSelector = "> form[mc-name=search-form] input[mc-name=text]";
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=close]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel");
+		});
+	}
+
+	function bindSearch(dom, at){
+		dom.on("submit", "> form[mc-name=search-form]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var text = dom.find(searchTextInputSelector).val().trim();
+			
+		});
 	}
 
 /***/ },
 /* 161 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div>\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div>\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<form mc-name=\"search-form\">\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
 /* 162 */
@@ -30350,7 +30385,7 @@
 	function bindCancel(dom){
 		dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
 			event.preventDefault();
-			dom.trigger("close-workarea");
+			dom.trigger("cancel");
 		});
 	}
 

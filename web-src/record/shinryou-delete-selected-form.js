@@ -55,6 +55,6 @@ function bindEnter(dom){
 function bindCancel(dom){
 	dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
 		event.preventDefault();
-		dom.trigger("close-workarea");
+		dom.trigger("cancel");
 	});
 }
