@@ -10,27 +10,42 @@ exports.setup = function(dom, visitId){
 	bindEnter(dom, visitId);
 };
 
+var enterLinkSelector = "> [mc-name=disp] [mc-name=addTextLink]";
+
+function getDispDom(dom){
+	return dom.find("> [mc-name=disp]");
+}
+
+function getWorkspaceDom(dom){
+	return dom.find("> [mc-name=workspace]");
+}
+
 function bindEnter(dom, visitId){
-	dom.on("click", "[mc-name=addTextLink]", function(event){
+	dom.on("click", enterLinkSelector, function(event){
 		event.preventDefault();
 		var editor = TextForm.create({content: "", visit_id: visitId});
 		bindEditor(dom, editor, visitId);
-		dom.hide();
-		dom.after(editor);
+		var disp = getDispDom(dom);
+		var work = getWorkspaceDom(dom);
+		disp.hide();
+		work.html("").append(editor);
 	});
 }
 
 function bindEditor(dom, editor, visitId){
 	editor.on("text-entered", function(event, text){
 		event.stopPropagation();
-		var textDom = Text.create(text);
-		editor.remove();
-		dom.before(textDom);
-		dom.show();
+		var disp = getDispDom(dom);
+		var work = getWorkspaceDom(dom);
+		dom.trigger("text-batch-entered", [visitId, [text]]);
+		work.html("");
+		disp.show();
 	});
 	editor.on("cancel-edit", function(event){
 		event.stopPropagation();
-		editor.remove();
-		dom.show();
+		var disp = getDispDom(dom);
+		var work = getWorkspaceDom(dom);
+		work.html("");
+		disp.show();
 	})
 }

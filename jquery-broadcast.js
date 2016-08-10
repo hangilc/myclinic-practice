@@ -9,7 +9,7 @@ $.fn.broadcast = function(key, args){
 	return this.map(function(){
 		var e = $(this);
 		var iterReturn = e.find("." + key).map(function(){
-			return $(this);
+			var listener = $(this);
 			var cb = listener.data(key);
 			if( typeof cb === "function" ){
 				return cb.apply(listener, args);

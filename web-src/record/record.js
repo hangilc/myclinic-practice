@@ -4,7 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var tmplSrc = require("raw!./record.html");
 var Title = require("./title");
-var Text = require("./text");
+var TextList = require("./text-list");
 var TextMenu = require("./text-menu");
 var Hoken = require("./hoken");
 var DrugMenu = require("./drug-menu");
@@ -18,11 +18,7 @@ var Charge = require("./charge");
 exports.create = function(visit, currentVisitId, tempVisitId){
 	var dom = $(tmplSrc);
 	Title.setup(dom.find("[mc-name=title]"), visit, currentVisitId, tempVisitId);
-	var textWrapper = dom.find("[mc-name=texts]");
-	visit.texts.forEach(function(text){
-		var te = Text.create(text);
-		textWrapper.append(te);
-	});
+	TextList.setup(dom.find("[mc-name=texts]"), visit.visit_id, visit.texts);
 	TextMenu.setup(dom.find("[mc-name=text-menu]"), visit.visit_id);
 	Hoken.setup(dom.find("[mc-name=hoken]"), visit);
 	DrugMenu.setup(dom.find("[mc-name=drugMenu]"), visit);
@@ -34,5 +30,15 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	ConductMenu.setup(dom.find("[mc-name=conductMenu]"));
 	ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
 	Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
+	bindTextEntered(dom, visit.visit_id);
 	return dom;
+}
+
+function bindTextEntered(dom, visitId){
+	dom.on("text-batch-entered", function(event, targetVisitId, texts){
+		if( visitId === targetVisitId ){
+			event.stopPropagation();
+			dom.broadcast("rx-text-batch-entered", [targetVisitId, texts]);
+		}
+	})
 }
