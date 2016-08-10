@@ -35,6 +35,7 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	bindDrugsDeleted(dom, visit.visit_id);
 	bindDrugsModifiedDays(dom, visit.visit_id);
 	bindDrugsNeedRenumbering(dom, visit.visit_id);
+	bindShinryouEntered(dom, visit.visit_id);
 	return dom;
 }
 
@@ -83,6 +84,15 @@ function bindDrugsNeedRenumbering(dom, visitId){
 		if( visitId === targetVisitId ){
 			event.stopPropagation();
 			dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+		}
+	})
+}
+
+function bindShinryouEntered(dom, visitId){
+	dom.on("shinryou-batch-entered", function(event, targetVisitId, shinryouList){
+		if( visitId === targetVisitId ){
+			event.stopPropagation();
+			dom.broadcast("rx-shinryou-batch-entered", [targetVisitId, shinryouList]);
 		}
 	})
 }

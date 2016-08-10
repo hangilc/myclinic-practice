@@ -25053,6 +25053,10 @@
 		request("get_shinryou", {shinryou_id: shinryouId}, "GET", cb);
 	};
 
+	exports.getFullShinryou = function(shinryouId, at, cb){
+		request("get_full_shinryou", {shinryou_id: shinryouId, at: at}, "GET", cb);
+	};
+
 
 /***/ },
 /* 113 */
@@ -26713,6 +26717,7 @@
 		bindDrugsDeleted(dom, visit.visit_id);
 		bindDrugsModifiedDays(dom, visit.visit_id);
 		bindDrugsNeedRenumbering(dom, visit.visit_id);
+		bindShinryouEntered(dom, visit.visit_id);
 		return dom;
 	}
 
@@ -26761,6 +26766,15 @@
 			if( visitId === targetVisitId ){
 				event.stopPropagation();
 				dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+			}
+		})
+	}
+
+	function bindShinryouEntered(dom, visitId){
+		dom.on("shinryou-batch-entered", function(event, targetVisitId, shinryouList){
+			if( visitId === targetVisitId ){
+				event.stopPropagation();
+				dom.broadcast("rx-shinryou-batch-entered", [targetVisitId, shinryouList]);
 			}
 		})
 	}
@@ -28383,7 +28397,7 @@
 				},
 				function(done){
 					conti.forEachPara(newShinryouIds, function(shinryouId, done){
-						service.getShinryou(shinryouId, function(err, result){
+						service.getFullShinryou(shinryouId, at, function(err, result){
 							if( err ){
 								done(err);
 								return;
@@ -28398,7 +28412,8 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("shinryou-batch-entered", [newShinryouList]);
+				dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
+				dom.trigger("close-workarea");
 			})
 		})
 	}
@@ -28487,12 +28502,42 @@
 	var Shinryou = __webpack_require__(166);
 
 	exports.setup = function(dom, shinryouList, visitId, at, patientId){
-		dom.html("");
+		batchAdd(dom, shinryouList);
+		respondToShinryouEntered(dom, visitId);
+	};
+
+	function batchAdd(dom, shinryouList){
 		shinryouList.forEach(function(shinryou){
 			var se = Shinryou.create(shinryou);
 			dom.append(se);
 		});
-	};
+	}
+
+	function lookupShinryou(dom, visitId){
+		return dom.broadcast("rx-shinryou-lookup-for-visit", [visitId]);
+	}
+
+	function respondToShinryouEntered(dom, visitId){
+		dom.listen("rx-shinryou-batch-entered", function(targetVisitId, shinryouList){
+			if( visitId === targetVisitId ){
+				var currentList = lookupShinryou(dom, visitId).slice();
+				shinryouList = shinryouList.slice();
+				while( currentList.length > 0 && shinryouList.length > 0 ){
+					var curr = currentList[0];
+					var shin = shinryouList[0];
+					if( shin.shinryoucode < curr.shinryoucode ){
+						curr.dom.before(Shinryou.create(shin));
+						shinryouList.shift();
+					} else {
+						currentList.shift();
+					}
+				}
+				if( currentList.length === 0 ){
+					batchAdd(dom, shinryouList);
+				}
+			}
+		})
+	}
 
 /***/ },
 /* 166 */
@@ -28514,6 +28559,15 @@
 			label: shinryou.name
 		});
 		e.html(html);
+		e.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
+			if( targetVisitId === shinryou.visit_id ){
+				return {
+					shinryou_id: shinryou.shinryou_id,
+					shinryoucode: shinryou.shinryoucode,
+					dom: e
+				};
+			}
+		})
 		return e;
 	};
 

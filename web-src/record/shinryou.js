@@ -14,6 +14,15 @@ exports.create = function(shinryou){
 		label: shinryou.name
 	});
 	e.html(html);
+	e.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
+		if( targetVisitId === shinryou.visit_id ){
+			return {
+				shinryou_id: shinryou.shinryou_id,
+				shinryoucode: shinryou.shinryoucode,
+				dom: e
+			};
+		}
+	})
 	return e;
 };
 

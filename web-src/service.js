@@ -167,3 +167,7 @@ exports.batchEnterShinryou = function(shinryouList, cb){
 exports.getShinryou = function(shinryouId, cb){
 	request("get_shinryou", {shinryou_id: shinryouId}, "GET", cb);
 };
+
+exports.getFullShinryou = function(shinryouId, at, cb){
+	request("get_full_shinryou", {shinryou_id: shinryouId, at: at}, "GET", cb);
+};

@@ -51,7 +51,7 @@ function bindEnter(dom, visitId, at){
 			},
 			function(done){
 				conti.forEachPara(newShinryouIds, function(shinryouId, done){
-					service.getShinryou(shinryouId, function(err, result){
+					service.getFullShinryou(shinryouId, at, function(err, result){
 						if( err ){
 							done(err);
 							return;
@@ -66,7 +66,8 @@ function bindEnter(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			dom.trigger("shinryou-batch-entered", [newShinryouList]);
+			dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
+			dom.trigger("close-workarea");
 		})
 	})
 }

@@ -27,7 +27,6 @@ module.exports = function(config){
 				} else {
 					res.json(result);
 				}
-				conn.end();
 			});
 		} else if( q in service ){
 			var conn = mysql.createConnection(config.dbConfig);
