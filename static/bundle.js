@@ -26710,6 +26710,8 @@
 	var ConductMenu = __webpack_require__(168);
 	var ConductList = __webpack_require__(170);
 	var Charge = __webpack_require__(176);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
 
 	exports.create = function(visit, currentVisitId, tempVisitId){
 		var dom = $(tmplSrc);
@@ -26733,6 +26735,7 @@
 		bindDrugsNeedRenumbering(dom, visit.visit_id);
 		bindShinryouEntered(dom, visit.visit_id);
 		bindShinryouDeleted(dom, visit.visit_id);
+		bindShinryouDeleteDuplicated(dom, visit.visit_id);
 		return dom;
 	}
 
@@ -26801,6 +26804,38 @@
 				deletedShinryouIds.forEach(function(shinryouId){
 					dom.broadcast("rx-shinryou-deleted", [shinryouId])
 				});
+			}
+		});
+	}
+
+	function bindShinryouDeleteDuplicated(dom, visitId){
+		dom.on("shinryou-delete-duplicated", function(event, targetVisitId){
+			if( visitId === targetVisitId ){
+				event.stopPropagation();
+				var shinryouItems = dom.broadcast("rx-shinryou-lookup-for-visit", [targetVisitId]);
+				var curMap = {};
+				var duplicateShinryouIds = [];
+				shinryouItems.forEach(function(item){
+					var shinryoucode = item.shinryoucode;
+					if( curMap[shinryoucode] ){
+						duplicateShinryouIds.push(item.shinryou_id);
+					} else {
+						curMap[shinryoucode] = true;
+					}
+				});
+				task.run([
+					function(done){
+						service.batchDeleteShinryou(duplicateShinryouIds, done);
+					}
+				], function(err){
+					if( err ){
+						alert(err);
+						return;
+					}
+					duplicateShinryouIds.forEach(function(shinryouId){
+						dom.broadcast("rx-shinryou-deleted", [shinryouId]);
+					})
+				})
 			}
 		});
 	}
@@ -28014,6 +28049,7 @@
 		bindSubmenuCopyAll(dom, visitId, at);
 		bindSubmenuCopySelected(dom, visitId, at);
 		bindSubmenuDeleteSelectedForm(dom, visitId, at);
+		bindSubmenuDeleteDuplicated(dom, visitId);
 		bindSubmenuCancel(dom);
 		setState(dom, "init");
 	}
@@ -28062,7 +28098,7 @@
 				closeSubmenu(dom);
 				setState(dom, "init");
 			} else if( state === "init" ) {
-				dom.find(submenuAreaSelector).append(ShinryouSubmenu.create(visitId, at));
+				dom.find(submenuAreaSelector).append(ShinryouSubmenu.create());
 				setState(dom, "submenu");
 			}
 		})
@@ -28178,6 +28214,10 @@
 				alert("現在（暫定）診療中でないので、コピーできません。");
 				return;
 			}
+			if( targetVisitId === visitId ){
+				alert("自分自身にはコピーできません。");
+				return;
+			}
 			var srcShinryouList, newShinryouList = [];
 			task.run([
 				function(done){
@@ -28218,6 +28258,10 @@
 			var targetVisitId = dom.inquire("fn-get-target-visit-id");
 			if( !(targetVisitId > 0) ){
 				alert("現在（暫定）診療中でないので、コピーできません。");
+				return;
+			}
+			if( targetVisitId === visitId ){
+				alert("自分自身にはコピーできません。");
 				return;
 			}
 			var shinryouList;
@@ -28315,6 +28359,15 @@
 				startWork(dom, "delete-selected", form);
 			})
 		})
+	}
+
+	function bindSubmenuDeleteDuplicated(dom, visitId){
+		dom.on("submenu-delete-duplicated", function(event){
+			event.stopPropagation();
+			closeSubmenu(dom);
+			setState(dom, "init");
+			dom.trigger("shinryou-delete-duplicated", [visitId]);
+		});
 	}
 
 	function bindSubmenuCancel(dom){
@@ -28612,46 +28665,48 @@
 	var $ = __webpack_require__(1);
 	var tmplSrc = __webpack_require__(163);
 
-	exports.create = function(visitId, at){
+	exports.create = function(){
 		var dom = $(tmplSrc);
-		bindAddForm(dom, visitId);
-		bindCopyAll(dom, visitId);
-		bindCopySelected(dom, visitId);
-		bindDeleteSelected(dom, visitId);
-		bindCancel(dom, visitId);
+		bindAddForm(dom);
+		bindCopyAll(dom);
+		bindCopySelected(dom);
+		bindDeleteSelected(dom);
+		bindDeleteDuplicated(dom);
+		bindCancel(dom);
 		return dom;
 	};
 
-	function bindAddForm(dom, visitId){
+	function bindAddForm(dom){
 		dom.on("click", "> [mc-name=search]", function(event){
-			var ok = dom.inquire("fn-confirm-edit", [visitId, 
-				"（暫定）診察中の項目ではありませんが、診療行為を追加しますか？"]);
-			if( !ok ){
-				return;
-			}
 			dom.trigger("submenu-add-form");
 		});
 	}
 
-	function bindCopyAll(dom, visitId){
+	function bindCopyAll(dom){
 		dom.on("click", "> [mc-name=copyAll]", function(event){
 			dom.trigger("submenu-copy-all");
 		});
 	}
 
-	function bindCopySelected(dom, visitId){
+	function bindCopySelected(dom){
 		dom.on("click", "> [mc-name=copySelected]", function(event){
 			dom.trigger("submenu-copy-selected");
 		});
 	}
 
-	function bindDeleteSelected(dom, visitId){
+	function bindDeleteSelected(dom){
 		dom.on("click", "> [mc-name=deleteSelected]", function(event){
 			dom.trigger("submenu-delete-selected");
 		});
 	}
 
-	function bindCancel(dom, visitId){
+	function bindDeleteDuplicated(dom){
+		dom.on("click", "> [mc-name=deleteDuplicated]", function(event){
+			dom.trigger("submenu-delete-duplicated");
+		});
+	}
+
+	function bindCancel(dom){
 		dom.on("click", "> [mc-name=cancel]", function(event){
 			dom.trigger("submenu-cancel");
 		});
@@ -28661,7 +28716,7 @@
 /* 163 */
 /***/ function(module, exports) {
 
-	module.exports = "<div>\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
+	module.exports = "<div>\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"deleteDuplicated\" href=\"javascript:void(0)\" class=\"cmd-link\">重複削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
 
 /***/ },
 /* 164 */
@@ -28750,7 +28805,7 @@
 			if( shinryou.shinryou_id === targetShinryouId ){
 				dom.remove();
 			}
-		})
+		});
 		return dom;
 	};
 

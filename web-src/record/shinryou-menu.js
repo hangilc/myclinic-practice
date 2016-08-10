@@ -23,6 +23,7 @@ exports.setup = function(dom, visitId, at){
 	bindSubmenuCopyAll(dom, visitId, at);
 	bindSubmenuCopySelected(dom, visitId, at);
 	bindSubmenuDeleteSelectedForm(dom, visitId, at);
+	bindSubmenuDeleteDuplicated(dom, visitId);
 	bindSubmenuCancel(dom);
 	setState(dom, "init");
 }
@@ -71,7 +72,7 @@ function bindSubmenu(dom, visitId, at){
 			closeSubmenu(dom);
 			setState(dom, "init");
 		} else if( state === "init" ) {
-			dom.find(submenuAreaSelector).append(ShinryouSubmenu.create(visitId, at));
+			dom.find(submenuAreaSelector).append(ShinryouSubmenu.create());
 			setState(dom, "submenu");
 		}
 	})
@@ -187,6 +188,10 @@ function bindSubmenuCopyAll(dom, visitId, at){
 			alert("現在（暫定）診療中でないので、コピーできません。");
 			return;
 		}
+		if( targetVisitId === visitId ){
+			alert("自分自身にはコピーできません。");
+			return;
+		}
 		var srcShinryouList, newShinryouList = [];
 		task.run([
 			function(done){
@@ -227,6 +232,10 @@ function bindSubmenuCopySelected(dom, visitId, at){
 		var targetVisitId = dom.inquire("fn-get-target-visit-id");
 		if( !(targetVisitId > 0) ){
 			alert("現在（暫定）診療中でないので、コピーできません。");
+			return;
+		}
+		if( targetVisitId === visitId ){
+			alert("自分自身にはコピーできません。");
 			return;
 		}
 		var shinryouList;
@@ -324,6 +333,15 @@ function bindSubmenuDeleteSelectedForm(dom, visitId, at){
 			startWork(dom, "delete-selected", form);
 		})
 	})
+}
+
+function bindSubmenuDeleteDuplicated(dom, visitId){
+	dom.on("submenu-delete-duplicated", function(event){
+		event.stopPropagation();
+		closeSubmenu(dom);
+		setState(dom, "init");
+		dom.trigger("shinryou-delete-duplicated", [visitId]);
+	});
 }
 
 function bindSubmenuCancel(dom){

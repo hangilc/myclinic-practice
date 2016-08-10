@@ -3,46 +3,48 @@
 var $ = require("jquery");
 var tmplSrc = require("raw!./shinryou-submenu.html");
 
-exports.create = function(visitId, at){
+exports.create = function(){
 	var dom = $(tmplSrc);
-	bindAddForm(dom, visitId);
-	bindCopyAll(dom, visitId);
-	bindCopySelected(dom, visitId);
-	bindDeleteSelected(dom, visitId);
-	bindCancel(dom, visitId);
+	bindAddForm(dom);
+	bindCopyAll(dom);
+	bindCopySelected(dom);
+	bindDeleteSelected(dom);
+	bindDeleteDuplicated(dom);
+	bindCancel(dom);
 	return dom;
 };
 
-function bindAddForm(dom, visitId){
+function bindAddForm(dom){
 	dom.on("click", "> [mc-name=search]", function(event){
-		var ok = dom.inquire("fn-confirm-edit", [visitId, 
-			"（暫定）診察中の項目ではありませんが、診療行為を追加しますか？"]);
-		if( !ok ){
-			return;
-		}
 		dom.trigger("submenu-add-form");
 	});
 }
 
-function bindCopyAll(dom, visitId){
+function bindCopyAll(dom){
 	dom.on("click", "> [mc-name=copyAll]", function(event){
 		dom.trigger("submenu-copy-all");
 	});
 }
 
-function bindCopySelected(dom, visitId){
+function bindCopySelected(dom){
 	dom.on("click", "> [mc-name=copySelected]", function(event){
 		dom.trigger("submenu-copy-selected");
 	});
 }
 
-function bindDeleteSelected(dom, visitId){
+function bindDeleteSelected(dom){
 	dom.on("click", "> [mc-name=deleteSelected]", function(event){
 		dom.trigger("submenu-delete-selected");
 	});
 }
 
-function bindCancel(dom, visitId){
+function bindDeleteDuplicated(dom){
+	dom.on("click", "> [mc-name=deleteDuplicated]", function(event){
+		dom.trigger("submenu-delete-duplicated");
+	});
+}
+
+function bindCancel(dom){
 	dom.on("click", "> [mc-name=cancel]", function(event){
 		dom.trigger("submenu-cancel");
 	});

@@ -27,7 +27,7 @@ exports.create = function(shinryou){
 		if( shinryou.shinryou_id === targetShinryouId ){
 			dom.remove();
 		}
-	})
+	});
 	return dom;
 };
 

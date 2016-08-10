@@ -14,6 +14,8 @@ var ShinryouList = require("./shinryou-list");
 var ConductMenu = require("./conduct-menu");
 var ConductList = require("./conduct-list");
 var Charge = require("./charge");
+var task = require("../task");
+var service = require("../service");
 
 exports.create = function(visit, currentVisitId, tempVisitId){
 	var dom = $(tmplSrc);
@@ -37,6 +39,7 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	bindDrugsNeedRenumbering(dom, visit.visit_id);
 	bindShinryouEntered(dom, visit.visit_id);
 	bindShinryouDeleted(dom, visit.visit_id);
+	bindShinryouDeleteDuplicated(dom, visit.visit_id);
 	return dom;
 }
 
@@ -105,6 +108,38 @@ function bindShinryouDeleted(dom, visitId){
 			deletedShinryouIds.forEach(function(shinryouId){
 				dom.broadcast("rx-shinryou-deleted", [shinryouId])
 			});
+		}
+	});
+}
+
+function bindShinryouDeleteDuplicated(dom, visitId){
+	dom.on("shinryou-delete-duplicated", function(event, targetVisitId){
+		if( visitId === targetVisitId ){
+			event.stopPropagation();
+			var shinryouItems = dom.broadcast("rx-shinryou-lookup-for-visit", [targetVisitId]);
+			var curMap = {};
+			var duplicateShinryouIds = [];
+			shinryouItems.forEach(function(item){
+				var shinryoucode = item.shinryoucode;
+				if( curMap[shinryoucode] ){
+					duplicateShinryouIds.push(item.shinryou_id);
+				} else {
+					curMap[shinryoucode] = true;
+				}
+			});
+			task.run([
+				function(done){
+					service.batchDeleteShinryou(duplicateShinryouIds, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				duplicateShinryouIds.forEach(function(shinryouId){
+					dom.broadcast("rx-shinryou-deleted", [shinryouId]);
+				})
+			})
 		}
 	});
 }
