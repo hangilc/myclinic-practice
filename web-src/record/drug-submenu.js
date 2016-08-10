@@ -132,9 +132,8 @@ function bindCopySelected(dom, visitId, at){
 
 function bindModifyDays(dom, visitId){
 	dom.on("click", "[mc-name=modifyDays]", function(event){
-		var ok = dom.inquire("fn-confirm-edit", visitId, 
-			"（暫定）診察中の項目ではありませんが、薬剤を選択して日数を変更しますか？");
-		if( !ok ){
+		var msg = "（暫定）診察中の項目ではありませんが、薬剤を選択して日数を変更しますか？";
+		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 			return;
 		}
 		event.preventDefault();
@@ -145,9 +144,8 @@ function bindModifyDays(dom, visitId){
 
 function bindDeleteSelected(dom, visitId){
 	dom.on("click", "[mc-name=deleteSelected]", function(event){
-		var ok = dom.inquire("fn-confirm-edit", visitId, 
-			"（暫定）診察中の項目ではありませんが、薬剤を選択して削除しますか？");
-		if( !ok ){
+		var msg = "（暫定）診察中の項目ではありませんが、薬剤を選択して削除しますか？";
+		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 			return;
 		}
 		event.preventDefault();

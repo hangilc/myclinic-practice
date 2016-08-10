@@ -1,7 +1,20 @@
+<div class="workarea">
 <div class="title">複数診療削除</div>
+<form onsubmit="return false">
 <div>
 	<table>
-		<tbody mc-name="tbody"></tbody>
+		<tbody mc-name="tbody">
+		{{#list}}
+			<tr>
+				<td>
+					<input type="checkbox" name="shinryou_id" value={{shinryou_id}} />
+				</td>
+				<td>
+					{{name}}
+				</td>
+			</tr>
+		{{/list}}
+		</tbody>
 	</table>
 </div>
 <hr/>
@@ -12,4 +25,6 @@
 <div class="workarea-commandbox">
     <button mc-name="enter">削除実行</button>
     <button mc-name="cancel">キャンセル</button>
+</div>
+</form>
 </div>

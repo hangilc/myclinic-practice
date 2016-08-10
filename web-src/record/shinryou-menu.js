@@ -6,7 +6,10 @@ var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
 var AddRegularForm = require("./shinryou-add-regular");
 var ShinryouAddForm = require("./shinryou-add-form");
+var ShinryouDeleteSelectedForm = require("./shinryou-delete-selected-form");
 var ShinryouSubmenu = require("./shinryou-submenu");
+var service = require("../service");
+var task = require("../task");
 
 var tmplHtml = require("raw!./shinryou-menu.html");
 
@@ -15,6 +18,8 @@ exports.setup = function(dom, visitId, at){
 	bindAddRegular(dom, visitId, at);
 	bindSubmenu(dom, visitId, at);
 	bindSubmenuAddForm(dom);
+	bindSubmenuDeleteSelectedForm(dom, visitId, at);
+	bindSubmenuCancel(dom);
 	bindCloseWorkarea(dom);
 	bindShinryouBatchEntered(dom);
 	setState(dom, "init");
@@ -35,8 +40,8 @@ function bindAddRegular(dom, visitId, at){
 		} else if( state === "add-regular" ){
 			endWork(dom);
 		} else {
-			var ok = dom.inquire("fn-confirm-edit", visitId, 
-				"現在（暫定）診療中でありませんが、診療行為を追加しますか？");
+			var ok = dom.inquire("fn-confirm-edit", [visitId, 
+				"現在（暫定）診療中でありませんが、診療行為を追加しますか？"]);
 			if( !ok ){
 				return;
 			}
@@ -65,6 +70,46 @@ function bindSubmenuAddForm(dom){
 	dom.on("submenu-add-form", function(event){
 		event.stopPropagation();
 		console.log("add-form");
+	})
+}
+
+function bindSubmenuDeleteSelectedForm(dom, visitId, at){
+	dom.on("submenu-delete-selected", function(event){
+		event.stopPropagation();
+		if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を削除しますか？"]) ){
+			return;
+		}
+		var shinryouList;
+		task.run(function(done){
+			service.listFullShinryouForVisit(visitId, at, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				shinryouList = result;
+				done();
+			})
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var form = ShinryouDeleteSelectedForm.create(shinryouList);
+			form.on("shinryou-deleted", function(event, deletedShinryouIds){
+				dom.trigger("shinryou-batch-deleted", [visitId, deletedShinryouIds]);
+				endWork(dom);
+			});
+			closeSubmenu(dom);
+			startWork(dom, "delete-selected", form);
+		})
+	})
+}
+
+function bindSubmenuCancel(dom){
+	dom.on("submenu-cancel", function(event){
+		event.stopPropagation();
+		closeSubmenu(dom);
+		setState(dom, "init");
 	})
 }
 

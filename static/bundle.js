@@ -10308,8 +10308,7 @@
 		return this;
 	};
 
-	$.fn.inquire = function(key){
-		var args = [].slice.call(arguments, 1);
+	$.fn.inquire = function(key, args){
 		var t = makeToken(key);
 		var fn = this.closest("." + t).data(t);
 		return fn.apply(undefined, args);
@@ -25057,6 +25056,13 @@
 		request("get_full_shinryou", {shinryou_id: shinryouId, at: at}, "GET", cb);
 	};
 
+	exports.listFullShinryouForVisit = function(visitId, at, cb){
+		request("list_full_shinryou_for_visit", {visit_id: visitId, at: at}, "GET", cb);
+	};
+
+	exports.batchDeleteShinryou = function(shinryouIds, done){
+		request("batch_delete_shinryou", JSON.stringify(shinryouIds), "POST", done);
+	};
 
 /***/ },
 /* 113 */
@@ -26718,6 +26724,7 @@
 		bindDrugsModifiedDays(dom, visit.visit_id);
 		bindDrugsNeedRenumbering(dom, visit.visit_id);
 		bindShinryouEntered(dom, visit.visit_id);
+		bindShinryouDeleted(dom, visit.visit_id);
 		return dom;
 	}
 
@@ -26777,6 +26784,17 @@
 				dom.broadcast("rx-shinryou-batch-entered", [targetVisitId, shinryouList]);
 			}
 		})
+	}
+
+	function bindShinryouDeleted(dom, visitId){
+		dom.on("shinryou-batch-deleted", function(event, targetVisitId, deletedShinryouIds){
+			if( visitId === targetVisitId ){
+				event.stopPropagation();
+				deletedShinryouIds.forEach(function(shinryouId){
+					dom.broadcast("rx-shinryou-deleted", [shinryouId])
+				});
+			}
+		});
 	}
 
 
@@ -27405,9 +27423,9 @@
 
 	var tmplHtml = __webpack_require__(146);
 
-	var CopySelected = __webpack_require__(147);
-	var ModifyDays = __webpack_require__(149);
-	var DeleteSelected = __webpack_require__(151);
+	var CopySelected = __webpack_require__(209);
+	var ModifyDays = __webpack_require__(212);
+	var DeleteSelected = __webpack_require__(211);
 
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
@@ -27460,7 +27478,7 @@
 				return;
 			}
 			var msg = "（暫定）診察中ではありませんが、薬剤を追加しますか？";
-			if( !dom.inquire("fn-confirm-edit", visit.visit_id, msg) ){
+			if( !dom.inquire("fn-confirm-edit", [visit.visit_id, msg]) ){
 				return;
 			}
 			wa.html("");
@@ -27699,9 +27717,8 @@
 
 	function bindModifyDays(dom, visitId){
 		dom.on("click", "[mc-name=modifyDays]", function(event){
-			var ok = dom.inquire("fn-confirm-edit", visitId, 
-				"（暫定）診察中の項目ではありませんが、薬剤を選択して日数を変更しますか？");
-			if( !ok ){
+			var msg = "（暫定）診察中の項目ではありませんが、薬剤を選択して日数を変更しますか？";
+			if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 				return;
 			}
 			event.preventDefault();
@@ -27712,9 +27729,8 @@
 
 	function bindDeleteSelected(dom, visitId){
 		dom.on("click", "[mc-name=deleteSelected]", function(event){
-			var ok = dom.inquire("fn-confirm-edit", visitId, 
-				"（暫定）診察中の項目ではありませんが、薬剤を選択して削除しますか？");
-			if( !ok ){
+			var msg = "（暫定）診察中の項目ではありませんが、薬剤を選択して削除しますか？";
+			if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 				return;
 			}
 			event.preventDefault();
@@ -27746,279 +27762,12 @@
 	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div class=\"drug-submenu\" />\r\n<div mc-name=\"workarea\" />\r\n"
 
 /***/ },
-/* 147 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(148);
-	var tmpl = hogan.compile(tmplSrc);
-	var mUtil = __webpack_require__(5);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var conti = __webpack_require__(4);
-
-	exports.create = function(drugs){
-		var data = {
-			drugs: drugs.map(drugToData)
-		};
-		var dom = $(tmpl.render(data));
-		bindEnter(dom, drugs);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function drugToData(drug){
-		return {
-			drug_id: drug.drug_id,
-			label: mUtil.drugRep(drug)
-		}
-	}
-
-	function bindEnter(dom, drugs){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(){
-				return +$(this).val();
-			}).get();
-			var selectedDrugs = drugs.filter(function(drug){
-				return checked.indexOf(drug.drug_id) >= 0;
-			});
-			selectedDrugs = selectedDrugs.map(function(drug){
-				return mUtil.assign({}, drug);
-			});
-			var targetVisitId = dom.inquire("fn-get-target-visit-id");
-			if( !(targetVisitId > 0) ){
-				alert("コピー先の（暫定）診察がみつかりません。");
-				return;
-			}
-			var newDays = dom.find("> form input[name=days]").val();
-			var targetVisitAt;
-			var enteredDrugIds;
-			var newlyEnteredDrugs = [];
-			task.run([
-				function(done){
-					service.getVisit(targetVisitId, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						targetVisitAt = result.v_datetime;
-						done();
-					})
-				},
-				function(done){
-					conti.forEachPara(selectedDrugs, function(drug, done){
-						service.resolveIyakuhinMasterAt(drug.d_iyakuhincode, targetVisitAt, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							var modify = {
-								visit_id: targetVisitId
-							};
-							if( newDays !== "" ){
-								modify.d_days = newDays;
-							}
-							mUtil.assign(drug, result, modify);
-							done();
-						})
-					}, done);
-				},
-				function(done){
-					service.batchEnterDrugs(selectedDrugs, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						enteredDrugIds = result;
-						done();
-					});
-				},
-				function(done){
-					conti.forEach(enteredDrugIds, function(drugId, done){
-						service.getFullDrug(drugId, targetVisitAt, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							newlyEnteredDrugs.push(result);
-							done();
-						})
-					}, done);
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("drugs-batch-entered", [targetVisitId, newlyEnteredDrugs]);
-				dom.trigger("close-workarea");
-			})
-		})
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel-workarea");
-		})
-	}
-
-/***/ },
-/* 148 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">選択して処方をコピー</div>\r\n<form onsubmit=\"return false\">\r\n<table>\r\n\t<tbody mc-name=\"tbody\">\r\n\t{{#drugs}}\r\n\t\t<tr>\r\n\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t<td>{{label}}</td>\r\n\t\t</tr>\r\n\t{{/drugs}}\r\n\t</tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
-
-/***/ },
-/* 149 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(150);
-	var tmpl = hogan.compile(tmplSrc);
-	var mUtil = __webpack_require__(5);
-	var mConst = __webpack_require__(110);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-
-	exports.create = function(drugs, visitId, at){
-		drugs = drugs.filter(function(drug){
-			return drug.d_category === mConst.DrugCategoryNaifuku;
-		});
-		var data = {
-			drugs: drugs.map(function(drug){
-				return {
-					drug_id: drug.drug_id,
-					label: mUtil.drugRep(drug)
-				}
-			})
-		};
-		var dom = $(tmpl.render(data));
-		bindEnter(dom, drugs, visitId);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function bindEnter(dom, drugs, visitId){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
-				return +$(this).val();
-			}).get();
-			var days = dom.find("input[name=days]").val().trim();
-			if( days === "" ){
-				alert("日数が入力されていません。");
-				return;
-			}
-			if( !/^\d+$/.test(days) ){
-				alert("日数の入力が適切でありません。");
-				return;
-			}
-			task.run([
-				function(done){
-					service.batchUpdateDrugsDays(checked, +days, done);
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("drugs-batch-modified-days", [visitId, checked, days]);
-				dom.trigger("close-workarea");
-			})
-		});
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel-workarea");
-		})
-	}
-
-/***/ },
-/* 150 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">日数を変更</div>\r\n<form onsubmit=\"return false\">\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<hr />\r\n<div>\r\n\t<input name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">入力</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
-
-/***/ },
-/* 151 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(152);
-	var tmpl = hogan.compile(tmplSrc);
-	var mUtil = __webpack_require__(5);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-
-	exports.create = function(drugs, visitId, at){
-		var data = {
-			drugs: drugs.map(function(drug){
-				return {
-					drug_id: drug.drug_id,
-					label: mUtil.drugRep(drug)
-				}
-			})
-		};
-		var dom = $(tmpl.render(data));
-		bindEnter(dom, visitId);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function bindEnter(dom, visitId){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var deletedDrugIds = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
-				return +$(this).val();
-			}).get();
-			task.run(function(done){
-				service.batchDeleteDrugs(deletedDrugIds, done);
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("drugs-batch-deleted", [visitId, deletedDrugIds]);
-				dom.trigger("number-of-drugs-changed", [visitId]);
-				dom.trigger("drugs-need-renumbering", [visitId]);
-				dom.trigger("close-workarea");
-			})
-		});
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel-workarea");
-		})
-	}
-
-/***/ },
-/* 152 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
-
-/***/ },
+/* 147 */,
+/* 148 */,
+/* 149 */,
+/* 150 */,
+/* 151 */,
+/* 152 */,
 /* 153 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -28177,7 +27926,7 @@
 		dom.on("click", "[mc-name=disp]", function(event){
 			event.stopPropagation();
 			var message = "（暫定）診察中でありませんが、この薬剤を編集しますか？";
-			if( !dom.inquire("fn-confirm-edit", drug.visit_id, message) ){
+			if( !dom.inquire("fn-confirm-edit", [drug.visit_id, message]) ){
 				return;
 			}
 			var form = DrugForm.createEditForm(drug, at, patientId);
@@ -28240,7 +27989,10 @@
 	var mUtil = __webpack_require__(5);
 	var AddRegularForm = __webpack_require__(158);
 	var ShinryouAddForm = __webpack_require__(160);
+	var ShinryouDeleteSelectedForm = __webpack_require__(215);
 	var ShinryouSubmenu = __webpack_require__(162);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
 
 	var tmplHtml = __webpack_require__(164);
 
@@ -28249,6 +28001,8 @@
 		bindAddRegular(dom, visitId, at);
 		bindSubmenu(dom, visitId, at);
 		bindSubmenuAddForm(dom);
+		bindSubmenuDeleteSelectedForm(dom, visitId, at);
+		bindSubmenuCancel(dom);
 		bindCloseWorkarea(dom);
 		bindShinryouBatchEntered(dom);
 		setState(dom, "init");
@@ -28269,8 +28023,8 @@
 			} else if( state === "add-regular" ){
 				endWork(dom);
 			} else {
-				var ok = dom.inquire("fn-confirm-edit", visitId, 
-					"現在（暫定）診療中でありませんが、診療行為を追加しますか？");
+				var ok = dom.inquire("fn-confirm-edit", [visitId, 
+					"現在（暫定）診療中でありませんが、診療行為を追加しますか？"]);
 				if( !ok ){
 					return;
 				}
@@ -28299,6 +28053,46 @@
 		dom.on("submenu-add-form", function(event){
 			event.stopPropagation();
 			console.log("add-form");
+		})
+	}
+
+	function bindSubmenuDeleteSelectedForm(dom, visitId, at){
+		dom.on("submenu-delete-selected", function(event){
+			event.stopPropagation();
+			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を削除しますか？"]) ){
+				return;
+			}
+			var shinryouList;
+			task.run(function(done){
+				service.listFullShinryouForVisit(visitId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					shinryouList = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var form = ShinryouDeleteSelectedForm.create(shinryouList);
+				form.on("shinryou-deleted", function(event, deletedShinryouIds){
+					dom.trigger("shinryou-batch-deleted", [visitId, deletedShinryouIds]);
+					endWork(dom);
+				});
+				closeSubmenu(dom);
+				startWork(dom, "delete-selected", form);
+			})
+		})
+	}
+
+	function bindSubmenuCancel(dom){
+		dom.on("submenu-cancel", function(event){
+			event.stopPropagation();
+			closeSubmenu(dom);
+			setState(dom, "init");
 		})
 	}
 
@@ -28466,16 +28260,44 @@
 	exports.setup = function(dom, visitId, at){
 		dom.html(tmplSrc);
 		bindAddForm(dom, visitId);
+		bindCopyAll(dom, visitId);
+		bindCopySelected(dom, visitId);
+		bindDeleteSelected(dom, visitId);
+		bindCancel(dom, visitId);
 	};
 
 	function bindAddForm(dom, visitId){
 		dom.on("click", "> [mc-name=search]", function(event){
-			var ok = dom.inquire("fn-confirm-edit", visitId, 
-				"（暫定）診察中の項目ではありませんが、診療行為を追加しますか？");
+			var ok = dom.inquire("fn-confirm-edit", [visitId, 
+				"（暫定）診察中の項目ではありませんが、診療行為を追加しますか？"]);
 			if( !ok ){
 				return;
 			}
 			dom.trigger("submenu-add-form");
+		});
+	}
+
+	function bindCopyAll(dom, visitId){
+		dom.on("click", "> [mc-name=copyAll]", function(event){
+			dom.trigger("submenu-copy-all");
+		});
+	}
+
+	function bindCopySelected(dom, visitId){
+		dom.on("click", "> [mc-name=copySelected]", function(event){
+			dom.trigger("submenu-copy-selected");
+		});
+	}
+
+	function bindDeleteSelected(dom, visitId){
+		dom.on("click", "> [mc-name=deleteSelected]", function(event){
+			dom.trigger("submenu-delete-selected");
+		});
+	}
+
+	function bindCancel(dom, visitId){
+		dom.on("click", "> [mc-name=cancel]", function(event){
+			dom.trigger("submenu-cancel");
 		});
 	}
 
@@ -28554,21 +28376,26 @@
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryou){
-		var e = $("<div></div>");
+		var dom = $("<div></div>");
 		var html = tmpl.render({
 			label: shinryou.name
 		});
-		e.html(html);
-		e.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
+		dom.html(html);
+		dom.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
 			if( targetVisitId === shinryou.visit_id ){
 				return {
 					shinryou_id: shinryou.shinryou_id,
 					shinryoucode: shinryou.shinryoucode,
-					dom: e
+					dom: dom
 				};
 			}
+		});
+		dom.listen("rx-shinryou-deleted", function(targetShinryouId){
+			if( shinryou.shinryou_id === targetShinryouId ){
+				dom.remove();
+			}
 		})
-		return e;
+		return dom;
 	};
 
 
@@ -30188,6 +30015,350 @@
 /***/ function(module, exports) {
 
 	module.exports = "<option>{{label}}</option>"
+
+/***/ },
+/* 209 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(210);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
+
+	exports.create = function(drugs){
+		var data = {
+			drugs: drugs.map(drugToData)
+		};
+		var dom = $(tmpl.render(data));
+		bindEnter(dom, drugs);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function drugToData(drug){
+		return {
+			drug_id: drug.drug_id,
+			label: mUtil.drugRep(drug)
+		}
+	}
+
+	function bindEnter(dom, drugs){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(){
+				return +$(this).val();
+			}).get();
+			var selectedDrugs = drugs.filter(function(drug){
+				return checked.indexOf(drug.drug_id) >= 0;
+			});
+			selectedDrugs = selectedDrugs.map(function(drug){
+				return mUtil.assign({}, drug);
+			});
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( !(targetVisitId > 0) ){
+				alert("コピー先の（暫定）診察がみつかりません。");
+				return;
+			}
+			var newDays = dom.find("> form input[name=days]").val();
+			var targetVisitAt;
+			var enteredDrugIds;
+			var newlyEnteredDrugs = [];
+			task.run([
+				function(done){
+					service.getVisit(targetVisitId, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						targetVisitAt = result.v_datetime;
+						done();
+					})
+				},
+				function(done){
+					conti.forEachPara(selectedDrugs, function(drug, done){
+						service.resolveIyakuhinMasterAt(drug.d_iyakuhincode, targetVisitAt, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							var modify = {
+								visit_id: targetVisitId
+							};
+							if( newDays !== "" ){
+								modify.d_days = newDays;
+							}
+							mUtil.assign(drug, result, modify);
+							done();
+						})
+					}, done);
+				},
+				function(done){
+					service.batchEnterDrugs(selectedDrugs, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						enteredDrugIds = result;
+						done();
+					});
+				},
+				function(done){
+					conti.forEach(enteredDrugIds, function(drugId, done){
+						service.getFullDrug(drugId, targetVisitAt, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newlyEnteredDrugs.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drugs-batch-entered", [targetVisitId, newlyEnteredDrugs]);
+				dom.trigger("close-workarea");
+			})
+		})
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 210 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">選択して処方をコピー</div>\r\n<form onsubmit=\"return false\">\r\n<table>\r\n\t<tbody mc-name=\"tbody\">\r\n\t{{#drugs}}\r\n\t\t<tr>\r\n\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t<td>{{label}}</td>\r\n\t\t</tr>\r\n\t{{/drugs}}\r\n\t</tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+
+/***/ },
+/* 211 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(213);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+
+	exports.create = function(drugs, visitId, at){
+		var data = {
+			drugs: drugs.map(function(drug){
+				return {
+					drug_id: drug.drug_id,
+					label: mUtil.drugRep(drug)
+				}
+			})
+		};
+		var dom = $(tmpl.render(data));
+		bindEnter(dom, visitId);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindEnter(dom, visitId){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var deletedDrugIds = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
+				return +$(this).val();
+			}).get();
+			task.run(function(done){
+				service.batchDeleteDrugs(deletedDrugIds, done);
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drugs-batch-deleted", [visitId, deletedDrugIds]);
+				dom.trigger("number-of-drugs-changed", [visitId]);
+				dom.trigger("drugs-need-renumbering", [visitId]);
+				dom.trigger("close-workarea");
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 212 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(214);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var mConst = __webpack_require__(110);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+
+	exports.create = function(drugs, visitId, at){
+		drugs = drugs.filter(function(drug){
+			return drug.d_category === mConst.DrugCategoryNaifuku;
+		});
+		var data = {
+			drugs: drugs.map(function(drug){
+				return {
+					drug_id: drug.drug_id,
+					label: mUtil.drugRep(drug)
+				}
+			})
+		};
+		var dom = $(tmpl.render(data));
+		bindEnter(dom, drugs, visitId);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindEnter(dom, drugs, visitId){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
+				return +$(this).val();
+			}).get();
+			var days = dom.find("input[name=days]").val().trim();
+			if( days === "" ){
+				alert("日数が入力されていません。");
+				return;
+			}
+			if( !/^\d+$/.test(days) ){
+				alert("日数の入力が適切でありません。");
+				return;
+			}
+			task.run([
+				function(done){
+					service.batchUpdateDrugsDays(checked, +days, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drugs-batch-modified-days", [visitId, checked, days]);
+				dom.trigger("close-workarea");
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 213 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+
+/***/ },
+/* 214 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">日数を変更</div>\r\n<form onsubmit=\"return false\">\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<hr />\r\n<div>\r\n\t<input name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">入力</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+
+/***/ },
+/* 215 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(216);
+	var tmpl = hogan.compile(tmplSrc);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+
+	exports.create = function(shinryouList){
+		var dom = $(tmpl.render({list: shinryouList}));
+		bindSelectAll(dom);
+		bindDeselectAll(dom);
+		bindEnter(dom);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindSelectAll(dom){
+		dom.on("click", "> form [mc-name=selectAll]", function(event){
+			event.preventDefault();
+			dom.find("> form input[name=shinryou_id]").prop("checked", true);
+		})
+	}
+
+	function bindDeselectAll(dom){
+		dom.on("click", "> form [mc-name=deselectAll]", function(event){
+			event.preventDefault();
+			dom.find("> form input[name=shinryou_id]").prop("checked", false);
+		})
+	}
+
+	function collectChecked(dom){
+		return dom.find("> form input[name=shinryou_id]:checked").map(function(){
+			return +$(this).val();
+		}).get();
+	}
+
+	function bindEnter(dom){
+		dom.on("click", "> form .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			var shinryouIds = collectChecked(dom);
+			task.run(function(done){
+				service.batchDeleteShinryou(shinryouIds, done);
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("shinryou-deleted", [shinryouIds]);
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			dom.trigger("close-workarea");
+		});
+	}
+
+/***/ },
+/* 216 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">複数診療削除</div>\n<form onsubmit=\"return false\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t{{#list}}\n\t\t\t<tr>\n\t\t\t\t<td>\n\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value={{shinryou_id}} />\n\t\t\t\t</td>\n\t\t\t\t<td>\n\t\t\t\t\t{{name}}\n\t\t\t\t</td>\n\t\t\t</tr>\n\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n<hr/>\n<div>\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">削除実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ }
 /******/ ]);

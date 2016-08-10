@@ -9,9 +9,9 @@ var DrugForm = require("./drug-form");
 
 var tmplHtml = require("raw!./drug-menu.html");
 
-var CopySelected = require("./drug-copy-selected");
-var ModifyDays = require("./drug-modify-days");
-var DeleteSelected = require("./drug-delete-selected");
+var CopySelected = require("./drug-copy-selected-form");
+var ModifyDays = require("./drug-modify-days-form");
+var DeleteSelected = require("./drug-delete-selected-form");
 
 var task = require("../task");
 var service = require("../service");
@@ -64,7 +64,7 @@ function bindAddDrug(dom, visit){
 			return;
 		}
 		var msg = "（暫定）診察中ではありませんが、薬剤を追加しますか？";
-		if( !dom.inquire("fn-confirm-edit", visit.visit_id, msg) ){
+		if( !dom.inquire("fn-confirm-edit", [visit.visit_id, msg]) ){
 			return;
 		}
 		wa.html("");

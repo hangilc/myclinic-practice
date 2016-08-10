@@ -171,3 +171,11 @@ exports.getShinryou = function(shinryouId, cb){
 exports.getFullShinryou = function(shinryouId, at, cb){
 	request("get_full_shinryou", {shinryou_id: shinryouId, at: at}, "GET", cb);
 };
+
+exports.listFullShinryouForVisit = function(visitId, at, cb){
+	request("list_full_shinryou_for_visit", {visit_id: visitId, at: at}, "GET", cb);
+};
+
+exports.batchDeleteShinryou = function(shinryouIds, done){
+	request("batch_delete_shinryou", JSON.stringify(shinryouIds), "POST", done);
+};

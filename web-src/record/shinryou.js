@@ -9,21 +9,26 @@ var tmplSrc = require("raw!./shinryou.html");
 var tmpl = hogan.compile(tmplSrc);
 
 exports.create = function(shinryou){
-	var e = $("<div></div>");
+	var dom = $("<div></div>");
 	var html = tmpl.render({
 		label: shinryou.name
 	});
-	e.html(html);
-	e.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
+	dom.html(html);
+	dom.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
 		if( targetVisitId === shinryou.visit_id ){
 			return {
 				shinryou_id: shinryou.shinryou_id,
 				shinryoucode: shinryou.shinryoucode,
-				dom: e
+				dom: dom
 			};
 		}
+	});
+	dom.listen("rx-shinryou-deleted", function(targetShinryouId){
+		if( shinryou.shinryou_id === targetShinryouId ){
+			dom.remove();
+		}
 	})
-	return e;
+	return dom;
 };
 
 

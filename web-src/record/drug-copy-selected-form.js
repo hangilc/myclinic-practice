@@ -2,7 +2,7 @@
 
 var $ = require("jquery");
 var hogan = require("hogan");
-var tmplSrc = require("raw!./drug-copy-selected.html");
+var tmplSrc = require("raw!./drug-copy-selected-form.html");
 var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
 var service = require("../service");

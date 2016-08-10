@@ -66,7 +66,7 @@ function bindClick(dom, drug, at, patientId){
 	dom.on("click", "[mc-name=disp]", function(event){
 		event.stopPropagation();
 		var message = "（暫定）診察中でありませんが、この薬剤を編集しますか？";
-		if( !dom.inquire("fn-confirm-edit", drug.visit_id, message) ){
+		if( !dom.inquire("fn-confirm-edit", [drug.visit_id, message]) ){
 			return;
 		}
 		var form = DrugForm.createEditForm(drug, at, patientId);
