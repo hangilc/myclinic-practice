@@ -29,7 +29,7 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	ShinryouMenu.setup(dom.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
 	ShinryouList.setup(dom.find("[mc-name=shinryouList]"), visit.shinryou_list,
 		visit.visit_id, visit.v_datetime, visit.patient_id);
-	ConductMenu.setup(dom.find("[mc-name=conductMenu]"));
+	ConductMenu.setup(dom.find("[mc-name=conductMenu]"), visit.visit_id);
 	ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
 	Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 	bindTextsEntered(dom, visit.visit_id);

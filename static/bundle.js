@@ -26725,7 +26725,7 @@
 		ShinryouMenu.setup(dom.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
 		ShinryouList.setup(dom.find("[mc-name=shinryouList]"), visit.shinryou_list,
 			visit.visit_id, visit.v_datetime, visit.patient_id);
-		ConductMenu.setup(dom.find("[mc-name=conductMenu]"));
+		ConductMenu.setup(dom.find("[mc-name=conductMenu]"), visit.visit_id);
 		ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
 		Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 		bindTextsEntered(dom, visit.visit_id);
@@ -28875,11 +28875,100 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var myclinicUtil = __webpack_require__(5);
+	var ConductSubmenu = __webpack_require__(222);
+	var ConductAddXpForm = __webpack_require__(224);
 
 	var tmplHtml = __webpack_require__(169);
 
-	exports.setup = function(dom){
+	exports.setup = function(dom, visitId){
 		dom.html(tmplHtml);
+		bindTopMenuClick(dom, visitId);
+		setState(dom, "init");
+	}
+
+	function setState(dom, state){
+		dom.data("state", state);
+	}
+
+	function getState(dom){
+		return dom.data("state");
+	}
+
+	var topMenuSelector = "> [mc-name=top-menu-area] [mc-name=submenuLink]";
+	var submenuSelector = "> [mc-name=submenu-area]";
+	var workspaceSelector = "> [mc-name=workspace-area]";
+
+	function getSubmenuDom(dom){
+		return dom.find(submenuSelector);
+	}
+
+	function getWorkspaceDom(dom){
+		return dom.find(workspaceSelector);
+	}
+
+	function closeSubmenu(dom){
+		getSubmenuDom(dom).html("");
+	}
+
+	function startWork(dom, state, form){
+		closeSubmenu(dom);
+		getWorkspaceDom(dom).append(form);
+		setState(dom, state);
+	}
+
+	function endWork(dom){
+		getWorkspaceDom(dom).html("");
+		setState(dom, "init");
+	}
+
+	function bindTopMenuClick(dom, visitId){
+		dom.on("click", topMenuSelector, function(event){
+			event.preventDefault();
+			var state = getState(dom);
+			if( state === "init" ){
+				var submenu = ConductSubmenu.create();
+				bindSubmenu(dom, submenu, visitId);
+				getSubmenuDom(dom).append(submenu);
+				setState(dom, "submenu");
+			} else if( state === "submenu" ){
+				closeSubmenu(dom);
+				setState(dom, "init");
+			}
+		});
+	}
+
+	function doAddXp(dom, visitId){
+		var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
+		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
+			return;
+		}
+		var form = ConductAddXpForm.create();
+		form.on("enter", function(event, label, film){
+			event.stopPropagation();
+			console.log("enter-xp", label, film);
+		})
+		form.on("cancel", function(event){
+			event.stopPropagation();
+			endWork(dom);
+		});
+		startWork(dom, "add-xp", form);
+	}
+
+	function bindSubmenu(dom, submenu, visitId){
+		submenu.on("add-xp", function(event){
+			doAddXp(dom, visitId);
+		});
+		submenu.on("add-inject", function(event){
+			console.log("add-inject");
+		});
+		submenu.on("copy-all", function(event){
+			console.log("copy-all");
+		});
+		submenu.on("cancel", function(event){
+			event.stopPropagation();
+			closeSubmenu(dom);
+			setState(dom, "init");
+		});
 	}
 
 
@@ -28888,7 +28977,7 @@
 /* 169 */
 /***/ function(module, exports) {
 
-	module.exports = "<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n"
+	module.exports = "<div mc-name=\"top-menu-area\">\r\n\t<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n</div>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"workspace-area\"></div>\r\n"
 
 /***/ },
 /* 170 */
@@ -30936,6 +31025,111 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為編集</div>\r\n<div>\r\n\t名称：<span mc-name=\"name\">{{name}}</span>\r\n</div>\r\n<form onsubmit=\"return false\" mc-name=\"command-box\">\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> |\r\n\t\t<a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t</div>\r\n</form>\r\n</div>\r\n"
+
+/***/ },
+/* 222 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplSrc = __webpack_require__(223);
+
+	exports.create = function(){
+		var dom = $(tmplSrc);
+		bindAddXp(dom);
+		bindAddInject(dom);
+		bindCopyAll(dom);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindAddXp(dom){
+		dom.on("click", "> [mc-name=addXp]", function(event){
+			event.preventDefault();
+			dom.trigger("add-xp");
+		});
+	}
+
+	function bindAddInject(dom){
+		dom.on("click", "> [mc-name=addInject]", function(event){
+			event.preventDefault();
+			dom.trigger("add-inject");
+		});
+	}
+
+	function bindCopyAll(dom){
+		dom.on("click", "> [mc-name=copyAll]", function(event){
+			event.preventDefault();
+			dom.trigger("copy-all");
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> [mc-name=cancel]", function(event){
+			event.preventDefault();
+			dom.trigger("cancel");
+		});
+	}
+
+/***/ },
+/* 223 */
+/***/ function(module, exports) {
+
+	module.exports = "<div>\r\n\t<a mc-name=\"addXp\" href=\"javascript:void(0)\" class=\"cmd-link\">Ｘ線検査追加</a> |\r\n\t<a mc-name=\"addInject\" href=\"javascript:void(0)\" class=\"cmd-link\">注射追加</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>"
+
+/***/ },
+/* 224 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplSrc = __webpack_require__(225);
+
+	exports.create = function(){
+		var dom = $(tmplSrc);
+		bindEnter(dom);
+		bindCancel(dom);
+		return dom;
+	}
+
+	var labelSelectSelector = "> form [mc-name=label-selector-area] select[mc-name=label]";
+	var filmSelectSelector = "> form [mc-name=film-selector-area] select[mc-name=film]";
+	var enterSelector = "> form .workarea-commandbox [mc-name=enter]";
+	var cancelSelector = "> form .workarea-commandbox [mc-name=cancel]";
+
+	function getSelectedLabel(dom){
+		return dom.find(labelSelectSelector + " option:selected").val();
+	}
+
+	function getSelectedFilm(dom){
+		return dom.find(filmSelectSelector + " option:selected").val();
+	}
+
+	function bindEnter(dom){
+		dom.on("click", enterSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var label = getSelectedLabel(dom);
+			var film = getSelectedFilm(dom);
+			dom.trigger("enter", [label, film]);
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel");
+		});
+	}
+
+/***/ },
+/* 225 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">X線入力</div>\r\n    <form onsubmit=\"return false\">\r\n        <div style=\"margin: 3px 0\" mc-name=\"label-selector-area\">\r\n            <select mc-name=\"label\">\r\n                <option>胸部単純Ｘ線</option>\r\n                <option>腹部単純Ｘ線</option>\r\n            </select>\r\n        </div>\r\n        <div style=\"margin: 3px 0\" mc-name=\"film-selector-area\">\r\n            <select mc-name=\"film\">\r\n                <option>半切</option>\r\n                <option selected>大角</option>\r\n                <option>四ツ切</option>\r\n            </select>\r\n        </div>\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);
