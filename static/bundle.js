@@ -28782,16 +28782,17 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
+	var ShinryouForm = __webpack_require__(220);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
 
 	var tmplSrc = __webpack_require__(167);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryou){
-		var dom = $("<div></div>");
-		var html = tmpl.render({
+		var dom = $(tmpl.render({
 			label: shinryou.name
-		});
-		dom.html(html);
+		}));
 		dom.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
 			if( targetVisitId === shinryou.visit_id ){
 				return {
@@ -28806,8 +28807,54 @@
 				dom.remove();
 			}
 		});
+		bindClick(dom, shinryou);
 		return dom;
 	};
+
+	var dispSelector = "> [mc-name=disp]";
+	var formSelector = "> [mc-name=form]";
+
+	function getDispDom(dom){
+		return dom.find(dispSelector);
+	}
+
+	function getFormDom(dom){
+		return dom.find(formSelector);
+	}
+
+	function taskDeleteShinryou(ctx, opt){
+		opt = opt || {};
+		var keyShinryouId = opt.shinryouId || "shinryouId";
+		return function(done){
+			var shinryouId = ctx[keyShinryouId];
+			service.batchDeleteShinryou([shinryouId], done);
+		}
+	}
+
+	function bindClick(dom, shinryou){
+		dom.on("click", dispSelector, function(event){
+			event.stopPropagation();
+			event.preventDefault();
+			if( !dom.inquire("fn-confirm-edit", [shinryou.visit_id, "現在（限定）診察中でありませんが、この診療行為を編集しますか？"]) ){
+				return;
+			}
+			var form = ShinryouForm.create(shinryou);
+			form.on("delete", function(event){
+				event.stopPropagation();
+				var ctx = {shinryouId: shinryou.shinryou_id};
+				task.run(taskDeleteShinryou(ctx), function(err){
+					dom.trigger("shinryou-batch-deleted", [shinryou.visit_id, [shinryou.shinryou_id]]);
+				});
+			});
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				getFormDom(dom).html("");
+				getDispDom(dom).show();
+			});
+			getDispDom(dom).hide();
+			getFormDom(dom).append(form);
+		})
+	}
 
 
 
@@ -28816,7 +28863,7 @@
 /* 167 */
 /***/ function(module, exports) {
 
-	module.exports = "{{label}}"
+	module.exports = "<div>\r\n\t<div mc-name=\"disp\">{{label}}</div>\r\n\t<div mc-name=\"form\"></div>\r\n</div>"
 
 /***/ },
 /* 168 */
@@ -30841,6 +30888,54 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為コピー</div>\n<form onsubmit=\"return false\" mc-name=\"search-result\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t\t{{#list}}\n\t\t\t\t<tr>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value=\"{{shinryou_id}}\" />\n\t\t\t\t\t</td>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t{{name}}\n\t\t\t\t\t</td>\n\t\t\t\t</tr>\n\t\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n</form>\n<hr/>\n<div mc-name=\"selector-box\">\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<form onsubmit=\"return false\" mc-name=\"command-form\">\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
+
+/***/ },
+/* 220 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(221);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(shinryou){
+		var dom = $(tmpl.render({
+			name: shinryou.name
+		}));
+		bindDelete(dom, shinryou.visit_id);
+		bindCancel(dom);
+		return dom;
+	}
+
+	var deleteSelector = "> form[mc-name=command-box] [mc-name=deleteLink]";
+	var cancelSelector = "> form[mc-name=command-box] [mc-name=cancelLink]";
+
+	function bindDelete(dom, visitId){
+		dom.on("click", deleteSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診察中でありませんが、この診療行為を削除しますか？"]) ){
+				return;
+			}
+			dom.trigger("delete");
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel");
+		});
+	}
+
+/***/ },
+/* 221 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為編集</div>\r\n<div>\r\n\t名称：<span mc-name=\"name\">{{name}}</span>\r\n</div>\r\n<form onsubmit=\"return false\" mc-name=\"command-box\">\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> |\r\n\t\t<a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);
