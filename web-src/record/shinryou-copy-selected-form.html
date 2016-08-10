@@ -1,15 +1,32 @@
+<div class="workarea">
 <div class="title">診療行為コピー</div>
+<form onsubmit="return false" mc-name="search-result">
 <div>
 	<table>
-		<tbody mc-name="tbody"></tbody>
+		<tbody mc-name="tbody">
+			{{#list}}
+				<tr>
+					<td>
+						<input type="checkbox" name="shinryou_id" value="{{shinryou_id}}" />
+					</td>
+					<td>
+						{{name}}
+					</td>
+				</tr>
+			{{/list}}
+		</tbody>
 	</table>
 </div>
+</form>
 <hr/>
-<div>
+<div mc-name="selector-box">
     <a mc-name="selectAll" href="javascript:void(0)" class="cmd-link">全部選択</a> :
     <a mc-name="deselectAll" href="javascript:void(0)" class="cmd-link">全部解除</a>
 </div>
+<form onsubmit="return false" mc-name="command-form">
 <div class="workarea-commandbox">
     <button mc-name="enter">実行</button>
     <button mc-name="cancel">キャンセル</button>
+</div>
+</form>
 </div>

@@ -27997,6 +27997,7 @@
 	var mUtil = __webpack_require__(5);
 	var AddRegularForm = __webpack_require__(158);
 	var ShinryouAddForm = __webpack_require__(160);
+	var ShinryouCopySelectedForm = __webpack_require__(218);
 	var ShinryouDeleteSelectedForm = __webpack_require__(215);
 	var ShinryouSubmenu = __webpack_require__(162);
 	var service = __webpack_require__(112);
@@ -28011,6 +28012,7 @@
 		bindSubmenu(dom, visitId, at);
 		bindSubmenuAddForm(dom, visitId, at);
 		bindSubmenuCopyAll(dom, visitId, at);
+		bindSubmenuCopySelected(dom, visitId, at);
 		bindSubmenuDeleteSelectedForm(dom, visitId, at);
 		bindSubmenuCancel(dom);
 		setState(dom, "init");
@@ -28086,6 +28088,88 @@
 		})
 	}
 
+	function batchFetchShinryou(shinryouIds, at, cb){
+		var newShinryouList = [];
+		conti.forEach(shinryouIds, function(shinryouId, done){
+			service.getFullShinryou(shinryouId, at, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				newShinryouList.push(result);
+				done();
+			})
+		}, function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newShinryouList);
+		});
+	}
+
+	function copy(targetVisitId, srcShinryouList, cb){
+		var targetVisit, dstShinryouCodes = [], dstShinryouList, newShinryouIds, newShinryouList = [];
+		conti.exec([
+			function(done){
+				service.getVisit(targetVisitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					targetVisit = result;
+					done();
+				})
+			},
+			function(done){
+				var targetAt = targetVisit.v_datetime;
+				conti.forEach(srcShinryouList, function(shinryou, done){
+					service.resolveShinryouMasterAt(shinryou.shinryoucode, targetAt, function(err, result){
+						if( err ){
+							console.log(err);
+							done("コピー先で有効でありません：" + shinryou.name);
+							return;
+						}
+						dstShinryouCodes.push(result.shinryoucode);
+						done();
+					})
+				}, done);
+			},
+			function(done){
+				var dstShinryouList = dstShinryouCodes.map(function(shinryoucode){
+					return {
+						visit_id: targetVisitId,
+						shinryoucode: shinryoucode
+					};
+				});
+				service.batchEnterShinryou(dstShinryouList, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newShinryouIds = result;
+					done();
+				})
+			},
+			function(done){
+				batchFetchShinryou(newShinryouIds, targetVisit.v_datetime, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newShinryouList = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newShinryouList);
+		});
+	}
+
 	function bindSubmenuCopyAll(dom, visitId, at){
 		dom.on("submenu-copy-all", function(event){
 			event.stopPropagation();
@@ -28094,7 +28178,7 @@
 				alert("現在（暫定）診療中でないので、コピーできません。");
 				return;
 			}
-			var srcShinryouList, targetVisit, dstShinryouCodes = [], newShinryouIds, newShinryouList = [];
+			var srcShinryouList, newShinryouList = [];
 			task.run([
 				function(done){
 					service.listFullShinryouForVisit(visitId, at, function(err, result){
@@ -28107,57 +28191,14 @@
 					})
 				},
 				function(done){
-					service.getVisit(targetVisitId, function(err, result){
+					copy(targetVisitId, srcShinryouList, function(err, result){
 						if( err ){
 							done(err);
 							return;
 						}
-						targetVisit = result;
+						newShinryouList = result;
 						done();
 					})
-				},
-				function(done){
-					var targetAt = targetVisit.v_datetime;
-					conti.forEachPara(srcShinryouList, function(shinryou, done){
-						service.resolveShinryouMasterAt(shinryou.shinryoucode, targetAt, function(err, result){
-							if( err ){
-								console.log(err);
-								done("コピー先で有効でありません：" + shinryou.name);
-								return;
-							}
-							dstShinryouCodes.push(result.shinryoucode);
-							done();
-						})
-					}, done);
-				},
-				function(done){
-					var shinryouList = dstShinryouCodes.map(function(shinryoucode){
-						return {
-							visit_id: targetVisitId,
-							shinryoucode: shinryoucode
-						};
-					});
-					service.batchEnterShinryou(shinryouList, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newShinryouIds = result;
-						done();
-					})
-				},
-				function(done){
-					var targetAt = targetVisit.v_datetime;
-					conti.forEach(newShinryouIds, function(shinryouId, done){
-						service.getFullShinryou(shinryouId, targetAt, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							newShinryouList.push(result);
-							done();
-						})
-					}, done);
 				}
 			], function(err){
 				if( err ){
@@ -28169,6 +28210,74 @@
 				dom.trigger("shinryou-batch-entered", [targetVisitId, newShinryouList]);
 			})
 		})
+	}
+
+	function bindSubmenuCopySelected(dom, visitId, at){
+		dom.on("submenu-copy-selected", function(event){
+			event.stopPropagation();
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( !(targetVisitId > 0) ){
+				alert("現在（暫定）診療中でないので、コピーできません。");
+				return;
+			}
+			var shinryouList;
+			task.run([
+				function(done){
+					service.listFullShinryouForVisit(visitId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						shinryouList = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var form = ShinryouCopySelectedForm.create(shinryouList);
+				form.on("enter", function(event, shinryouIds){
+					var srcShinryouList, newShinryouList;
+					task.run([
+						function(done){
+							batchFetchShinryou(shinryouIds, at, function(err, result){
+								if( err ){
+									done(err);
+									return;
+								}
+								srcShinryouList = result;
+								done();
+							})
+						},
+						function(done){
+							copy(targetVisitId, srcShinryouList, function(err, result){
+								if( err ){
+									done(err);
+									return;
+								}
+								newShinryouList = result;
+								done();
+							})
+						}
+					], function(err){
+						if( err ){
+							alert(err);
+							return;
+						}
+						endWork(dom);
+						dom.trigger("shinryou-batch-entered", [targetVisitId, newShinryouList]);
+					})
+				});
+				form.on("cancel", function(event){
+					event.stopPropagation();
+					endWork(dom);
+				})
+				closeSubmenu(dom);
+				startWork(dom, "copy-selected", form);
+			})		
+		});
 	}
 
 	function bindSubmenuDeleteSelectedForm(dom, visitId, at){
@@ -30612,6 +30721,71 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
+
+/***/ },
+/* 218 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(219);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(shinryouList){
+		var dom = $(tmpl.render({list: shinryouList}));
+		bindSelectAll(dom);
+		bindDeselectAll(dom);
+		bindEnter(dom);
+		bindCancel(dom);
+		return dom;
+	};
+
+	var inputSelector = "> form[mc-name=search-result] input[name=shinryou_id]";
+	var selectAllSelector = "> div[mc-name=selector-box] [mc-name=selectAll]";
+	var deselectAllSelector = "> div[mc-name=selector-box] [mc-name=deselectAll]";
+	var enterSelector = "> form[mc-name=command-form] [mc-name=enter]";
+	var cancelSelector = "> form[mc-name=command-form] [mc-name=cancel]";
+
+	function bindSelectAll(dom){
+		dom.on("click", selectAllSelector, function(event){
+			event.preventDefault();
+			dom.find(inputSelector).prop("checked", true);
+		})
+	}
+
+	function bindDeselectAll(dom){
+		dom.on("click", deselectAllSelector, function(event){
+			event.preventDefault();
+			dom.find(inputSelector).prop("checked", false);
+		})
+	}
+
+	function bindEnter(dom){
+		dom.on("click", enterSelector, function(event){
+			var shinryouIds = dom.find(inputSelector).filter(function(){
+				return $(this).is(":checked");
+			}).map(function(){
+				return +$(this).val();
+			}).get();
+			dom.trigger("enter", [shinryouIds]);
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel");
+		});
+	}
+
+/***/ },
+/* 219 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為コピー</div>\n<form onsubmit=\"return false\" mc-name=\"search-result\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t\t{{#list}}\n\t\t\t\t<tr>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value=\"{{shinryou_id}}\" />\n\t\t\t\t\t</td>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t{{name}}\n\t\t\t\t\t</td>\n\t\t\t\t</tr>\n\t\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n</form>\n<hr/>\n<div mc-name=\"selector-box\">\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<form onsubmit=\"return false\" mc-name=\"command-form\">\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ }
 /******/ ]);
