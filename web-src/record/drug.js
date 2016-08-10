@@ -4,7 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
-var DrugForm = require("./drug-form/drug-form");
+var DrugForm = require("./drug-form");
 
 var tmplSrc = require("raw!./drug.html");
 var tmpl = hogan.compile(tmplSrc);

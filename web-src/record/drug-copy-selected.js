@@ -33,7 +33,6 @@ function bindEnter(dom, drugs){
 		var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(){
 			return +$(this).val();
 		}).get();
-		console.log(typeof checked);
 		var selectedDrugs = drugs.filter(function(drug){
 			return checked.indexOf(drug.drug_id) >= 0;
 		});

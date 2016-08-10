@@ -2,14 +2,14 @@
 
 var $ = require("jquery");
 var hogan = require("hogan");
-var mUtil = require("../../../myclinic-util");
-var service = require("../../service");
-var task = require("../../task");
+var mUtil = require("../../myclinic-util");
+var service = require("../service");
+var task = require("../task");
 var mConsts = require("myclinic-consts");
 
 var tmplSrc = require("raw!./drug-form.html");
 var tmpl = hogan.compile(tmplSrc);
-var itemTmplSrc = require("raw!./search-result-item.html");
+var itemTmplSrc = require("raw!./drug-form-search-result-item.html");
 var itemTmpl = hogan.compile(itemTmplSrc);
 
 var Naifuku = mConsts.DrugCategoryNaifuku;

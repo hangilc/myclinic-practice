@@ -5,7 +5,7 @@ var Text = require("./text");
 
 exports.setup = function(dom, visitId, texts){
 	batchAdd(dom, texts);
-	dom.listen("rx-text-batch-entered", function(targetVisitId, texts){
+	dom.listen("rx-texts-batch-entered", function(targetVisitId, texts){
 		if( visitId !== targetVisitId ){
 			return;
 		}

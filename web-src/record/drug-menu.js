@@ -5,7 +5,7 @@ var hogan = require("hogan");
 var kanjidate = require("kanjidate");
 var myclinicUtil = require("../../myclinic-util");
 var Submenu = require("./drug-submenu");
-var DrugForm = require("./drug-form/drug-form");
+var DrugForm = require("./drug-form");
 
 var tmplHtml = require("raw!./drug-menu.html");
 

@@ -30,15 +30,27 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	ConductMenu.setup(dom.find("[mc-name=conductMenu]"));
 	ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
 	Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
-	bindTextEntered(dom, visit.visit_id);
+	bindTextsEntered(dom, visit.visit_id);
+	bindDrugsEntered(dom, visit.visit_id);
 	return dom;
 }
 
-function bindTextEntered(dom, visitId){
+function bindTextsEntered(dom, visitId){
 	dom.on("text-batch-entered", function(event, targetVisitId, texts){
 		if( visitId === targetVisitId ){
 			event.stopPropagation();
-			dom.broadcast("rx-text-batch-entered", [targetVisitId, texts]);
+			dom.broadcast("rx-texts-batch-entered", [targetVisitId, texts]);
 		}
 	})
 }
+
+function bindDrugsEntered(dom, visitId){
+	dom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
+		if( targetVisitId === visitId ){
+			event.stopPropagation();
+			dom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
+		}
+	});
+}
+
+

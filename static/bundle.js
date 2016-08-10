@@ -26735,18 +26735,30 @@
 		ConductMenu.setup(dom.find("[mc-name=conductMenu]"));
 		ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
 		Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
-		bindTextEntered(dom, visit.visit_id);
+		bindTextsEntered(dom, visit.visit_id);
+		bindDrugsEntered(dom, visit.visit_id);
 		return dom;
 	}
 
-	function bindTextEntered(dom, visitId){
+	function bindTextsEntered(dom, visitId){
 		dom.on("text-batch-entered", function(event, targetVisitId, texts){
 			if( visitId === targetVisitId ){
 				event.stopPropagation();
-				dom.broadcast("rx-text-batch-entered", [targetVisitId, texts]);
+				dom.broadcast("rx-texts-batch-entered", [targetVisitId, texts]);
 			}
 		})
 	}
+
+	function bindDrugsEntered(dom, visitId){
+		dom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
+			if( targetVisitId === visitId ){
+				event.stopPropagation();
+				dom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
+			}
+		});
+	}
+
+
 
 
 /***/ },
@@ -27366,7 +27378,7 @@
 	var kanjidate = __webpack_require__(118);
 	var myclinicUtil = __webpack_require__(5);
 	var Submenu = __webpack_require__(141);
-	var DrugForm = __webpack_require__(143);
+	var DrugForm = __webpack_require__(206);
 
 	var tmplHtml = __webpack_require__(146);
 
@@ -27702,585 +27714,9 @@
 	module.exports = "<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">部分コピー</a> |\r\n<a mc-name=\"modifyDays\" href=\"javascript:void(0)\" class=\"cmd-link\">日数変更</a> |\r\n<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n"
 
 /***/ },
-/* 143 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var mUtil = __webpack_require__(5);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var mConsts = __webpack_require__(110);
-
-	var tmplSrc = __webpack_require__(144);
-	var tmpl = hogan.compile(tmplSrc);
-	var itemTmplSrc = __webpack_require__(145);
-	var itemTmpl = hogan.compile(itemTmplSrc);
-
-	var Naifuku = mConsts.DrugCategoryNaifuku;
-	var Tonpuku = mConsts.DrugCategoryTonpuku;
-	var Gaiyou = mConsts.DrugCategoryGaiyou;
-
-	var ZaikeiGaiyou = mConsts.ZaikeiGaiyou;
-
-	exports.createAddForm = function(visitId, at, patientId){
-		var dom = $(tmpl.render({isCreating: true, title: "新規処方の入力"}));
-		bindSearchForm(dom, visitId, at, patientId);
-		bindSearchResult(dom, at);
-		bindUsageExample(dom);
-		bindCategoryChange(dom);
-		bindClear(dom);
-		bindEnter(dom, visitId, at);
-		bindCancel(dom);
-		return dom;
-	};
-
-	exports.createEditForm = function(drug, at, patientId){
-		var data = {
-			isEditing: true,
-			title: "処方の編集",
-			name: drug.name,
-			iyakuhincode: drug.d_iyakuhincode,
-			amount: drug.d_amount,
-			unit: drug.unit,
-			usage: drug.d_usage,
-			days: drug.d_days,
-			category: drug.d_category
-		}
-		var dom = $(tmpl.render(data));
-		updateDisplayDom(dom, data);
-		bindSearchForm(dom, drug.visit_id, at, patientId);
-		bindSearchResult(dom, at);
-		bindUsageExample(dom);
-		bindCategoryChange(dom);
-		bindClear(dom);
-		bindModify(dom, drug.drug_id, at);
-		bindCancel(dom);
-		bindDelete(dom, drug.drug_id);
-		return dom;
-	}
-
-	function getErrorBox(dom){
-		return dom.find("> .error-box");
-	}
-
-	function getDisplayDom(dom){
-		return dom.find("> .drug-area");
-	}
-
-	function getDisplayNameDom(dom){
-		return dom.find("> .drug-area [mc-name=name]");
-	}
-
-	function getDisplayAmountLabelDom(dom){
-		return dom.find("> .drug-area [mc-name=amountLabel]");
-	}
-
-	function getDisplayAmountInputDom(dom){
-		return dom.find("> .drug-area input[mc-name=amount]");
-	}
-
-	function getDisplayUnitDom(dom){
-		return dom.find("> .drug-area [mc-name=unit]");
-	}
-
-	function getDisplayUsageInputDom(dom){
-		return dom.find("> .drug-area input[mc-name=usage]");
-	}
-
-	function getDisplayDaysRowDom(dom){
-		return dom.find("> .drug-area [mc-name=daysRow]");
-	}
-
-	function getDisplayDaysLabelDom(dom){
-		return dom.find("> .drug-area [mc-name=daysLabel]");
-	}
-
-	function getDisplayDaysInputDom(dom){
-		return dom.find("> .drug-area input[mc-name=days]");
-	}
-
-	function getDisplayDaysUnitDom(dom){
-		return dom.find("> .drug-area [mc-name=daysUnit]");
-	}
-
-	function getSearchButtonDom(dom){
-		return dom.find("[mc-name=searchLink]");
-	}
-
-	function getSearchTextDom(dom){
-		return dom.find("[mc-name=searchText]");
-	}
-
-	function getSearchMode(dom){
-		return dom.find("input[type=radio][name=search-mode]:checked").val();
-	}
-
-	function getSearchSelectDom(dom){
-		return dom.find("> .drug-search-area select[mc-name=searchResult]");
-	}
-
-	function getCheckedCategory(dom){
-		return dom.find("> .drug-area input[type=radio][name=category]:checked").val();
-	}
-
-	function adaptToCategory(dom, category){
-		var amountLabel, daysLabel, daysUnit;
-		switch(category){
-			case Naifuku: 
-				amountLabel = "用量";
-				daysLabel = "日数";
-				daysUnit = "日分";
-				break;
-			case Tonpuku:
-				amountLabel = "一回";
-				daysLabel = "回数";
-				daysUnit = "回分";
-				break;
-			case Gaiyou:
-				amountLabel: "";
-				amountLabel = "用量";
-				daysLabel = "";
-				daysUnit = "";
-				break;
-			default: alert("unknown category"); return;
-		}
-		getDisplayAmountLabelDom(dom).text(amountLabel);
-		getDisplayDaysLabelDom(dom).text(daysLabel);
-		if( category === Gaiyou ){
-			getDisplayDaysRowDom(dom).hide();
-		} else {
-			getDisplayDaysRowDom(dom).show();
-		}
-		getDisplayDaysUnitDom(dom).text(daysUnit);
-	}
-
-	function updateDisplayCategory(dom, category){
-		dom.find("> .drug-area input[type=radio][name=category][value=" + category + "]").prop("checked", true);
-		adaptToCategory(dom, category);
-	}
-
-	function updateDisplayDom(dom, data){
-		getDisplayDom(dom).data("iyakuhincode", data.iyakuhincode);
-		getDisplayNameDom(dom).text(data.name);
-		getDisplayAmountInputDom(dom).val(data.amount);
-		getDisplayUnitDom(dom).text(data.unit);
-		getDisplayUsageInputDom(dom).val(data.usage);
-		getDisplayDaysInputDom(dom).val(data.days);
-		updateDisplayCategory(dom, data.category);
-	}
-
-	function fixedDays(dom){
-		var input = dom.find("> .drug-area input[mc-name=fixedDaysCheck]:visible");
-		return input.length > 0 ? input.prop("checked") : false;
-	}
-
-	function preserveUsageEtc(dom){
-		var input = dom.find("> .drug-area input[mc-name=preserveUsage]:visible");
-		return input.length > 0 ? input.prop("checked") : false;
-	}
-
-	function updateDisplay(dom, data, at){
-		var iyakuhincode = +data.iyakuhincode;
-		var master;
-		task.run(function(done){
-			service.resolveIyakuhinMasterAt(iyakuhincode, at, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				master = result;
-				done();
-			})
-		}, function( err ){
-			if( err ){
-				alert(err);
-				return;
-			}
-			if( master === null ){
-				alert("現在使用できない薬剤です。");
-				return;
-			}
-			var dispData = {
-				iyakuhincode: master.iyakuhincode,
-				name: master.name,
-				amount: data.amount,
-				unit: data.unit,
-				usage: data.usage,
-				days: data.days,
-				category: data.category
-			};
-			if( fixedDays(dom) && getDisplayDaysInputDom(dom).val() !== "" ){
-				dispData.days = getDisplayDaysInputDom(dom).val();
-			}
-			if( preserveUsageEtc(dom) ){
-				mUtil.assign(dispData, {
-					amount: getDisplayAmountInputDom(dom).val(),
-					usage: getDisplayUsageInputDom(dom).val(),
-					days: getDisplayDaysInputDom(dom).val()
-				});
-			}
-			updateDisplayDom(dom, dispData);
-		});
-	}
-
-	function clearDisplay(dom){
-		getErrorBox(dom).html("").hide();
-		getDisplayDom(dom).removeData("iyakuhincode");
-		getDisplayNameDom(dom).text("");
-		getDisplayAmountInputDom(dom).val("");
-		getDisplayUsageInputDom(dom).val("");
-		getDisplayDaysInputDom(dom).val("");
-	}
-
-	function updateSearchResult(dom, dataList){
-		var select = getSearchSelectDom(dom).html("");
-		dataList.forEach(function(data){
-			var opt = $(itemTmpl.render(data));
-			opt.data("data", data);
-			select.append(opt);
-		})
-	}
-
-	function masterToData(master){
-		return {
-			label: master.name,
-			iyakuhincode: master.iyakuhincode,
-			amount: "",
-			unit: master.unit,
-			usage: "",
-			days: "",
-			category: (+master.zaikei) === ZaikeiGaiyou ? Gaiyou : Naifuku
-		}
-	}
-
-	function searchMaster(dom, text, at){
-		var list;
-		task.run(function(done){
-			service.searchIyakuhinMaster(text, at, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				list = result;
-				done();
-			})
-		}, function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			updateSearchResult(dom, list.map(masterToData));
-		});
-	}
-
-	function convertPrescExampleToDrug(ex){
-		var drug = {};
-		Object.keys(ex).forEach(function(key){
-			var val = ex[key];
-			if( key.startsWith("m_") ){
-				key = "d_" + key.slice(2);
-			}
-			drug[key] = val;
-		});
-		return drug;
-	}
-
-	function stockToData(stock){
-		var drug = convertPrescExampleToDrug(stock);
-		return {
-			label: mUtil.drugRep(drug),
-			iyakuhincode: drug.d_iyakuhincode,
-			amount: drug.d_amount,
-			unit: stock.unit,
-			usage: drug.d_usage,
-			days: drug.d_days,
-			category: drug.d_category
-		}
-	}
-
-	function searchStock(dom, text){
-		var list;
-		task.run(function(done){
-			service.searchPrescExample(text, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				list = result;
-				done();
-			})
-		}, function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			var dataList = list.map(stockToData);
-			updateSearchResult(dom, dataList);
-		});
-	}
-
-	function prevToData(prev){
-		return {
-			label: mUtil.drugRep(prev),
-			iyakuhincode: prev.d_iyakuhincode,
-			amount: prev.d_amount,
-			unit: prev.unit,
-			usage: prev.d_usage,
-			days: prev.d_days,
-			category: prev.d_category
-		}
-	}
-
-	function searchPrev(dom, patientId, text){
-		var list;
-		task.run(function(done){
-			service.searchFullDrugForPatient(patientId, text, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				list = result;
-				done();
-			})
-		}, function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			updateSearchResult(dom, list.map(prevToData));
-		});
-	}
-
-	function bindSearchForm(dom, visitId, at, patientId){
-		var form = dom.find("> .drug-search-area form[mc-name=searchForm]");
-		form.submit(function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var text = getSearchTextDom(dom).val().trim();
-			if( text === "" ){
-				return;
-			}
-			var mode = getSearchMode(dom);
-			switch(mode){
-				case "master": searchMaster(dom, text, at); break;
-				case "stock": searchStock(dom, text); break;
-				case "prev": searchPrev(dom, patientId, text); break;
-				default: throw new Error("unknown search mode: " + mode); 
-			}
-		});
-	}
-
-	function bindSearchResult(dom, at){
-		var select = getSearchSelectDom(dom);
-		select.on("click", "option", function(event){
-			var data = $(this).data("data");
-			updateDisplay(dom, data, at);
-		})
-	}
-
-	function bindUsageExample(dom){
-		var examples = dom.find("> .drug-area [mc-name=usageExampleWrapper]")
-		dom.on("click", "> .drug-area [mc-name=usageExampleLink]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			examples.toggle();
-		});
-		dom.on("click", "> .drug-area select[name=usage-example] option", function(){
-			var value = $(this).val();
-			getDisplayUsageInputDom(dom).val(value);
-			examples.hide();
-		});
-	}
-
-	function bindCategoryChange(dom){
-		dom.on("change", "> .drug-area input[type=radio][name=category]", function(event){
-			var category = +$(this).val();
-			adaptToCategory(dom, category);
-		});
-	}
-
-	function bindClear(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=clearFormLink]", function(event){
-			event.preventDefault();
-			clearDisplay(dom);
-		});
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=closeLink]", function(event){
-			event.stopPropagation();
-			dom.trigger("cancel-form");
-		});
-	}
-
-	function collectFormInputs(dom, drug){
-		mUtil.assign(drug, {
-			d_amount: getDisplayAmountInputDom(dom).val(),
-			d_usage: getDisplayUsageInputDom(dom).val(),
-			d_category: +getCheckedCategory(dom),
-			d_days: +getDisplayDaysInputDom(dom).val()
-		});
-		if( drug.d_category === Gaiyou ){
-			drug.d_days = 1;
-		}
-	}
-
-	function validate(drug){
-		var errs = [];
-		if( !(drug.d_iyakuhincode > 0) ){
-			errs.push("invalid iyakuhincode: " + drug.d_iyakuhincode);
-		}
-		if( !drug.d_amount ){
-			errs.push("用量が指定されていません。");
-		}
-		var category = +drug.d_category;
-		if( !(category === Naifuku || category === Tonpuku || category === Gaiyou) ){
-			errs.push("invalid category: " + category);
-		}
-		if( !(drug.d_days && ("" + drug.d_days).match(/^\d+$/)) ){
-			errs.push("日数・回数の指定が不適切です。");
-		}
-		return errs;
-	}
-
-	function clearDisplayConsideringFixedDays(dom){
-		var days = getDisplayDaysInputDom(dom).val();
-		clearDisplay(dom);
-		if( fixedDays(dom) ){
-			getDisplayDaysInputDom(dom).val(days);
-		}
-	}
-
-	function bindEnter(dom, visitId, at){
-		dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
-			event.stopPropagation();
-			var iyakuhincode = getDisplayDom(dom).data("iyakuhincode");
-			if( !iyakuhincode ){
-				alert("薬剤が設定されていません。");
-				return;
-			}
-			var drug = {
-				visit_id: visitId,
-				d_iyakuhincode: iyakuhincode,
-				d_prescribed: 0
-			};
-			collectFormInputs(dom, drug);
-			var errors = validate(drug);
-			if( errors.length > 0 ){
-				getErrorBox(dom).text(errors.join("")).show();
-				return;
-			}
-			var drugId, newDrug;
-			task.run([
-				function(done){
-					service.enterDrug(drug, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						drugId = result;
-						done();
-					})
-				},
-				function(done){
-					service.getFullDrug(drugId, at, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newDrug = result;
-						done();
-					})
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
-				clearDisplayConsideringFixedDays(dom);
-			})
-		});
-	}
-
-	function bindModify(dom, drugId, at){
-		dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
-			event.stopPropagation();
-			var iyakuhincode = getDisplayDom(dom).data("iyakuhincode");
-			if( !iyakuhincode ){
-				alert("薬剤が設定されていません。");
-				return;
-			}
-			var drug = {
-				drug_id: drugId,
-				d_iyakuhincode: iyakuhincode
-			};
-			collectFormInputs(dom, drug);
-			var errors = validate(drug);
-			if( errors.length > 0 ){
-				getErrorBox(dom).text(errors.join("")).show();
-				return;
-			}
-			var newDrug;
-			task.run([
-				function(done){
-					service.modifyDrug(drug, done);
-				},
-				function(done){
-					service.getFullDrug(drug.drug_id, at, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newDrug = result;
-						done();
-					})
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("drug-modified", newDrug);
-			})
-		});
-	}
-
-	function bindDelete(dom, drugId){
-		dom.on("click", "> .workarea-commandbox [mc-name=deleteLink]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			if( !confirm("本当にこの薬剤を削除しますか？") ){
-				return;
-			}
-			task.run(function(done){
-				service.batchDeleteDrugs([drugId], done);
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("drug-deleted");
-			})
-		});
-	}
-
-/***/ },
-/* 144 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n<div mc-name=\"title\" class=\"title\">{{title}}</div>\r\n<div class=\"error-box\" style=\"display:none\"></div>\r\n<div class=\"drug-area\"> <!-- should be at the top level -->\r\n    <table width=\"100%\">\r\n        <tr>\r\n            <td style=\"width:3em;\">名称</td>\r\n            <td mc-name=\"name\"></td>\r\n        </tr>\r\n        <tr>\r\n            <td mc-name=\"amountLabel\">用量</td>\r\n            <td>\r\n                <input mc-name=\"amount\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"unit\"></span>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td>用法</td>\r\n            <td>\r\n                <table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\r\n                    <tr>\r\n                        <td>\r\n                            <input mc-name=\"usage\" class=\"kanji\" style=\"width:100%\" />\r\n                        </td>\r\n                        <td>\r\n                            &nbsp;\r\n                            <a mc-name=\"usageExampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                               >例</a>\r\n                        </td>\r\n                    </tr>\r\n                </table>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"usageExampleWrapper\" style=\"display:none\">\r\n            <td colspan=\"2\">\r\n                <select name=\"usage-example\" size=\"4\">\r\n                    <option>分１　朝食後</option>\r\n                    <option>分２　朝夕食後</option>\r\n                    <option>分３　毎食後</option>\r\n                    <option>分１　寝る前</option>\r\n                </select>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"daysRow\">\r\n            <td mc-name=\"daysLabel\">日数</td>\r\n            <td>\r\n                <input mc-name=\"days\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"daysUnit\">日分</span>\r\n                {{#isCreating}}\r\n        \t\t<span mc-name=\"fixedDaysWrapper\">\r\n        \t\t\t<input mc-name=\"fixedDaysCheck\" type=\"checkbox\"  checked=\"checked\"/> 固定\r\n        \t\t</span>\r\n                {{/isCreating}}\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <div>\r\n        <input type=radio mc-name=\"categoryNaifuku\" name=\"category\" value=\"0\" checked>内服\r\n        <input type=radio mc-name=\"categoryTonpuku\" name=\"category\" value=\"1\">屯服\r\n        <input type=radio mc-name=\"categoryGaiyou\"  name=\"category\" value=\"2\">外用\r\n    </div>\r\n    {{#isEditing}}\r\n    <div>\r\n        <input type=\"checkbox\" mc-name=\"preserveUsage\" />用量・用法・日数をそのままに\r\n    </div>\r\n    {{/isEditing}}\r\n    <div mc-name=\"comment\" style=\"padding:6px;display:none;border:1px solid #ccc\"></div>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enterLink\">入力</button>\r\n    <button mc-name=\"closeLink\">閉じる</button>\r\n    <a mc-name=\"clearFormLink\" href=\"javascript:void(0)\" class=\"cmd-link\">クリア</a>\r\n    {{#isEditing}}\r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n    {{/isEditing}}\r\n</div>\r\n<div class=\"drug-search-area\">\r\n    <form style=\"margin:4px 0\" mc-name=\"searchForm\">\r\n        <input mc-name=\"searchText\" type=\"text\" class=\"kanji\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div style=\"margin:4px 0\">\r\n        <input type=radio name=\"search-mode\" value=\"master\">マスター\r\n        <input type=radio name=\"search-mode\" value=\"stock\" checked>約束処方\r\n        <input type=radio name=\"search-mode\" value=\"prev\">過去の処方\r\n    </div>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=10 style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n</div>\r\n\r\n"
-
-/***/ },
-/* 145 */
-/***/ function(module, exports) {
-
-	module.exports = "<option>{{label}}</option>"
-
-/***/ },
+/* 143 */,
+/* 144 */,
+/* 145 */,
 /* 146 */
 /***/ function(module, exports) {
 
@@ -28325,7 +27761,6 @@
 			var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(){
 				return +$(this).val();
 			}).get();
-			console.log(typeof checked);
 			var selectedDrugs = drugs.filter(function(drug){
 				return checked.indexOf(drug.drug_id) >= 0;
 			});
@@ -28655,7 +28090,7 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
-	var DrugForm = __webpack_require__(143);
+	var DrugForm = __webpack_require__(206);
 
 	var tmplSrc = __webpack_require__(156);
 	var tmpl = hogan.compile(tmplSrc);
@@ -30081,7 +29516,7 @@
 
 	exports.setup = function(dom, visitId, texts){
 		batchAdd(dom, texts);
-		dom.listen("rx-text-batch-entered", function(targetVisitId, texts){
+		dom.listen("rx-texts-batch-entered", function(targetVisitId, texts){
 			if( visitId !== targetVisitId ){
 				return;
 			}
@@ -30095,6 +29530,586 @@
 			dom.append(te);
 		});
 	}
+
+/***/ },
+/* 205 */,
+/* 206 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(5);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var mConsts = __webpack_require__(110);
+
+	var tmplSrc = __webpack_require__(207);
+	var tmpl = hogan.compile(tmplSrc);
+	var itemTmplSrc = __webpack_require__(208);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+
+	var Naifuku = mConsts.DrugCategoryNaifuku;
+	var Tonpuku = mConsts.DrugCategoryTonpuku;
+	var Gaiyou = mConsts.DrugCategoryGaiyou;
+
+	var ZaikeiGaiyou = mConsts.ZaikeiGaiyou;
+
+	exports.createAddForm = function(visitId, at, patientId){
+		var dom = $(tmpl.render({isCreating: true, title: "新規処方の入力"}));
+		bindSearchForm(dom, visitId, at, patientId);
+		bindSearchResult(dom, at);
+		bindUsageExample(dom);
+		bindCategoryChange(dom);
+		bindClear(dom);
+		bindEnter(dom, visitId, at);
+		bindCancel(dom);
+		return dom;
+	};
+
+	exports.createEditForm = function(drug, at, patientId){
+		var data = {
+			isEditing: true,
+			title: "処方の編集",
+			name: drug.name,
+			iyakuhincode: drug.d_iyakuhincode,
+			amount: drug.d_amount,
+			unit: drug.unit,
+			usage: drug.d_usage,
+			days: drug.d_days,
+			category: drug.d_category
+		}
+		var dom = $(tmpl.render(data));
+		updateDisplayDom(dom, data);
+		bindSearchForm(dom, drug.visit_id, at, patientId);
+		bindSearchResult(dom, at);
+		bindUsageExample(dom);
+		bindCategoryChange(dom);
+		bindClear(dom);
+		bindModify(dom, drug.drug_id, at);
+		bindCancel(dom);
+		bindDelete(dom, drug.drug_id);
+		return dom;
+	}
+
+	function getErrorBox(dom){
+		return dom.find("> .error-box");
+	}
+
+	function getDisplayDom(dom){
+		return dom.find("> .drug-area");
+	}
+
+	function getDisplayNameDom(dom){
+		return dom.find("> .drug-area [mc-name=name]");
+	}
+
+	function getDisplayAmountLabelDom(dom){
+		return dom.find("> .drug-area [mc-name=amountLabel]");
+	}
+
+	function getDisplayAmountInputDom(dom){
+		return dom.find("> .drug-area input[mc-name=amount]");
+	}
+
+	function getDisplayUnitDom(dom){
+		return dom.find("> .drug-area [mc-name=unit]");
+	}
+
+	function getDisplayUsageInputDom(dom){
+		return dom.find("> .drug-area input[mc-name=usage]");
+	}
+
+	function getDisplayDaysRowDom(dom){
+		return dom.find("> .drug-area [mc-name=daysRow]");
+	}
+
+	function getDisplayDaysLabelDom(dom){
+		return dom.find("> .drug-area [mc-name=daysLabel]");
+	}
+
+	function getDisplayDaysInputDom(dom){
+		return dom.find("> .drug-area input[mc-name=days]");
+	}
+
+	function getDisplayDaysUnitDom(dom){
+		return dom.find("> .drug-area [mc-name=daysUnit]");
+	}
+
+	function getSearchButtonDom(dom){
+		return dom.find("[mc-name=searchLink]");
+	}
+
+	function getSearchTextDom(dom){
+		return dom.find("[mc-name=searchText]");
+	}
+
+	function getSearchMode(dom){
+		return dom.find("input[type=radio][name=search-mode]:checked").val();
+	}
+
+	function getSearchSelectDom(dom){
+		return dom.find("> .drug-search-area select[mc-name=searchResult]");
+	}
+
+	function getCheckedCategory(dom){
+		return dom.find("> .drug-area input[type=radio][name=category]:checked").val();
+	}
+
+	function adaptToCategory(dom, category){
+		var amountLabel, daysLabel, daysUnit;
+		switch(category){
+			case Naifuku: 
+				amountLabel = "用量";
+				daysLabel = "日数";
+				daysUnit = "日分";
+				break;
+			case Tonpuku:
+				amountLabel = "一回";
+				daysLabel = "回数";
+				daysUnit = "回分";
+				break;
+			case Gaiyou:
+				amountLabel: "";
+				amountLabel = "用量";
+				daysLabel = "";
+				daysUnit = "";
+				break;
+			default: alert("unknown category"); return;
+		}
+		getDisplayAmountLabelDom(dom).text(amountLabel);
+		getDisplayDaysLabelDom(dom).text(daysLabel);
+		if( category === Gaiyou ){
+			getDisplayDaysRowDom(dom).hide();
+		} else {
+			getDisplayDaysRowDom(dom).show();
+		}
+		getDisplayDaysUnitDom(dom).text(daysUnit);
+	}
+
+	function updateDisplayCategory(dom, category){
+		dom.find("> .drug-area input[type=radio][name=category][value=" + category + "]").prop("checked", true);
+		adaptToCategory(dom, category);
+	}
+
+	function updateDisplayDom(dom, data){
+		getDisplayDom(dom).data("iyakuhincode", data.iyakuhincode);
+		getDisplayNameDom(dom).text(data.name);
+		getDisplayAmountInputDom(dom).val(data.amount);
+		getDisplayUnitDom(dom).text(data.unit);
+		getDisplayUsageInputDom(dom).val(data.usage);
+		getDisplayDaysInputDom(dom).val(data.days);
+		updateDisplayCategory(dom, data.category);
+	}
+
+	function fixedDays(dom){
+		var input = dom.find("> .drug-area input[mc-name=fixedDaysCheck]:visible");
+		return input.length > 0 ? input.prop("checked") : false;
+	}
+
+	function preserveUsageEtc(dom){
+		var input = dom.find("> .drug-area input[mc-name=preserveUsage]:visible");
+		return input.length > 0 ? input.prop("checked") : false;
+	}
+
+	function updateDisplay(dom, data, at){
+		var iyakuhincode = +data.iyakuhincode;
+		var master;
+		task.run(function(done){
+			service.resolveIyakuhinMasterAt(iyakuhincode, at, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				master = result;
+				done();
+			})
+		}, function( err ){
+			if( err ){
+				alert(err);
+				return;
+			}
+			if( master === null ){
+				alert("現在使用できない薬剤です。");
+				return;
+			}
+			var dispData = {
+				iyakuhincode: master.iyakuhincode,
+				name: master.name,
+				amount: data.amount,
+				unit: data.unit,
+				usage: data.usage,
+				days: data.days,
+				category: data.category
+			};
+			if( fixedDays(dom) && getDisplayDaysInputDom(dom).val() !== "" ){
+				dispData.days = getDisplayDaysInputDom(dom).val();
+			}
+			if( preserveUsageEtc(dom) ){
+				mUtil.assign(dispData, {
+					amount: getDisplayAmountInputDom(dom).val(),
+					usage: getDisplayUsageInputDom(dom).val(),
+					days: getDisplayDaysInputDom(dom).val()
+				});
+			}
+			updateDisplayDom(dom, dispData);
+		});
+	}
+
+	function clearDisplay(dom){
+		getErrorBox(dom).html("").hide();
+		getDisplayDom(dom).removeData("iyakuhincode");
+		getDisplayNameDom(dom).text("");
+		getDisplayAmountInputDom(dom).val("");
+		getDisplayUsageInputDom(dom).val("");
+		getDisplayDaysInputDom(dom).val("");
+	}
+
+	function updateSearchResult(dom, dataList){
+		var select = getSearchSelectDom(dom).html("");
+		dataList.forEach(function(data){
+			var opt = $(itemTmpl.render(data));
+			opt.data("data", data);
+			select.append(opt);
+		})
+	}
+
+	function masterToData(master){
+		return {
+			label: master.name,
+			iyakuhincode: master.iyakuhincode,
+			amount: "",
+			unit: master.unit,
+			usage: "",
+			days: "",
+			category: (+master.zaikei) === ZaikeiGaiyou ? Gaiyou : Naifuku
+		}
+	}
+
+	function searchMaster(dom, text, at){
+		var list;
+		task.run(function(done){
+			service.searchIyakuhinMaster(text, at, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				list = result;
+				done();
+			})
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			updateSearchResult(dom, list.map(masterToData));
+		});
+	}
+
+	function convertPrescExampleToDrug(ex){
+		var drug = {};
+		Object.keys(ex).forEach(function(key){
+			var val = ex[key];
+			if( key.startsWith("m_") ){
+				key = "d_" + key.slice(2);
+			}
+			drug[key] = val;
+		});
+		return drug;
+	}
+
+	function stockToData(stock){
+		var drug = convertPrescExampleToDrug(stock);
+		return {
+			label: mUtil.drugRep(drug),
+			iyakuhincode: drug.d_iyakuhincode,
+			amount: drug.d_amount,
+			unit: stock.unit,
+			usage: drug.d_usage,
+			days: drug.d_days,
+			category: drug.d_category
+		}
+	}
+
+	function searchStock(dom, text){
+		var list;
+		task.run(function(done){
+			service.searchPrescExample(text, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				list = result;
+				done();
+			})
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var dataList = list.map(stockToData);
+			updateSearchResult(dom, dataList);
+		});
+	}
+
+	function prevToData(prev){
+		return {
+			label: mUtil.drugRep(prev),
+			iyakuhincode: prev.d_iyakuhincode,
+			amount: prev.d_amount,
+			unit: prev.unit,
+			usage: prev.d_usage,
+			days: prev.d_days,
+			category: prev.d_category
+		}
+	}
+
+	function searchPrev(dom, patientId, text){
+		var list;
+		task.run(function(done){
+			service.searchFullDrugForPatient(patientId, text, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				list = result;
+				done();
+			})
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			updateSearchResult(dom, list.map(prevToData));
+		});
+	}
+
+	function bindSearchForm(dom, visitId, at, patientId){
+		var form = dom.find("> .drug-search-area form[mc-name=searchForm]");
+		form.submit(function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var text = getSearchTextDom(dom).val().trim();
+			if( text === "" ){
+				return;
+			}
+			var mode = getSearchMode(dom);
+			switch(mode){
+				case "master": searchMaster(dom, text, at); break;
+				case "stock": searchStock(dom, text); break;
+				case "prev": searchPrev(dom, patientId, text); break;
+				default: throw new Error("unknown search mode: " + mode); 
+			}
+		});
+	}
+
+	function bindSearchResult(dom, at){
+		var select = getSearchSelectDom(dom);
+		select.on("click", "option", function(event){
+			var data = $(this).data("data");
+			updateDisplay(dom, data, at);
+		})
+	}
+
+	function bindUsageExample(dom){
+		var examples = dom.find("> .drug-area [mc-name=usageExampleWrapper]")
+		dom.on("click", "> .drug-area [mc-name=usageExampleLink]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			examples.toggle();
+		});
+		dom.on("click", "> .drug-area select[name=usage-example] option", function(){
+			var value = $(this).val();
+			getDisplayUsageInputDom(dom).val(value);
+			examples.hide();
+		});
+	}
+
+	function bindCategoryChange(dom){
+		dom.on("change", "> .drug-area input[type=radio][name=category]", function(event){
+			var category = +$(this).val();
+			adaptToCategory(dom, category);
+		});
+	}
+
+	function bindClear(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=clearFormLink]", function(event){
+			event.preventDefault();
+			clearDisplay(dom);
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> .workarea-commandbox [mc-name=closeLink]", function(event){
+			event.stopPropagation();
+			dom.trigger("cancel-form");
+		});
+	}
+
+	function collectFormInputs(dom, drug){
+		mUtil.assign(drug, {
+			d_amount: getDisplayAmountInputDom(dom).val(),
+			d_usage: getDisplayUsageInputDom(dom).val(),
+			d_category: +getCheckedCategory(dom),
+			d_days: +getDisplayDaysInputDom(dom).val()
+		});
+		if( drug.d_category === Gaiyou ){
+			drug.d_days = 1;
+		}
+	}
+
+	function validate(drug){
+		var errs = [];
+		if( !(drug.d_iyakuhincode > 0) ){
+			errs.push("invalid iyakuhincode: " + drug.d_iyakuhincode);
+		}
+		if( !drug.d_amount ){
+			errs.push("用量が指定されていません。");
+		}
+		var category = +drug.d_category;
+		if( !(category === Naifuku || category === Tonpuku || category === Gaiyou) ){
+			errs.push("invalid category: " + category);
+		}
+		if( !(drug.d_days && ("" + drug.d_days).match(/^\d+$/)) ){
+			errs.push("日数・回数の指定が不適切です。");
+		}
+		return errs;
+	}
+
+	function clearDisplayConsideringFixedDays(dom){
+		var days = getDisplayDaysInputDom(dom).val();
+		clearDisplay(dom);
+		if( fixedDays(dom) ){
+			getDisplayDaysInputDom(dom).val(days);
+		}
+	}
+
+	function bindEnter(dom, visitId, at){
+		dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
+			event.stopPropagation();
+			var iyakuhincode = getDisplayDom(dom).data("iyakuhincode");
+			if( !iyakuhincode ){
+				alert("薬剤が設定されていません。");
+				return;
+			}
+			var drug = {
+				visit_id: visitId,
+				d_iyakuhincode: iyakuhincode,
+				d_prescribed: 0
+			};
+			collectFormInputs(dom, drug);
+			var errors = validate(drug);
+			if( errors.length > 0 ){
+				getErrorBox(dom).text(errors.join("")).show();
+				return;
+			}
+			var drugId, newDrug;
+			task.run([
+				function(done){
+					service.enterDrug(drug, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						drugId = result;
+						done();
+					})
+				},
+				function(done){
+					service.getFullDrug(drugId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newDrug = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
+				clearDisplayConsideringFixedDays(dom);
+			})
+		});
+	}
+
+	function bindModify(dom, drugId, at){
+		dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
+			event.stopPropagation();
+			var iyakuhincode = getDisplayDom(dom).data("iyakuhincode");
+			if( !iyakuhincode ){
+				alert("薬剤が設定されていません。");
+				return;
+			}
+			var drug = {
+				drug_id: drugId,
+				d_iyakuhincode: iyakuhincode
+			};
+			collectFormInputs(dom, drug);
+			var errors = validate(drug);
+			if( errors.length > 0 ){
+				getErrorBox(dom).text(errors.join("")).show();
+				return;
+			}
+			var newDrug;
+			task.run([
+				function(done){
+					service.modifyDrug(drug, done);
+				},
+				function(done){
+					service.getFullDrug(drug.drug_id, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newDrug = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drug-modified", newDrug);
+			})
+		});
+	}
+
+	function bindDelete(dom, drugId){
+		dom.on("click", "> .workarea-commandbox [mc-name=deleteLink]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			if( !confirm("本当にこの薬剤を削除しますか？") ){
+				return;
+			}
+			task.run(function(done){
+				service.batchDeleteDrugs([drugId], done);
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("drug-deleted");
+			})
+		});
+	}
+
+/***/ },
+/* 207 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div mc-name=\"title\" class=\"title\">{{title}}</div>\r\n<div class=\"error-box\" style=\"display:none\"></div>\r\n<div class=\"drug-area\"> <!-- should be at the top level -->\r\n    <table width=\"100%\">\r\n        <tr>\r\n            <td style=\"width:3em;\">名称</td>\r\n            <td mc-name=\"name\"></td>\r\n        </tr>\r\n        <tr>\r\n            <td mc-name=\"amountLabel\">用量</td>\r\n            <td>\r\n                <input mc-name=\"amount\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"unit\"></span>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td>用法</td>\r\n            <td>\r\n                <table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\r\n                    <tr>\r\n                        <td>\r\n                            <input mc-name=\"usage\" class=\"kanji\" style=\"width:100%\" />\r\n                        </td>\r\n                        <td>\r\n                            &nbsp;\r\n                            <a mc-name=\"usageExampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                               >例</a>\r\n                        </td>\r\n                    </tr>\r\n                </table>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"usageExampleWrapper\" style=\"display:none\">\r\n            <td colspan=\"2\">\r\n                <select name=\"usage-example\" size=\"4\">\r\n                    <option>分１　朝食後</option>\r\n                    <option>分２　朝夕食後</option>\r\n                    <option>分３　毎食後</option>\r\n                    <option>分１　寝る前</option>\r\n                </select>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"daysRow\">\r\n            <td mc-name=\"daysLabel\">日数</td>\r\n            <td>\r\n                <input mc-name=\"days\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"daysUnit\">日分</span>\r\n                {{#isCreating}}\r\n        \t\t<span mc-name=\"fixedDaysWrapper\">\r\n        \t\t\t<input mc-name=\"fixedDaysCheck\" type=\"checkbox\"  checked=\"checked\"/> 固定\r\n        \t\t</span>\r\n                {{/isCreating}}\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <div>\r\n        <input type=radio mc-name=\"categoryNaifuku\" name=\"category\" value=\"0\" checked>内服\r\n        <input type=radio mc-name=\"categoryTonpuku\" name=\"category\" value=\"1\">屯服\r\n        <input type=radio mc-name=\"categoryGaiyou\"  name=\"category\" value=\"2\">外用\r\n    </div>\r\n    {{#isEditing}}\r\n    <div>\r\n        <input type=\"checkbox\" mc-name=\"preserveUsage\" />用量・用法・日数をそのままに\r\n    </div>\r\n    {{/isEditing}}\r\n    <div mc-name=\"comment\" style=\"padding:6px;display:none;border:1px solid #ccc\"></div>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enterLink\">入力</button>\r\n    <button mc-name=\"closeLink\">閉じる</button>\r\n    <a mc-name=\"clearFormLink\" href=\"javascript:void(0)\" class=\"cmd-link\">クリア</a>\r\n    {{#isEditing}}\r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n    {{/isEditing}}\r\n</div>\r\n<div class=\"drug-search-area\">\r\n    <form style=\"margin:4px 0\" mc-name=\"searchForm\">\r\n        <input mc-name=\"searchText\" type=\"text\" class=\"kanji\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div style=\"margin:4px 0\">\r\n        <input type=radio name=\"search-mode\" value=\"master\">マスター\r\n        <input type=radio name=\"search-mode\" value=\"stock\" checked>約束処方\r\n        <input type=radio name=\"search-mode\" value=\"prev\">過去の処方\r\n    </div>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=10 style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n</div>\r\n\r\n"
+
+/***/ },
+/* 208 */
+/***/ function(module, exports) {
+
+	module.exports = "<option>{{label}}</option>"
 
 /***/ }
 /******/ ]);
