@@ -84,14 +84,6 @@
 
 	var appData = new AppData();
 
-	// window.getCurrentVisitId = function(){
-	// 	return appData.currentVisitId;
-	// };
-
-	// window.getTempVisitId = function(){
-	// 	return appData.tempVisitId;
-	// };
-
 	function startPage(patientId, visitId){
 		appData.startPage(patientId, visitId, function(err){
 			if( err ){
@@ -25064,6 +25056,14 @@
 		request("batch_delete_shinryou", JSON.stringify(shinryouIds), "POST", done);
 	};
 
+	exports.searchShinryouMaster = function(text, at, cb){
+		request("search_shinryou_master", {text: text, at: at}, "GET", cb);
+	};
+
+	exports.resolveShinryouMasterAt = function(shinryoucode, at, cb){
+		request("resolve_shinryou_master_at", {shinryoucode: shinryoucode, at: at}, "GET", cb);
+	};
+
 /***/ },
 /* 113 */
 /***/ function(module, exports, __webpack_require__) {
@@ -26663,6 +26663,7 @@
 		});
 		bindDrugsBatchEntered(dom);
 		bindNumberOfDrugsChanged(dom);
+		bindShinryouBatchEntered(dom);
 	};
 
 	function bindDrugsBatchEntered(recordListDom){
@@ -26677,6 +26678,13 @@
 			event.stopPropagation();
 			recordListDom.broadcast("rx-number-of-drugs-changed", [visitId]);
 		});
+	}
+
+	function bindShinryouBatchEntered(dom){
+		dom.on("shinryou-batch-entered", function(event, visitId, shinryouList){
+			event.stopPropagation();
+			dom.broadcast("rx-shinryou-batch-entered", [visitId, shinryouList]);
+		})
 	}
 
 
@@ -27453,7 +27461,7 @@
 	function setWorkarea(dom, kind, content){
 		var wa = getWorkareaDom(dom);
 		wa.data("kind", kind);
-		wa.html("").append(content);
+		wa.append(content);
 	}
 
 	function clearWorkarea(dom){
@@ -27993,6 +28001,7 @@
 	var ShinryouSubmenu = __webpack_require__(162);
 	var service = __webpack_require__(112);
 	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
 
 	var tmplHtml = __webpack_require__(164);
 
@@ -28001,10 +28010,9 @@
 		bindAddRegular(dom, visitId, at);
 		bindSubmenu(dom, visitId, at);
 		bindSubmenuAddForm(dom, visitId, at);
+		bindSubmenuCopyAll(dom, visitId, at);
 		bindSubmenuDeleteSelectedForm(dom, visitId, at);
 		bindSubmenuCancel(dom);
-		bindCloseWorkarea(dom);
-		bindShinryouBatchEntered(dom);
 		setState(dom, "init");
 	}
 
@@ -28029,6 +28037,15 @@
 					return;
 				}
 				var form = AddRegularForm.create(visitId, at);
+				form.on("entered", function(event, newShinryouList){
+					event.stopPropagation();
+					endWork(dom);
+					dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
+				});
+				form.on("cancel", function(event){
+					event.stopPropagation();
+					endWork(dom);
+				});
 				startWork(dom, "add-regular", form);
 			}
 		})
@@ -28043,7 +28060,7 @@
 				closeSubmenu(dom);
 				setState(dom, "init");
 			} else if( state === "init" ) {
-				ShinryouSubmenu.setup(dom.find(submenuAreaSelector), visitId, at);
+				dom.find(submenuAreaSelector).append(ShinryouSubmenu.create(visitId, at));
 				setState(dom, "submenu");
 			}
 		})
@@ -28056,12 +28073,101 @@
 				return;
 			}
 			var form = ShinryouAddForm.create(visitId, at);
+			form.on("shinryou-entered", function(event, newShinryou){
+				event.stopPropagation();
+				dom.trigger("shinryou-batch-entered", [visitId, [newShinryou]]);
+			});
 			form.on("cancel", function(event){
 				event.stopPropagation();
 				endWork(dom);
 			})
 			closeSubmenu(dom);
 			startWork(dom, "add-search", form);
+		})
+	}
+
+	function bindSubmenuCopyAll(dom, visitId, at){
+		dom.on("submenu-copy-all", function(event){
+			event.stopPropagation();
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( !(targetVisitId > 0) ){
+				alert("現在（暫定）診療中でないので、コピーできません。");
+				return;
+			}
+			var srcShinryouList, targetVisit, dstShinryouCodes = [], newShinryouIds, newShinryouList = [];
+			task.run([
+				function(done){
+					service.listFullShinryouForVisit(visitId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						srcShinryouList = result;
+						done();
+					})
+				},
+				function(done){
+					service.getVisit(targetVisitId, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						targetVisit = result;
+						done();
+					})
+				},
+				function(done){
+					var targetAt = targetVisit.v_datetime;
+					conti.forEachPara(srcShinryouList, function(shinryou, done){
+						service.resolveShinryouMasterAt(shinryou.shinryoucode, targetAt, function(err, result){
+							if( err ){
+								console.log(err);
+								done("コピー先で有効でありません：" + shinryou.name);
+								return;
+							}
+							dstShinryouCodes.push(result.shinryoucode);
+							done();
+						})
+					}, done);
+				},
+				function(done){
+					var shinryouList = dstShinryouCodes.map(function(shinryoucode){
+						return {
+							visit_id: targetVisitId,
+							shinryoucode: shinryoucode
+						};
+					});
+					service.batchEnterShinryou(shinryouList, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouIds = result;
+						done();
+					})
+				},
+				function(done){
+					var targetAt = targetVisit.v_datetime;
+					conti.forEach(newShinryouIds, function(shinryouId, done){
+						service.getFullShinryou(shinryouId, targetAt, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newShinryouList.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				closeSubmenu(dom);
+				setState(dom, "init");
+				dom.trigger("shinryou-batch-entered", [targetVisitId, newShinryouList]);
+			})
 		})
 	}
 
@@ -28088,7 +28194,7 @@
 				}
 				var form = ShinryouDeleteSelectedForm.create(shinryouList);
 				form.on("shinryou-deleted", function(event, deletedShinryouIds){
-					evnt.stopPropagation();
+					event.stopPropagation();
 					dom.trigger("shinryou-batch-deleted", [visitId, deletedShinryouIds]);
 					endWork(dom);
 				});
@@ -28132,18 +28238,18 @@
 		dom.find(submenuAreaSelector).html("");
 	}
 
-	function bindCloseWorkarea(dom){
-		dom.on("close-workarea", function(event){
-			event.stopPropagation();
-			endWork(dom);
-		})
-	}
+	// function bindCloseWorkarea(dom){
+	// 	dom.on("close-workarea", function(event){
+	// 		event.stopPropagation();
+	// 		endWork(dom);
+	// 	})
+	// }
 
-	function bindShinryouBatchEntered(dom){
-		dom.on("shiryou-batch-entered", function(event){
-			endWork(dom);
-		});
-	}
+	// function bindShinryouBatchEntered(dom){
+	// 	dom.on("shiryou-batch-entered", function(event){
+	// 		endWork(dom);
+	// 	});
+	// }
 
 
 
@@ -28220,8 +28326,7 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
-				dom.trigger("close-workarea");
+				dom.trigger("entered", [newShinryouList]);
 			})
 		})
 	}
@@ -28230,7 +28335,7 @@
 		dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
 			event.preventDefault();
 			event.stopPropagation();
-			dom.trigger("close-workarea");
+			dom.trigger("cancel");
 		});
 	}
 
@@ -28248,20 +28353,80 @@
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
 
 	var tmplSrc = __webpack_require__(161);
+	var resultTmplSrc = __webpack_require__(217);
+	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(visitId, at){
 		var dom = $(tmplSrc);
+		var ctx = {shinryoucode: undefined};
+		bindEnter(dom, visitId, at, ctx);
 		bindCancel(dom);
 		bindSearch(dom, at);
+		bindResult(dom, at, ctx);
 		return dom;
 	}
 
+	var dispNameSelector = "> div[mc-name=disp-area] [mc-name=name]";
+	var enterSelector = "> .workarea-commandbox [mc-name=enter]";
+	var cancelSelector = "> .workarea-commandbox [mc-name=close]";
 	var searchTextInputSelector = "> form[mc-name=search-form] input[mc-name=text]";
+	var searchResultSelector = "> form[mc-name=search-form] select";
+
+	function updateDisp(dom, label){
+		dom.find(dispNameSelector).text(label);
+	}
+
+	function bindEnter(dom, visitId, at, ctx){
+		dom.on("click", enterSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var shinryoucode = ctx.shinryoucode;
+			if( !shinryoucode ){
+				alert("診療行為が指定されていません。");
+				return;
+			}
+			shinryoucode = +shinryoucode;
+			var newShinryouId, newShinryou;
+			task.run([
+				function(done){
+					service.batchEnterShinryou([{
+						visit_id: visitId,
+						shinryoucode: shinryoucode
+					}], function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouId = result;
+						done();
+					})
+				},
+				function(done){
+					service.getFullShinryou(newShinryouId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryou = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("shinryou-entered", [newShinryou]);
+			});
+		})
+	}
 
 	function bindCancel(dom){
-		dom.on("click", "> .workarea-commandbox [mc-name=close]", function(event){
+		dom.on("click", cancelSelector, function(event){
 			event.preventDefault();
 			event.stopPropagation();
 			dom.trigger("cancel");
@@ -28273,7 +28438,53 @@
 			event.preventDefault();
 			event.stopPropagation();
 			var text = dom.find(searchTextInputSelector).val().trim();
-			
+			if( text === "" ){
+				return;
+			}
+			var list;
+			task.run(function(done){
+				service.searchShinryouMaster(text, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					list = result;
+					done();
+				});
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = dom.find(searchResultSelector);
+				select.html(resultTmpl.render({list: list}));
+			});
+		});
+	}
+
+	function bindResult(dom, at, ctx){
+		dom.on("change", searchResultSelector, function(event){
+			var shinryoucode = +dom.find(searchResultSelector + " option:selected").val();
+			var master;
+			task.run([
+				function(done){
+					service.resolveShinryouMasterAt(shinryoucode, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						master = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				ctx.shinryoucode = master.shinryoucode;
+				updateDisp(dom, master.name);
+			})
 		});
 	}
 
@@ -28281,7 +28492,7 @@
 /* 161 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div>\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<form mc-name=\"search-form\">\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</form>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div mc-name=\"disp-area\">\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<form mc-name=\"search-form\">\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
 /* 162 */
@@ -28292,13 +28503,14 @@
 	var $ = __webpack_require__(1);
 	var tmplSrc = __webpack_require__(163);
 
-	exports.setup = function(dom, visitId, at){
-		dom.html(tmplSrc);
+	exports.create = function(visitId, at){
+		var dom = $(tmplSrc);
 		bindAddForm(dom, visitId);
 		bindCopyAll(dom, visitId);
 		bindCopySelected(dom, visitId);
 		bindDeleteSelected(dom, visitId);
 		bindCancel(dom, visitId);
+		return dom;
 	};
 
 	function bindAddForm(dom, visitId){
@@ -28340,7 +28552,7 @@
 /* 163 */
 /***/ function(module, exports) {
 
-	module.exports = "<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n"
+	module.exports = "<div>\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
 
 /***/ },
 /* 164 */
@@ -30394,6 +30606,12 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\n<div class=\"title\">複数診療削除</div>\n<form onsubmit=\"return false\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t{{#list}}\n\t\t\t<tr>\n\t\t\t\t<td>\n\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value={{shinryou_id}} />\n\t\t\t\t</td>\n\t\t\t\t<td>\n\t\t\t\t\t{{name}}\n\t\t\t\t</td>\n\t\t\t</tr>\n\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n<hr/>\n<div>\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">削除実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
+
+/***/ },
+/* 217 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ }
 /******/ ]);

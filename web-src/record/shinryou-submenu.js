@@ -3,13 +3,14 @@
 var $ = require("jquery");
 var tmplSrc = require("raw!./shinryou-submenu.html");
 
-exports.setup = function(dom, visitId, at){
-	dom.html(tmplSrc);
+exports.create = function(visitId, at){
+	var dom = $(tmplSrc);
 	bindAddForm(dom, visitId);
 	bindCopyAll(dom, visitId);
 	bindCopySelected(dom, visitId);
 	bindDeleteSelected(dom, visitId);
 	bindCancel(dom, visitId);
+	return dom;
 };
 
 function bindAddForm(dom, visitId){

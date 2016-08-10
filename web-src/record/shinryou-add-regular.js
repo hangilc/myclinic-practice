@@ -66,8 +66,7 @@ function bindEnter(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
-			dom.trigger("close-workarea");
+			dom.trigger("entered", [newShinryouList]);
 		})
 	})
 }
@@ -76,6 +75,6 @@ function bindCancel(dom){
 	dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
 		event.preventDefault();
 		event.stopPropagation();
-		dom.trigger("close-workarea");
+		dom.trigger("cancel");
 	});
 }

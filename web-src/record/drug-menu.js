@@ -39,7 +39,7 @@ function getWorkareaDom(dom){
 function setWorkarea(dom, kind, content){
 	var wa = getWorkareaDom(dom);
 	wa.data("kind", kind);
-	wa.html("").append(content);
+	wa.append(content);
 }
 
 function clearWorkarea(dom){

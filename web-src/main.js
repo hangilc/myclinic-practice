@@ -38,14 +38,6 @@ $("#reception-link").click(function(event){
 
 var appData = new AppData();
 
-// window.getCurrentVisitId = function(){
-// 	return appData.currentVisitId;
-// };
-
-// window.getTempVisitId = function(){
-// 	return appData.tempVisitId;
-// };
-
 function startPage(patientId, visitId){
 	appData.startPage(patientId, visitId, function(err){
 		if( err ){
