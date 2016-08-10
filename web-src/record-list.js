@@ -22,33 +22,6 @@ exports.setup = function(dom){
 	bindNumberOfDrugsChanged(dom);
 };
 
-function bindDrugsBatchModifiedDays(recordDom, visitId){
-	recordDom.on("drugs-batch-modified-days", function(event, targetVisitId, drugIds, days){
-		if( visitId !== targetVisitId ){
-			return;
-		}
-		drugIds.forEach(function(drugId){
-			recordDom.broadcast("rx-drug-modified-days", [drugId, days]);
-		});
-	});
-}
-
-function bindDrugsBatchDeleted(recordDom){
-	recordDom.on("drugs-batch-deleted", function(event, drugIds){
-		event.stopPropagation();
-		drugIds.forEach(function(drugId){
-			recordDom.broadcast("rx-drug-deleted", [drugId]);
-		})
-	});
-}
-
-function bindDrugsNeedRenumbering(recordDom){
-	recordDom.on("drugs-need-renumbering", function(event){
-		event.stopPropagation();
-		recordDom.broadcast("rx-drugs-need-renumbering");
-	})
-}
-
 function bindDrugsBatchEntered(recordListDom){
 	recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
 		event.stopPropagation();

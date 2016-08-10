@@ -17,6 +17,13 @@ exports.create = function(index, drug, at, patientId){
 		label: mUtil.drugRep(drug)
 	});
 	e = $(html);
+	e.listen("rx-drug-lookup-for-visit", function(targetVisitId){
+		if( targetVisitId === drug.visit_id ){
+			return {
+				drug_id: drug.drug_id
+			};
+		}
+	});
 	e.listen("rx-drug-deleted", function(drugId){
 		if( drugId === drug.drug_id ){
 			e.remove();
@@ -29,11 +36,17 @@ exports.create = function(index, drug, at, patientId){
 		drug.d_days = days;
 		e.find("> [mc-name=disp] [mc-name=label]").text(mUtil.drugRep(drug));
 	});
+	e.listen("rx-drug-modify-index", function(drugId, index){
+		if( drugId !== drug.drug_id ){
+			return;
+		}
+		updateIndex(e, index);
+	});
 	bindClick(e, drug, at, patientId);
 	return e;
 }
 
-exports.updateIndex = function(dom, index){
+function updateIndex(dom, index){
 	getDispIndexDom(dom).text(index);
 }
 
@@ -90,7 +103,7 @@ function bindFormDelete(dom, form, visitId){
 		var parent = dom.parent();
 		dom.remove();
 		parent.trigger("number-of-drugs-changed", [visitId]);
-		parent.trigger("drugs-need-renumbering");
+		parent.trigger("drugs-need-renumbering", [visitId]);
 	});
 }
 

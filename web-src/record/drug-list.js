@@ -7,7 +7,7 @@ var Drug = require("./drug");
 exports.setup = function(dom, drugs, visitId, at, patientId){
 	dom.html(tmplHtml);
 	var listDom = getListDom(dom);
-	updateRp(dom, drugs.length);
+	updateRp(dom, drugs.length > 0);
 	var index = 1;
 	drugs.forEach(function(drug){
 		var e = Drug.create(index++, drug, at, patientId);
@@ -15,7 +15,7 @@ exports.setup = function(dom, drugs, visitId, at, patientId){
 	});
 	respondToDrugsBatchEntered(dom, visitId);
 	respondToNumberOfDrugsChanged(dom, visitId);
-	respondToDrugsNeedRenumbering(dom);
+	respondToDrugsNeedRenumbering(dom, visitId);
 };
 
 function getRpDom(dom){
@@ -26,29 +26,29 @@ function getListDom(dom){
 	return dom.find("[mc-name=list]");
 }
 
-function listDrugDoms(dom){
-	return dom.find(".record-drug-item");
+function lookupDrugs(dom, visitId){
+	return dom.broadcast("rx-drug-lookup-for-visit", [visitId]);
 }
 
-function countDrugs(dom){
-	return listDrugDoms(dom).length;
+function countDrugs(dom, visitId){
+	return lookupDrugs(dom, visitId).length;
 }
 
-function updateRp(dom, numDrugs){
-	var text = numDrugs > 0 ? "Rp)" : "";
+function updateRp(dom, show){
+	var text = show ? "Rp)" : "";
 	getRpDom(dom).text(text);
 }
 
 function respondToDrugsBatchEntered(dom, visitId){
 	dom.listen("rx-drugs-batch-entered", function(targetVisitId, drugs){
 		if( visitId === targetVisitId ){
-			var index = countDrugs(dom) + 1;
+			var index = countDrugs(dom, visitId) + 1;
 			var listDom = getListDom(dom);
 			drugs.forEach(function(drug){
 				var e = Drug.create(index++, drug);
 				listDom.append(e);
 			});
-			updateRp(dom, countDrugs(dom));
+			updateRp(dom, true);
 		}
 	});
 }
@@ -58,17 +58,19 @@ function respondToNumberOfDrugsChanged(dom, visitId){
 		if( visitId !== targetVisitId ){
 			return;
 		}
-		updateRp(dom, countDrugs(dom));
+		updateRp(dom, countDrugs(dom, visitId) > 0);
 	});
 }
 
-function respondToDrugsNeedRenumbering(dom){
-	dom.listen("rx-drugs-need-renumbering", function(){
-		var drugDoms = listDrugDoms(dom);
+function respondToDrugsNeedRenumbering(dom, visitId){
+	dom.listen("rx-drugs-need-renumbering", function(targetVisitId){
+		if( visitId !== targetVisitId ){
+			return;
+		}
 		var index = 1;
-		drugDoms.each(function(){
-			var de = $(this);
-			Drug.updateIndex(de, index++);
-		});
+		var drugs = lookupDrugs(dom, visitId);
+		drugs.forEach(function(drug){
+			dom.broadcast("rx-drug-modify-index", [drug.drug_id, index++]);
+		})
 	});
 }

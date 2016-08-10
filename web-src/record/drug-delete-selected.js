@@ -27,19 +27,19 @@ function bindEnter(dom, visitId){
 	dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
 		event.preventDefault();
 		event.stopPropagation();
-		var checked = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
+		var deletedDrugIds = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
 			return +$(this).val();
 		}).get();
 		task.run(function(done){
-			service.batchDeleteDrugs(checked, done);
+			service.batchDeleteDrugs(deletedDrugIds, done);
 		}, function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
-			dom.trigger("drugs-batch-deleted", [checked]);
+			dom.trigger("drugs-batch-deleted", [visitId, deletedDrugIds]);
 			dom.trigger("number-of-drugs-changed", [visitId]);
-			dom.trigger("drugs-need-renumbering");
+			dom.trigger("drugs-need-renumbering", [visitId]);
 			dom.trigger("close-workarea");
 		})
 	});

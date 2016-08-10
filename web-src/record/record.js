@@ -32,6 +32,9 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 	bindTextsEntered(dom, visit.visit_id);
 	bindDrugsEntered(dom, visit.visit_id);
+	bindDrugsDeleted(dom, visit.visit_id);
+	bindDrugsModifiedDays(dom, visit.visit_id);
+	bindDrugsNeedRenumbering(dom, visit.visit_id);
 	return dom;
 }
 
@@ -52,5 +55,38 @@ function bindDrugsEntered(dom, visitId){
 		}
 	});
 }
+
+function bindDrugsModifiedDays(dom, visitId){
+	dom.on("drugs-batch-modified-days", function(event, targetVisitId, drugIds, days){
+		if( visitId === targetVisitId ){
+			event.stopPropagation();
+			drugIds.forEach(function(drugId){
+				dom.broadcast("rx-drug-modified-days", [drugId, days]);
+			});
+		}
+	});
+}
+
+function bindDrugsDeleted(dom, visitId){
+	dom.on("drugs-batch-deleted", function(event, targetVisitId, drugIds){
+		if( targetVisitId === visitId ){
+			event.stopPropagation();
+			drugIds.forEach(function(drugId){
+				dom.broadcast("rx-drug-deleted", [drugId]);
+			})
+		}
+	})
+}
+
+function bindDrugsNeedRenumbering(dom, visitId){
+	dom.on("drugs-need-renumbering", function(event, targetVisitId){
+		if( visitId === targetVisitId ){
+			event.stopPropagation();
+			dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+		}
+	})
+}
+
+
 
 
