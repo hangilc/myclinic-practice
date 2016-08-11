@@ -188,6 +188,10 @@ exports.resolveShinryouMasterAt = function(shinryoucode, at, cb){
 	request("resolve_shinryou_master_at", {shinryoucode: shinryoucode, at: at}, "GET", cb);
 };
 
+exports.getShinryouMaster = function(shinryoucode, at, cb){
+	request("get_shinryou_master", {shinryoucode: shinryoucode, at: at}, "GET", cb);
+};
+
 exports.enterConduct = function(conduct, cb){
 	request("enter_conduct", JSON.stringify(conduct), "POST", cb);
 };
@@ -218,6 +222,10 @@ exports.batchEnterConductShinryou = function(conductShinryouList, cb){
 
 exports.getFullConduct = function(conductId, at, cb){
 	request("get_full_conduct", {conduct_id: conductId, at: at}, "GET", cb);
+};
+
+exports.enterConductShinryou = function(conductShinryou, cb){
+	request("enter_conduct_shinryou", JSON.stringify(conductShinryou), "POST", cb);
 };
 
 exports.enterConductDrug = function(conductDrug, cb){

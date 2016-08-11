@@ -19,7 +19,7 @@ var dispTmpl = hogan.compile(dispTmplSrc);
 var dispAreaSelector = "> [mc-name=disp-area]";
 var workAreaSelector = "> [mc-name=work-area]";
 
-exports.create = function(conduct){
+exports.create = function(conduct, visitId, at){
 	var visitId = conduct.visit_id;
 	var conductId = conduct.id;
 	var data = mUtil.assign({}, conduct, {
@@ -29,7 +29,7 @@ exports.create = function(conduct){
 	ConductShinryouList.setup(dom.find("> [mc-name=disp-area] [mc-name=shinryouList]"), conduct.shinryou_list);
 	ConductDrugList.setup(dom.find("> [mc-name=disp-area] [mc-name=drugs]"), conduct.drugs);
 	ConductKizaiList.setup(dom.find("> [mc-name=disp-area] [mc-name=kizaiList]"), conduct.kizai_list);
-	bindClick(dom, visitId, conduct);
+	bindClick(dom, visitId, at, conduct);
 	return dom;
 };
 
@@ -41,7 +41,7 @@ function getWorkAreaDom(dom){
 	return dom.find(workAreaSelector);
 }
 
-function bindClick(dom, visitId, conduct){
+function bindClick(dom, visitId, at, conduct){
 	dom.on("click", dispAreaSelector, function(event){
 		event.preventDefault();
 		var conductId = conduct;
@@ -49,7 +49,7 @@ function bindClick(dom, visitId, conduct){
 		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 			return;
 		}
-		var form = ConductForm.create(conduct);
+		var form = ConductForm.create(conduct, at);
 		form.on("close", function(event){
 			event.stopPropagation();
 			getWorkAreaDom(dom).html("");

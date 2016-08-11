@@ -25064,6 +25064,10 @@
 		request("resolve_shinryou_master_at", {shinryoucode: shinryoucode, at: at}, "GET", cb);
 	};
 
+	exports.getShinryouMaster = function(shinryoucode, at, cb){
+		request("get_shinryou_master", {shinryoucode: shinryoucode, at: at}, "GET", cb);
+	};
+
 	exports.enterConduct = function(conduct, cb){
 		request("enter_conduct", JSON.stringify(conduct), "POST", cb);
 	};
@@ -25094,6 +25098,10 @@
 
 	exports.getFullConduct = function(conductId, at, cb){
 		request("get_full_conduct", {conduct_id: conductId, at: at}, "GET", cb);
+	};
+
+	exports.enterConductShinryou = function(conductShinryou, cb){
+		request("enter_conduct_shinryou", JSON.stringify(conductShinryou), "POST", cb);
 	};
 
 	exports.enterConductDrug = function(conductDrug, cb){
@@ -29311,18 +29319,18 @@
 	var Conduct = __webpack_require__(171);
 
 	exports.setup = function(dom, conducts, visitId, at){
-		batchAdd(dom, conducts);
+		batchAdd(dom, conducts, visitId, at);
 		dom.listen("rx-conducts-batch-entered", function(targetVisitId, conducts){
 			if( visitId !== targetVisitId ){
 				return;
 			}
-			batchAdd(dom, conducts);
+			batchAdd(dom, conducts, visitId, at);
 		});
 	};
 
-	function batchAdd(dom, conducts){
+	function batchAdd(dom, conducts, visitId, at){
 		conducts.forEach(function(conduct){
-			var ce = Conduct.create(conduct);
+			var ce = Conduct.create(conduct, visitId, at);
 			dom.append(ce);
 		})
 	}
@@ -29355,7 +29363,7 @@
 	var dispAreaSelector = "> [mc-name=disp-area]";
 	var workAreaSelector = "> [mc-name=work-area]";
 
-	exports.create = function(conduct){
+	exports.create = function(conduct, visitId, at){
 		var visitId = conduct.visit_id;
 		var conductId = conduct.id;
 		var data = mUtil.assign({}, conduct, {
@@ -29365,7 +29373,7 @@
 		ConductShinryouList.setup(dom.find("> [mc-name=disp-area] [mc-name=shinryouList]"), conduct.shinryou_list);
 		ConductDrugList.setup(dom.find("> [mc-name=disp-area] [mc-name=drugs]"), conduct.drugs);
 		ConductKizaiList.setup(dom.find("> [mc-name=disp-area] [mc-name=kizaiList]"), conduct.kizai_list);
-		bindClick(dom, visitId, conduct);
+		bindClick(dom, visitId, at, conduct);
 		return dom;
 	};
 
@@ -29377,7 +29385,7 @@
 		return dom.find(workAreaSelector);
 	}
 
-	function bindClick(dom, visitId, conduct){
+	function bindClick(dom, visitId, at, conduct){
 		dom.on("click", dispAreaSelector, function(event){
 			event.preventDefault();
 			var conductId = conduct;
@@ -29385,7 +29393,7 @@
 			if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 				return;
 			}
-			var form = ConductForm.create(conduct);
+			var form = ConductForm.create(conduct, at);
 			form.on("close", function(event){
 				event.stopPropagation();
 				getWorkAreaDom(dom).html("");
@@ -31702,8 +31710,9 @@
 	var kizaiTmplSrc = __webpack_require__(234);
 	var kizaiTmpl = hogan.compile(kizaiTmplSrc);
 	var mUtil = __webpack_require__(5);
+	var AddShinryouForm = __webpack_require__(235);
 
-	exports.create = function(conduct){
+	exports.create = function(conduct, at){
 		conduct = mUtil.assign({}, conduct);
 		conduct.drugs = conduct.drugs.map(function(drug){
 			return mUtil.assign({}, drug, {
@@ -31715,18 +31724,43 @@
 				label: mUtil.conductKizaiRep(kizai)
 			})
 		});
+		var conductId = conduct.id;
 		var dom = $(tmpl.render(conduct, {
 			shinryouList: shinryouTmpl,
 			drugs: drugTmpl,
 			kizaiList: kizaiTmpl
 		}));
+		bindAddShinryou(dom, at, conductId);
 		bindClose(dom);
 		bindDelete(dom);
 		return dom;
 	};
 
+	var addShinryouLinkSelector = "> [mc-name=main-area] > .menu-box [mc-name=addShinryou]";
+	var subformAreaSelector = "> [mc-name=main-area] > [mc-name=subwidget]";
 	var closeLinkSelector = "> [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=closeLink]";
 	var deleteLinkSelector = "> [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=deleteLink]";
+
+	function getSubformAreaDom(dom){
+		return dom.find(subformAreaSelector);
+	}
+
+	function bindAddShinryou(dom, at, conductId){
+		dom.on("click", addShinryouLinkSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var area = getSubformAreaDom(dom);
+			if( !area.is(":empty") ){
+				return;
+			}
+			var form = AddShinryouForm.create(at, conductId);
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				getSubformAreaDom(dom).empty();
+			});
+			dom.find(subformAreaSelector).append(form);
+		});
+	}
 
 	function bindClose(dom){
 		dom.on("click", closeLinkSelector, function(event){
@@ -31774,6 +31808,153 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#kizai_list}}\r\n<div>\r\n\t<span mc-name=\"label\">{{label}}</span> \r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> \r\n</div>\r\n{{/kizai_list}}"
+
+/***/ },
+/* 235 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(236);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var resultTmplSrc = __webpack_require__(237);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+
+	exports.create = function(at, conductId){
+		var dom = $(tmplSrc);
+		var ctx = {
+			shinryoucode: undefined
+		};
+		bindEnter(dom, conductId, ctx);
+		bindCancel(dom);
+		bindSearch(dom, at);
+		bindSearchResultSelect(dom, at, ctx);
+		return dom;
+	};
+
+	var nameSelector = "> [mc-name=disp-area] [mc-name=name]";
+	var enterSelector = "> .commandbox [mc-name=enterLink]";
+	var cancelSelector = "> .commandbox [mc-name=cancelLink]";
+	var searchFormSelector = "> form[mc-name=search-form]";
+	var searchTextSelector = "> form[mc-name=search-form] input[mc-name=searchText]";
+	var searchResultSelector = "> form[mc-name=search-form] select[mc-name=searchResult]";
+
+	function getSearchResultDom(dom){
+		return dom.find(searchResultSelector);
+	}
+
+	function getSearchText(dom){
+		return dom.find(searchTextSelector).val().trim();
+	}
+
+	function updateName(dom, name){
+		dom.find(nameSelector).text(name);
+	}
+
+	function bindEnter(dom, conductId, ctx){
+		dom.on("click", enterSelector, function(event){
+			event.preventDefault();
+			var shinryoucode = ctx.shinryoucode;
+			if( !shinryoucode ){
+				alert("診療行為が指定されていません。");
+				return;
+			}
+			shinryoucode = +shinryoucode;
+			task.run([
+				function(done){
+					service.enterConductShinryou({
+						visit_conduct_id: conductId,
+						shinryoucode: shinryoucode
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			dom.trigger("cancel");
+		})
+	}
+
+	function bindSearch(dom, at){
+		dom.on("submit", searchFormSelector, function(event){
+			event.preventDefault();
+			var text = getSearchText(dom);
+			if( text === "" ){
+				return;
+			}
+			var searchResult;
+			console.log(text, at);
+			task.run(function(done){
+				service.searchShinryouMaster(text, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					searchResult = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				getSearchResultDom(dom).html(resultTmpl.render({list: searchResult}));
+			})
+		});
+	}
+
+	function setShinryou(dom, master, ctx){
+		ctx.shinryoucode = master.shinryoucode;
+		updateName(dom, master.name);
+	}
+
+	function bindSearchResultSelect(dom, at, ctx){
+		dom.on("change", searchResultSelector, function(event){
+			var shinryoucode = dom.find(searchResultSelector + " option:selected").val();
+			var master;
+			task.run(function(done){
+				service.getShinryouMaster(shinryoucode, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					master = result;
+					done();
+				});
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				setShinryou(dom, master, ctx);
+			})
+		});
+	}
+
+
+
+/***/ },
+/* 236 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">診療行為追加</div>\r\n\t<div mc-name=\"disp-area\">\r\n\t    名前：<span mc-name=\"name\"></span>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t<hr />\r\n\t<form onsubmit=\"return false\" mc-name=\"search-form\">\r\n\t\t<div>\r\n\t\t    <input mc-name=\"searchText\"/>\r\n\t\t    <button mc-name=\"searchLink\">検索</button>\r\n\t\t</div>\r\n\t\t<div>\r\n\t\t    <select mc-name=\"searchResult\" style=\"width:100%\" size=\"6\"></select>\r\n\t\t</div>\r\n\t</form>\r\n</div>\r\n"
+
+/***/ },
+/* 237 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ }
 /******/ ]);
