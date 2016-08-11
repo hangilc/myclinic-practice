@@ -25096,6 +25096,10 @@
 		request("get_full_conduct", {conduct_id: conductId, at: at}, "GET", cb);
 	};
 
+	exports.enterConductDrug = function(conductDrug, cb){
+		request("enter_conduct_drug", JSON.stringify(conductDrug), "POST", cb);
+	};
+
 
 /***/ },
 /* 113 */
@@ -28920,6 +28924,7 @@
 	var myclinicUtil = __webpack_require__(5);
 	var ConductSubmenu = __webpack_require__(222);
 	var ConductAddXpForm = __webpack_require__(224);
+	var ConductAddInjectForm = __webpack_require__(226);
 	var conti = __webpack_require__(4);
 	var service = __webpack_require__(112);
 	var task = __webpack_require__(111);
@@ -29104,12 +29109,122 @@
 		startWork(dom, "add-xp", form);
 	}
 
+	function addInject(visitId, at, iyakuhincode, amount, kind, cb){
+		var conductId, newConduct;
+		var shinryouNames = [];
+		if( kind === mConsts.ConductKindHikaChuusha ){
+			shinryouNames.push("皮下筋注");
+		} else if( kind === mConsts.ConductKindJoumyakuChuusha ){
+			shinryouNames.push("静注");
+		}
+		var shinryoucodes = [];
+		conti.exec([
+			function(done){
+				var conduct = {
+					visit_id: visitId,
+					kind: kind
+				};
+				service.enterConduct(conduct, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					conductId = result;
+					done();
+				})
+			},
+			function(done){
+				var names = shinryouNames;
+				service.batchResolveShinryouNamesAt(names, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					names.forEach(function(name){
+						var code = result[name];
+						if( code > 0 ){
+							shinryoucodes.push(code);
+						}
+					});
+					done();
+				})
+			},
+			function(done){
+				var list = shinryoucodes.map(function(shinryoucode){
+					return {
+						visit_conduct_id: conductId,
+						shinryoucode: shinryoucode
+					};
+				});
+				service.batchEnterConductShinryou(list, done);
+			},
+			function(done){
+				var drug = {
+					visit_conduct_id: conductId,
+					iyakuhincode: iyakuhincode,
+					amount: amount
+				};
+				service.enterConductDrug(drug, done);
+			},
+			function(done){
+				service.getFullConduct(conductId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newConduct);
+		})
+	}
+
+	function doAddInject(dom, visitId, at){
+		var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
+		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
+			return;
+		}
+		var form = ConductAddInjectForm.create(at);
+		form.on("enter", function(event, iyakuhincode, amount, kind){
+			event.stopPropagation();
+			var newConduct;
+			task.run(function(done){
+				addInject(visitId, at, iyakuhincode, amount, kind, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conducts-batch-entered", [visitId, [newConduct]]);
+				endWork(dom);
+			});
+		});
+		form.on("cancel", function(event){
+			event.stopPropagation();
+			endWork(dom);
+		});
+		startWork(dom, "add-inject", form);
+	}
+
 	function bindSubmenu(dom, submenu, visitId, at){
 		submenu.on("add-xp", function(event){
 			doAddXp(dom, visitId, at);
 		});
 		submenu.on("add-inject", function(event){
-			console.log("add-inject");
+			doAddInject(dom, visitId, at);
 		});
 		submenu.on("copy-all", function(event){
 			console.log("copy-all");
@@ -31288,6 +31403,180 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">X線入力</div>\r\n    <form onsubmit=\"return false\">\r\n        <div style=\"margin: 3px 0\" mc-name=\"label-selector-area\">\r\n            <select mc-name=\"label\">\r\n                <option>胸部単純Ｘ線</option>\r\n                <option>腹部単純Ｘ線</option>\r\n            </select>\r\n        </div>\r\n        <div style=\"margin: 3px 0\" mc-name=\"film-selector-area\">\r\n            <select mc-name=\"film\">\r\n                <option>半切</option>\r\n                <option selected>大角</option>\r\n                <option>四ツ切</option>\r\n            </select>\r\n        </div>\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
+
+/***/ },
+/* 226 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(227);
+	var resultTmplSrc = __webpack_require__(228);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var mConsts = __webpack_require__(110);
+
+	exports.create = function(at){
+		var dom = $(tmplSrc);
+		var ctx = {
+			iyakuhincode: undefined
+		};
+		bindSearch(dom, at);
+		bindSearchResultSelect(dom, at, ctx);
+		bindEnter(dom, ctx);
+		bindCancel(dom);
+		return dom;
+	};
+
+	var drugNameSelector = "> form[mc-name=main-form] [mc-name=name]";
+	var drugUnitSelector = "> form[mc-name=main-form] [mc-name=unit]";
+	var amountInputSelector = "> form[mc-name=main-form] input[mc-name=amount]";
+	var kindInputSelector = "> form[mc-name=main-form] input[type=radio][name=kind]";
+	var searchFormSelector = "> form[mc-name=search-form]";
+	var searchTextSelector = "> form[mc-name=search-form] input[mc-name=searchText]";
+	var searchResultSelector = "> form[mc-name=search-form] select";
+	var enterSelector = "> form[mc-name=main-form] .workarea-commandbox [mc-name=enter]";
+	var cancelSelector = "> form[mc-name=main-form] .workarea-commandbox [mc-name=cancel]";
+
+	var listOfConductKinds = [mConsts.ConductKindHikaChuusha, mConsts.ConductKindJoumyakuChuusha,
+		mConsts.ConductKindOtherChuusha, mConsts.ConductKindGazou];
+
+	function getSearchResultDom(dom){
+		return dom.find(searchResultSelector);
+	}
+
+	function getSearchText(dom){
+		return dom.find(searchTextSelector).val();
+	}
+
+	function getAmount(dom){
+		return dom.find(amountInputSelector).val();
+	}
+
+	function getKind(dom){
+		return dom.find(kindInputSelector).filter(function(){
+			return $(this).is(":checked");
+		}).val();
+	}
+
+	function updateDrugName(dom, name){
+		dom.find(drugNameSelector).text(name);
+	}
+
+	function updateDrugUnit(dom, unit){
+		dom.find(drugUnitSelector).text(unit);
+	}
+
+	function updateSearchResult(dom, resultList){
+		getSearchResultDom(dom).html(resultTmpl.render({
+			list: resultList
+		}));
+	}
+
+	function setDrug(dom, master, ctx){
+		ctx.iyakuhincode = master.iyakuhincode;
+		updateDrugName(dom, master.name);
+		updateDrugUnit(dom, master.unit);
+	}
+
+	function bindSearch(dom, at){
+		dom.on("submit", searchFormSelector, function(event){
+			event.preventDefault();
+			var text = getSearchText(dom).trim();
+			if( text === "" ){
+				return;
+			}
+			var searchResult;
+			task.run([
+				function(done){
+					service.searchIyakuhinMaster(text, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						searchResult = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				updateSearchResult(dom, searchResult);
+			})
+		});
+	}
+
+	function bindSearchResultSelect(dom, at, ctx){
+		dom.on("change", searchResultSelector, function(event){
+			var iyakuhincode = dom.find(searchResultSelector + " option:selected").val();
+			var master;
+			task.run([
+				function(done){
+					service.resolveIyakuhinMasterAt(iyakuhincode, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						master = result;
+						done();
+					});
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				setDrug(dom, master, ctx);
+			})
+		});
+	}
+
+	function bindEnter(dom, ctx){
+		dom.on("click", enterSelector, function(event){
+			event.preventDefault();
+			var iyakuhincode = ctx.iyakuhincode;
+			if( !iyakuhincode ){
+				alert("薬剤が指定されていません。");
+				return;
+			}
+			iyakuhincode = +iyakuhincode;
+			var amount = +getAmount(dom);
+			var kind = +getKind(dom);
+			if( !(amount > 0) ){
+				alert("用量が不適切です。");
+				return;
+			}
+			if( listOfConductKinds.indexOf(kind) < 0 ){
+				alert("invalid conduct kind: " + kind);
+				return;
+			}
+			dom.trigger("enter", [iyakuhincode, amount, kind]);
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			dom.trigger("cancel");
+		});
+	}
+
+/***/ },
+/* 227 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置注射入力</div>\r\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\r\n        <div>\r\n            <table style=\"width:100%\">\r\n                <tr>\r\n                    <td style=\"width:3em\">名称：</td>\r\n                    <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n                </tr>\r\n                <tr>\r\n                    <td style=\"width:2.5em\">用量：</td>\r\n                    <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                        <span mc-name=\"unit\"></span></td>\r\n                </tr>\r\n            </table>\r\n        </div>\r\n        <div mc-name=\"kindWrapper\">\r\n            <input type=\"radio\" name=\"kind\" value=\"0\" checked>皮下・筋肉\r\n            <input type=\"radio\" name=\"kind\" value=\"1\">静脈\r\n            <input type=\"radio\" name=\"kind\" value=\"2\">その他\r\n        </div>\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n    <hr />\r\n    <form onsubmit=\"return false\" mc-name=\"search-form\">\r\n        <div style=\"margin:3px 0\">\r\n            <input mc-name=\"searchText\"/>\r\n            <button mc-name=\"searchLink\">検索</button>\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"10\" style=\"width:100%\"></select>\r\n        </div>\r\n    </form>\r\n</div>\r\n\r\n"
+
+/***/ },
+/* 228 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{iyakuhincode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ }
 /******/ ]);

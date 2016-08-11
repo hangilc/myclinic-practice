@@ -219,3 +219,7 @@ exports.batchEnterConductShinryou = function(conductShinryouList, cb){
 exports.getFullConduct = function(conductId, at, cb){
 	request("get_full_conduct", {conduct_id: conductId, at: at}, "GET", cb);
 };
+
+exports.enterConductDrug = function(conductDrug, cb){
+	request("enter_conduct_drug", JSON.stringify(conductDrug), "POST", cb);
+};

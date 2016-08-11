@@ -6,6 +6,7 @@ var kanjidate = require("kanjidate");
 var myclinicUtil = require("../../myclinic-util");
 var ConductSubmenu = require("./conduct-submenu");
 var ConductAddXpForm = require("./conduct-add-xp-form");
+var ConductAddInjectForm = require("./conduct-add-inject-form");
 var conti = require("conti");
 var service = require("../service");
 var task = require("../task");
@@ -190,12 +191,122 @@ function doAddXp(dom, visitId, at){
 	startWork(dom, "add-xp", form);
 }
 
+function addInject(visitId, at, iyakuhincode, amount, kind, cb){
+	var conductId, newConduct;
+	var shinryouNames = [];
+	if( kind === mConsts.ConductKindHikaChuusha ){
+		shinryouNames.push("皮下筋注");
+	} else if( kind === mConsts.ConductKindJoumyakuChuusha ){
+		shinryouNames.push("静注");
+	}
+	var shinryoucodes = [];
+	conti.exec([
+		function(done){
+			var conduct = {
+				visit_id: visitId,
+				kind: kind
+			};
+			service.enterConduct(conduct, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				conductId = result;
+				done();
+			})
+		},
+		function(done){
+			var names = shinryouNames;
+			service.batchResolveShinryouNamesAt(names, at, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				names.forEach(function(name){
+					var code = result[name];
+					if( code > 0 ){
+						shinryoucodes.push(code);
+					}
+				});
+				done();
+			})
+		},
+		function(done){
+			var list = shinryoucodes.map(function(shinryoucode){
+				return {
+					visit_conduct_id: conductId,
+					shinryoucode: shinryoucode
+				};
+			});
+			service.batchEnterConductShinryou(list, done);
+		},
+		function(done){
+			var drug = {
+				visit_conduct_id: conductId,
+				iyakuhincode: iyakuhincode,
+				amount: amount
+			};
+			service.enterConductDrug(drug, done);
+		},
+		function(done){
+			service.getFullConduct(conductId, at, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				newConduct = result;
+				done();
+			})
+		}
+	], function(err){
+		if( err ){
+			cb(err);
+			return;
+		}
+		cb(undefined, newConduct);
+	})
+}
+
+function doAddInject(dom, visitId, at){
+	var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
+	if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
+		return;
+	}
+	var form = ConductAddInjectForm.create(at);
+	form.on("enter", function(event, iyakuhincode, amount, kind){
+		event.stopPropagation();
+		var newConduct;
+		task.run(function(done){
+			addInject(visitId, at, iyakuhincode, amount, kind, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				newConduct = result;
+				done();
+			})
+		}, function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("conducts-batch-entered", [visitId, [newConduct]]);
+			endWork(dom);
+		});
+	});
+	form.on("cancel", function(event){
+		event.stopPropagation();
+		endWork(dom);
+	});
+	startWork(dom, "add-inject", form);
+}
+
 function bindSubmenu(dom, submenu, visitId, at){
 	submenu.on("add-xp", function(event){
 		doAddXp(dom, visitId, at);
 	});
 	submenu.on("add-inject", function(event){
-		console.log("add-inject");
+		doAddInject(dom, visitId, at);
 	});
 	submenu.on("copy-all", function(event){
 		console.log("copy-all");
