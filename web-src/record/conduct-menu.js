@@ -309,7 +309,48 @@ function bindSubmenu(dom, submenu, visitId, at){
 		doAddInject(dom, visitId, at);
 	});
 	submenu.on("copy-all", function(event){
-		console.log("copy-all");
+		var targetVisitId = dom.inquire("fn-get-target-visit-id");
+		if( !(targetVisitId > 0) ){
+			alert("現在（暫定）診察中でないので、コピーできません。");
+			return;
+		}
+		if( targetVisitId === visitId ){
+			alert("自分自身にコピーすることはできません。");
+			return;
+		}
+		var conductIds, newConducts = [];
+		task.run([
+			function(done){
+				service.copyConducts(visitId, targetVisitId, function(err, result){
+					if( err ){
+						alert(err);
+						return;
+					}
+					conductIds = result;
+					done();
+				})
+			},
+			function(done){
+				conti.forEach(conductIds, function(conductId, done){
+					service.getFullConduct(conductId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newConducts.push(result);
+						done();
+					})
+				}, done);
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			closeSubmenu(dom);
+			setState(dom, "init");
+			dom.trigger("conducts-batch-entered", [targetVisitId, newConducts]);
+		});
 	});
 	submenu.on("cancel", function(event){
 		event.stopPropagation();

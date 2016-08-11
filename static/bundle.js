@@ -25100,6 +25100,10 @@
 		request("enter_conduct_drug", JSON.stringify(conductDrug), "POST", cb);
 	};
 
+	exports.copyConducts = function(srcVisitId, dstVisitId, cb){
+		request("copy_conducts", {src_visit_id: srcVisitId, dst_visit_id: dstVisitId}, "POST", cb);
+	}
+
 
 /***/ },
 /* 113 */
@@ -26701,6 +26705,7 @@
 		bindDrugsBatchEntered(dom);
 		bindNumberOfDrugsChanged(dom);
 		bindShinryouBatchEntered(dom);
+		bindConductsBatchEntered(dom);
 	};
 
 	function bindDrugsBatchEntered(recordListDom){
@@ -26722,6 +26727,13 @@
 			event.stopPropagation();
 			dom.broadcast("rx-shinryou-batch-entered", [visitId, shinryouList]);
 		})
+	}
+
+	function bindConductsBatchEntered(dom){
+		dom.on("conducts-batch-entered", function(event, visitId, conducts){
+			event.stopPropagation();
+			dom.broadcast("rx-conducts-batch-entered", [visitId, conducts]);
+		});
 	}
 
 
@@ -29227,7 +29239,48 @@
 			doAddInject(dom, visitId, at);
 		});
 		submenu.on("copy-all", function(event){
-			console.log("copy-all");
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( !(targetVisitId > 0) ){
+				alert("現在（暫定）診察中でないので、コピーできません。");
+				return;
+			}
+			if( targetVisitId === visitId ){
+				alert("自分自身にコピーすることはできません。");
+				return;
+			}
+			var conductIds, newConducts = [];
+			task.run([
+				function(done){
+					service.copyConducts(visitId, targetVisitId, function(err, result){
+						if( err ){
+							alert(err);
+							return;
+						}
+						conductIds = result;
+						done();
+					})
+				},
+				function(done){
+					conti.forEach(conductIds, function(conductId, done){
+						service.getFullConduct(conductId, at, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newConducts.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				closeSubmenu(dom);
+				setState(dom, "init");
+				dom.trigger("conducts-batch-entered", [targetVisitId, newConducts]);
+			});
 		});
 		submenu.on("cancel", function(event){
 			event.stopPropagation();

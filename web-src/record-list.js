@@ -21,6 +21,7 @@ exports.setup = function(dom){
 	bindDrugsBatchEntered(dom);
 	bindNumberOfDrugsChanged(dom);
 	bindShinryouBatchEntered(dom);
+	bindConductsBatchEntered(dom);
 };
 
 function bindDrugsBatchEntered(recordListDom){
@@ -42,6 +43,13 @@ function bindShinryouBatchEntered(dom){
 		event.stopPropagation();
 		dom.broadcast("rx-shinryou-batch-entered", [visitId, shinryouList]);
 	})
+}
+
+function bindConductsBatchEntered(dom){
+	dom.on("conducts-batch-entered", function(event, visitId, conducts){
+		event.stopPropagation();
+		dom.broadcast("rx-conducts-batch-entered", [visitId, conducts]);
+	});
 }
 
 

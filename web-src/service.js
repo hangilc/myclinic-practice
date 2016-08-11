@@ -223,3 +223,7 @@ exports.getFullConduct = function(conductId, at, cb){
 exports.enterConductDrug = function(conductDrug, cb){
 	request("enter_conduct_drug", JSON.stringify(conductDrug), "POST", cb);
 };
+
+exports.copyConducts = function(srcVisitId, dstVisitId, cb){
+	request("copy_conducts", {src_visit_id: srcVisitId, dst_visit_id: dstVisitId}, "POST", cb);
+}
