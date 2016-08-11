@@ -29365,7 +29365,7 @@
 		ConductShinryouList.setup(dom.find("> [mc-name=disp-area] [mc-name=shinryouList]"), conduct.shinryou_list);
 		ConductDrugList.setup(dom.find("> [mc-name=disp-area] [mc-name=drugs]"), conduct.drugs);
 		ConductKizaiList.setup(dom.find("> [mc-name=disp-area] [mc-name=kizaiList]"), conduct.kizai_list);
-		bindClick(dom, visitId, conductId);
+		bindClick(dom, visitId, conduct);
 		return dom;
 	};
 
@@ -29377,14 +29377,15 @@
 		return dom.find(workAreaSelector);
 	}
 
-	function bindClick(dom, visitId, conductId){
+	function bindClick(dom, visitId, conduct){
 		dom.on("click", dispAreaSelector, function(event){
 			event.preventDefault();
+			var conductId = conduct;
 			var msg = "現在（暫定）診察中でありませんが、この処置を変更しますか？";
 			if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 				return;
 			}
-			var form = ConductForm.create();
+			var form = ConductForm.create(conduct);
 			form.on("close", function(event){
 				event.stopPropagation();
 				getWorkAreaDom(dom).html("");
@@ -31691,10 +31692,34 @@
 	"use strict";
 
 	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
 	var tmplSrc = __webpack_require__(230);
+	var tmpl = hogan.compile(tmplSrc);
+	var shinryouTmplSrc = __webpack_require__(232);
+	var shinryouTmpl = hogan.compile(shinryouTmplSrc);
+	var drugTmplSrc = __webpack_require__(233);
+	var drugTmpl = hogan.compile(drugTmplSrc);
+	var kizaiTmplSrc = __webpack_require__(234);
+	var kizaiTmpl = hogan.compile(kizaiTmplSrc);
+	var mUtil = __webpack_require__(5);
 
-	exports.create = function(){
-		var dom = $(tmplSrc);
+	exports.create = function(conduct){
+		conduct = mUtil.assign({}, conduct);
+		conduct.drugs = conduct.drugs.map(function(drug){
+			return mUtil.assign({}, drug, {
+				label: mUtil.conductDrugRep(drug)
+			})
+		});
+		conduct.kizai_list = conduct.kizai_list.map(function(kizai){
+			return mUtil.assign({}, kizai, {
+				label: mUtil.conductKizaiRep(kizai)
+			})
+		});
+		var dom = $(tmpl.render(conduct, {
+			shinryouList: shinryouTmpl,
+			drugs: drugTmpl,
+			kizaiList: kizaiTmpl
+		}));
 		bindClose(dom);
 		bindDelete(dom);
 		return dom;
@@ -31724,13 +31749,31 @@
 /* 230 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置の編集</div>\r\n    <div mc-name=\"main-area\">\r\n        <div class=\"menu-box\">\r\n            <a mc-name=\"addShinryou\" class=\"cmd-link menu-item\" \r\n               href=\"javascript:void(0)\">診療行為追加</a> |\r\n            <a mc-name=\"addDrug\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">薬剤追加</a> |\r\n            <a mc-name=\"addKizai\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">器材追加</a>\r\n        </div>\r\n        <div mc-name=\"subwidget\" class=\"subwidget-area\"></div>\r\n        <div mc-name=\"disp-area\">\r\n            <div mc-name=\"kind-area\">\r\n                <table style=\"margin-left:0\" padding=\"0\" cellspacing=\"0\">\r\n                    <tr>\r\n                        <td>種類：</td>\r\n                        <td width=\"*\"><select mc-name=\"kind\" style=\"margin: 3px 0\">\r\n                            <option value=\"0\">皮下・筋肉注射</option>\r\n                            <option value=\"1\">静脈注射</option>\r\n                            <option value=\"2\">その他の注射</option>\r\n                            <option value=\"3\">画像</option>\r\n                            </select>\r\n                        </td>\r\n                    </tr>\r\n                    </select>\r\n                </table>\r\n            </div>\r\n            <div mc-name=\"gazouLabelWrapper\" style=\"margin: 3px 0\">\r\n                画像ラベル： <span mc-name=\"gazouLabel\"></span>\r\n                <a mc-name=\"editGazouLabelLink\" class=\"cmd-link\" href=\"javascript:void(0)\">編集</a>\r\n            </div>\r\n            <div mc-name=\"shinryouList\"></div>\r\n            <div mc-name=\"drugList\"></div>\r\n            <div mc-name=\"kizaiList\"></div>\r\n            <hr/>\r\n            <div class=\"workarea-commandbox\">\r\n                <button mc-name=\"closeLink\">閉じる</button>\r\n                <a mc-name=\"deleteLink\" class=\"cmd-link\" href=\"javascript:void(0)\">削除</a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置の編集</div>\r\n    <div mc-name=\"main-area\">\r\n        <div class=\"menu-box\">\r\n            <a mc-name=\"addShinryou\" class=\"cmd-link menu-item\" \r\n               href=\"javascript:void(0)\">診療行為追加</a> |\r\n            <a mc-name=\"addDrug\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">薬剤追加</a> |\r\n            <a mc-name=\"addKizai\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">器材追加</a>\r\n        </div>\r\n        <div mc-name=\"subwidget\" class=\"subwidget-area\"></div>\r\n        <div mc-name=\"disp-area\">\r\n            <div mc-name=\"kind-area\">\r\n                <table style=\"margin-left:0\" padding=\"0\" cellspacing=\"0\">\r\n                    <tr>\r\n                        <td>種類：</td>\r\n                        <td width=\"*\"><select mc-name=\"kind\" style=\"margin: 3px 0\">\r\n                            <option value=\"0\">皮下・筋肉注射</option>\r\n                            <option value=\"1\">静脈注射</option>\r\n                            <option value=\"2\">その他の注射</option>\r\n                            <option value=\"3\">画像</option>\r\n                            </select>\r\n                        </td>\r\n                    </tr>\r\n                    </select>\r\n                </table>\r\n            </div>\r\n            <div mc-name=\"gazouLabelWrapper\" style=\"margin: 3px 0\">\r\n                画像ラベル： <span mc-name=\"gazouLabel\">{{gazou_label}}</span>\r\n                <a mc-name=\"editGazouLabelLink\" class=\"cmd-link\" href=\"javascript:void(0)\">編集</a>\r\n            </div>\r\n            <div mc-name=\"shinryouList\">{{> shinryouList}}</div>\r\n            <div mc-name=\"drugList\">{{> drugs}}</div>\r\n            <div mc-name=\"kizaiList\">{{> kizaiList}}</div>\r\n            <hr/>\r\n            <div class=\"workarea-commandbox\">\r\n                <button mc-name=\"closeLink\">閉じる</button>\r\n                <a mc-name=\"deleteLink\" class=\"cmd-link\" href=\"javascript:void(0)\">削除</a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
 /* 231 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n"
+
+/***/ },
+/* 232 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#shinryou_list}}\r\n<div>\r\n\t<span mc-name=\"label\">{{name}}</span> \r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n</div>\r\n{{/shinryou_list}}"
+
+/***/ },
+/* 233 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#drugs}}\r\n<div>\r\n\t<span mc-name=\"label\">{{label}}</span>  \r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>  \r\n</div>\r\n{{/drugs}}"
+
+/***/ },
+/* 234 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#kizai_list}}\r\n<div>\r\n\t<span mc-name=\"label\">{{label}}</span> \r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> \r\n</div>\r\n{{/kizai_list}}"
 
 /***/ }
 /******/ ]);

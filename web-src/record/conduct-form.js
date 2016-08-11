@@ -1,10 +1,34 @@
 "use strict";
 
 var $ = require("jquery");
+var hogan = require("hogan");
 var tmplSrc = require("raw!./conduct-form.html");
+var tmpl = hogan.compile(tmplSrc);
+var shinryouTmplSrc = require("raw!./conduct-form-shinryou-list.html");
+var shinryouTmpl = hogan.compile(shinryouTmplSrc);
+var drugTmplSrc = require("raw!./conduct-form-drugs.html");
+var drugTmpl = hogan.compile(drugTmplSrc);
+var kizaiTmplSrc = require("raw!./conduct-form-kizai-list.html");
+var kizaiTmpl = hogan.compile(kizaiTmplSrc);
+var mUtil = require("../../myclinic-util");
 
-exports.create = function(){
-	var dom = $(tmplSrc);
+exports.create = function(conduct){
+	conduct = mUtil.assign({}, conduct);
+	conduct.drugs = conduct.drugs.map(function(drug){
+		return mUtil.assign({}, drug, {
+			label: mUtil.conductDrugRep(drug)
+		})
+	});
+	conduct.kizai_list = conduct.kizai_list.map(function(kizai){
+		return mUtil.assign({}, kizai, {
+			label: mUtil.conductKizaiRep(kizai)
+		})
+	});
+	var dom = $(tmpl.render(conduct, {
+		shinryouList: shinryouTmpl,
+		drugs: drugTmpl,
+		kizaiList: kizaiTmpl
+	}));
 	bindClose(dom);
 	bindDelete(dom);
 	return dom;

@@ -27,12 +27,12 @@
                 </table>
             </div>
             <div mc-name="gazouLabelWrapper" style="margin: 3px 0">
-                画像ラベル： <span mc-name="gazouLabel"></span>
+                画像ラベル： <span mc-name="gazouLabel">{{gazou_label}}</span>
                 <a mc-name="editGazouLabelLink" class="cmd-link" href="javascript:void(0)">編集</a>
             </div>
-            <div mc-name="shinryouList"></div>
-            <div mc-name="drugList"></div>
-            <div mc-name="kizaiList"></div>
+            <div mc-name="shinryouList">{{> shinryouList}}</div>
+            <div mc-name="drugList">{{> drugs}}</div>
+            <div mc-name="kizaiList">{{> kizaiList}}</div>
             <hr/>
             <div class="workarea-commandbox">
                 <button mc-name="closeLink">閉じる</button>

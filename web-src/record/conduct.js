@@ -29,7 +29,7 @@ exports.create = function(conduct){
 	ConductShinryouList.setup(dom.find("> [mc-name=disp-area] [mc-name=shinryouList]"), conduct.shinryou_list);
 	ConductDrugList.setup(dom.find("> [mc-name=disp-area] [mc-name=drugs]"), conduct.drugs);
 	ConductKizaiList.setup(dom.find("> [mc-name=disp-area] [mc-name=kizaiList]"), conduct.kizai_list);
-	bindClick(dom, visitId, conductId);
+	bindClick(dom, visitId, conduct);
 	return dom;
 };
 
@@ -41,14 +41,15 @@ function getWorkAreaDom(dom){
 	return dom.find(workAreaSelector);
 }
 
-function bindClick(dom, visitId, conductId){
+function bindClick(dom, visitId, conduct){
 	dom.on("click", dispAreaSelector, function(event){
 		event.preventDefault();
+		var conductId = conduct;
 		var msg = "現在（暫定）診察中でありませんが、この処置を変更しますか？";
 		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 			return;
 		}
-		var form = ConductForm.create();
+		var form = ConductForm.create(conduct);
 		form.on("close", function(event){
 			event.stopPropagation();
 			getWorkAreaDom(dom).html("");
