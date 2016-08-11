@@ -25064,6 +25064,39 @@
 		request("resolve_shinryou_master_at", {shinryoucode: shinryoucode, at: at}, "GET", cb);
 	};
 
+	exports.enterConduct = function(conduct, cb){
+		request("enter_conduct", JSON.stringify(conduct), "POST", cb);
+	};
+
+	exports.enterGazouLabel = function(gazouLabel, done){
+		request("enter_gazou_label", JSON.stringify(gazouLabel), "POST", done);
+	};
+
+	exports.enterConductDrug = function(conductDrug, cb){
+		request("enter_conduct_drug", JSON.stringify(conductDrug), "POST", cb);
+	};
+
+	exports.enterConductKizai = function(conductKizai, cb){
+		request("enter_conduct_kizai", JSON.stringify(conductKizai), "POST", cb);
+	};
+
+	exports.resolveKizaiNameAt = function(name, at, cb){
+		var data = {
+			name: name,
+			at: at
+		};
+		request("resolve_kizai_name_at", data, "GET", cb);
+	};
+
+	exports.batchEnterConductShinryou = function(conductShinryouList, cb){
+		request("batch_enter_conduct_shinryou", JSON.stringify(conductShinryouList), "POST", cb);
+	};
+
+	exports.getFullConduct = function(conductId, at, cb){
+		request("get_full_conduct", {conduct_id: conductId, at: at}, "GET", cb);
+	};
+
+
 /***/ },
 /* 113 */
 /***/ function(module, exports, __webpack_require__) {
@@ -26725,8 +26758,8 @@
 		ShinryouMenu.setup(dom.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
 		ShinryouList.setup(dom.find("[mc-name=shinryouList]"), visit.shinryou_list,
 			visit.visit_id, visit.v_datetime, visit.patient_id);
-		ConductMenu.setup(dom.find("[mc-name=conductMenu]"), visit.visit_id);
-		ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
+		ConductMenu.setup(dom.find("[mc-name=conductMenu]"), visit.visit_id, visit.v_datetime);
+		ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts, visit.visit_id, visit.v_datetime);
 		Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 		bindTextsEntered(dom, visit.visit_id);
 		bindDrugsEntered(dom, visit.visit_id);
@@ -26736,6 +26769,7 @@
 		bindShinryouEntered(dom, visit.visit_id);
 		bindShinryouDeleted(dom, visit.visit_id);
 		bindShinryouDeleteDuplicated(dom, visit.visit_id);
+		bindConductEntered(dom, visit.visit_id);
 		return dom;
 	}
 
@@ -26838,6 +26872,15 @@
 				})
 			}
 		});
+	}
+
+	function bindConductEntered(dom, visitId){
+		dom.on("conducts-batch-entered", function(event, targetVisitId, conducts){
+			if( targetVisitId === visitId ){
+				event.stopPropagation();
+				dom.broadcast("rx-conducts-batch-entered", [targetVisitId, conducts]);
+			}
+		})
 	}
 
 
@@ -28877,12 +28920,16 @@
 	var myclinicUtil = __webpack_require__(5);
 	var ConductSubmenu = __webpack_require__(222);
 	var ConductAddXpForm = __webpack_require__(224);
+	var conti = __webpack_require__(4);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var mConsts = __webpack_require__(110);
 
 	var tmplHtml = __webpack_require__(169);
 
-	exports.setup = function(dom, visitId){
+	exports.setup = function(dom, visitId, at){
 		dom.html(tmplHtml);
-		bindTopMenuClick(dom, visitId);
+		bindTopMenuClick(dom, visitId, at);
 		setState(dom, "init");
 	}
 
@@ -28921,13 +28968,13 @@
 		setState(dom, "init");
 	}
 
-	function bindTopMenuClick(dom, visitId){
+	function bindTopMenuClick(dom, visitId, at){
 		dom.on("click", topMenuSelector, function(event){
 			event.preventDefault();
 			var state = getState(dom);
 			if( state === "init" ){
 				var submenu = ConductSubmenu.create();
-				bindSubmenu(dom, submenu, visitId);
+				bindSubmenu(dom, submenu, visitId, at);
 				getSubmenuDom(dom).append(submenu);
 				setState(dom, "submenu");
 			} else if( state === "submenu" ){
@@ -28937,7 +28984,93 @@
 		});
 	}
 
-	function doAddXp(dom, visitId){
+	function enterXp(visitId, at, label, film, cb){
+		var conductId, kizaicode, shinryoucodes = [], newConduct;
+		conti.exec([
+			function(done){
+				var conduct = {
+					visit_id: visitId,
+					kind: mConsts.ConductKindGazou
+				}
+				service.enterConduct(conduct, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					conductId = result;
+					done();
+				})
+			},
+			function(done){
+				var gazouLabel = {
+					visit_conduct_id: conductId,
+					label: label
+				};
+				service.enterGazouLabel(gazouLabel, done);
+			},
+			function(done){
+				service.resolveKizaiNameAt(film, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					kizaicode = result;
+					done();
+				})
+			},
+			function(done){
+				var kizai = {
+					visit_conduct_id: conductId,
+					kizaicode: kizaicode,
+					amount: 1
+				};
+				service.enterConductKizai(kizai, done);
+			},
+			function(done){
+				var names = ['単純撮影', '単純撮影診断'];
+				service.batchResolveShinryouNamesAt(names, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					names.forEach(function(name){
+						var code = result[name];
+						if( code > 0 ){
+							shinryoucodes.push(code);
+						}
+					});
+					done();
+				})
+			},
+			function(done){
+				var list = shinryoucodes.map(function(shinryoucode){
+					return {
+						visit_conduct_id: conductId,
+						shinryoucode: shinryoucode
+					};
+				});
+				service.batchEnterConductShinryou(list, done);
+			},
+			function(done){
+				service.getFullConduct(conductId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newConduct);
+		});
+	}
+
+	function doAddXp(dom, visitId, at){
 		var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
 		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 			return;
@@ -28945,8 +29078,25 @@
 		var form = ConductAddXpForm.create();
 		form.on("enter", function(event, label, film){
 			event.stopPropagation();
-			console.log("enter-xp", label, film);
-		})
+			var newConduct;
+			task.run(function(done){
+				enterXp(visitId, at, label, film, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conducts-batch-entered", [visitId, [newConduct]]);
+				endWork(dom);
+			})
+		});
 		form.on("cancel", function(event){
 			event.stopPropagation();
 			endWork(dom);
@@ -28954,9 +29104,9 @@
 		startWork(dom, "add-xp", form);
 	}
 
-	function bindSubmenu(dom, submenu, visitId){
+	function bindSubmenu(dom, submenu, visitId, at){
 		submenu.on("add-xp", function(event){
-			doAddXp(dom, visitId);
+			doAddXp(dom, visitId, at);
 		});
 		submenu.on("add-inject", function(event){
 			console.log("add-inject");
@@ -28988,11 +29138,19 @@
 	var $ = __webpack_require__(1);
 	var Conduct = __webpack_require__(171);
 
-	exports.setup = function(dom, conducts){
-		dom.html("");
+	exports.setup = function(dom, conducts, visitId, at){
+		batchAdd(dom, conducts);
+		dom.listen("rx-conducts-batch-entered", function(targetVisitId, conducts){
+			if( visitId !== targetVisitId ){
+				return;
+			}
+			batchAdd(dom, conducts);
+		});
+	};
+
+	function batchAdd(dom, conducts){
 		conducts.forEach(function(conduct){
-			var ce = $("<div></div>");
-			Conduct.setup(ce, conduct);
+			var ce = Conduct.create(conduct);
 			dom.append(ce);
 		})
 	}
@@ -29017,15 +29175,15 @@
 	var tmplSrc = __webpack_require__(175);
 	var tmpl = hogan.compile(tmplSrc);
 
-	exports.setup = function(dom, conduct){
+	exports.create = function(conduct){
 		var data = mUtil.assign({}, conduct, {
 			kind_label: mUtil.conductKindToKanji(conduct.kind)
 		})
-		var html = tmpl.render(data);
-		dom.html(html);
+		var dom = $(tmpl.render(data));
 		ConductShinryouList.setup(dom.find("[mc-name=shinryouList]"), conduct.shinryou_list);
 		ConductDrugList.setup(dom.find("[mc-name=drugs]"), conduct.drugs);
 		ConductKizaiList.setup(dom.find("[mc-name=kizaiList]"), conduct.kizai_list);
+		return dom;
 	}
 
 
@@ -29094,7 +29252,7 @@
 /* 175 */
 /***/ function(module, exports) {
 
-	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n\r\n"
+	module.exports = "<div>\r\n\t<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n\t<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n\t<div mc-name=\"shinryouList\"></div>\r\n\t<div mc-name=\"drugs\"></div>\r\n\t<div mc-name=\"kizaiList\"></div>\r\n</div>\r\n"
 
 /***/ },
 /* 176 */

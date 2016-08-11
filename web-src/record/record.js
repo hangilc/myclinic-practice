@@ -29,8 +29,8 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	ShinryouMenu.setup(dom.find("[mc-name=shinryouMenu]"), visit.visit_id, visit.v_datetime);
 	ShinryouList.setup(dom.find("[mc-name=shinryouList]"), visit.shinryou_list,
 		visit.visit_id, visit.v_datetime, visit.patient_id);
-	ConductMenu.setup(dom.find("[mc-name=conductMenu]"), visit.visit_id);
-	ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts);
+	ConductMenu.setup(dom.find("[mc-name=conductMenu]"), visit.visit_id, visit.v_datetime);
+	ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts, visit.visit_id, visit.v_datetime);
 	Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 	bindTextsEntered(dom, visit.visit_id);
 	bindDrugsEntered(dom, visit.visit_id);
@@ -40,6 +40,7 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	bindShinryouEntered(dom, visit.visit_id);
 	bindShinryouDeleted(dom, visit.visit_id);
 	bindShinryouDeleteDuplicated(dom, visit.visit_id);
+	bindConductEntered(dom, visit.visit_id);
 	return dom;
 }
 
@@ -142,6 +143,15 @@ function bindShinryouDeleteDuplicated(dom, visitId){
 			})
 		}
 	});
+}
+
+function bindConductEntered(dom, visitId){
+	dom.on("conducts-batch-entered", function(event, targetVisitId, conducts){
+		if( targetVisitId === visitId ){
+			event.stopPropagation();
+			dom.broadcast("rx-conducts-batch-entered", [targetVisitId, conducts]);
+		}
+	})
 }
 
 

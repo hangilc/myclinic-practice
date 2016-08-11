@@ -187,3 +187,35 @@ exports.searchShinryouMaster = function(text, at, cb){
 exports.resolveShinryouMasterAt = function(shinryoucode, at, cb){
 	request("resolve_shinryou_master_at", {shinryoucode: shinryoucode, at: at}, "GET", cb);
 };
+
+exports.enterConduct = function(conduct, cb){
+	request("enter_conduct", JSON.stringify(conduct), "POST", cb);
+};
+
+exports.enterGazouLabel = function(gazouLabel, done){
+	request("enter_gazou_label", JSON.stringify(gazouLabel), "POST", done);
+};
+
+exports.enterConductDrug = function(conductDrug, cb){
+	request("enter_conduct_drug", JSON.stringify(conductDrug), "POST", cb);
+};
+
+exports.enterConductKizai = function(conductKizai, cb){
+	request("enter_conduct_kizai", JSON.stringify(conductKizai), "POST", cb);
+};
+
+exports.resolveKizaiNameAt = function(name, at, cb){
+	var data = {
+		name: name,
+		at: at
+	};
+	request("resolve_kizai_name_at", data, "GET", cb);
+};
+
+exports.batchEnterConductShinryou = function(conductShinryouList, cb){
+	request("batch_enter_conduct_shinryou", JSON.stringify(conductShinryouList), "POST", cb);
+};
+
+exports.getFullConduct = function(conductId, at, cb){
+	request("get_full_conduct", {conduct_id: conductId, at: at}, "GET", cb);
+};

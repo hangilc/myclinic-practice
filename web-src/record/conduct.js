@@ -11,14 +11,14 @@ var ConductKizaiList = require("./conduct-kizai-list");
 var tmplSrc = require("raw!./conduct.html");
 var tmpl = hogan.compile(tmplSrc);
 
-exports.setup = function(dom, conduct){
+exports.create = function(conduct){
 	var data = mUtil.assign({}, conduct, {
 		kind_label: mUtil.conductKindToKanji(conduct.kind)
 	})
-	var html = tmpl.render(data);
-	dom.html(html);
+	var dom = $(tmpl.render(data));
 	ConductShinryouList.setup(dom.find("[mc-name=shinryouList]"), conduct.shinryou_list);
 	ConductDrugList.setup(dom.find("[mc-name=drugs]"), conduct.drugs);
 	ConductKizaiList.setup(dom.find("[mc-name=kizaiList]"), conduct.kizai_list);
+	return dom;
 }
 
