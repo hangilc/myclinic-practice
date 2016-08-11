@@ -119,6 +119,10 @@ exports.resolveIyakuhinMasterAt = function(iyakuhincode, at, cb){
 	request("resolve_iyakuhin_master_at", {iyakuhincode: iyakuhincode, at: at}, "GET", cb);
 };
 
+exports.getIyakuhinMaster = function(iyakuhincode, at, cb){
+	request("get_iyakuhin_master", {iyakuhincode: iyakuhincode, at: at}, "GET", cb);
+};
+
 exports.enterDrug = function(drug, cb){
 	request("enter_drug", drug, "POST", cb);
 };
