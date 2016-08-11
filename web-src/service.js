@@ -226,4 +226,8 @@ exports.enterConductDrug = function(conductDrug, cb){
 
 exports.copyConducts = function(srcVisitId, dstVisitId, cb){
 	request("copy_conducts", {src_visit_id: srcVisitId, dst_visit_id: dstVisitId}, "POST", cb);
-}
+};
+
+exports.deleteConduct = function(conductId, done){
+	request("delete_conduct", {conduct_id: conductId}, "POST", done);
+};
