@@ -13,20 +13,9 @@ var kizaiTmpl = hogan.compile(kizaiTmplSrc);
 var mUtil = require("../../myclinic-util");
 var AddShinryouForm = require("./conduct-form-add-shinryou-subform");
 
-exports.create = function(conduct, at){
-	conduct = mUtil.assign({}, conduct);
-	conduct.drugs = conduct.drugs.map(function(drug){
-		return mUtil.assign({}, drug, {
-			label: mUtil.conductDrugRep(drug)
-		})
-	});
-	conduct.kizai_list = conduct.kizai_list.map(function(kizai){
-		return mUtil.assign({}, kizai, {
-			label: mUtil.conductKizaiRep(kizai)
-		})
-	});
-	var conductId = conduct.id;
-	var dom = $(tmpl.render(conduct, {
+exports.create = function(conductEx, at){
+	var conductId = conductEx.id;
+	var dom = $(tmpl.render(conductEx, {
 		shinryouList: shinryouTmpl,
 		drugs: drugTmpl,
 		kizaiList: kizaiTmpl
@@ -34,6 +23,12 @@ exports.create = function(conduct, at){
 	bindAddShinryou(dom, at, conductId);
 	bindClose(dom);
 	bindDelete(dom);
+	dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
+		if( conductId !== targetConductId ){
+			return;
+		}
+		dom.replaceWith(exports.create(newConductEx, at));
+	});
 	return dom;
 };
 

@@ -14,7 +14,7 @@ $.fn.broadcast = function(key, args){
 			if( typeof cb === "function" ){
 				return cb.apply(listener, args);
 			} else {
-				throw new Exception("cannot find function while broadcasting: " + key);
+				throw "cannot find function while broadcasting: " + key;
 			}
 		}).get();
 	}).get();

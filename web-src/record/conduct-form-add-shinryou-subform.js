@@ -13,7 +13,7 @@ exports.create = function(at, conductId){
 	var ctx = {
 		shinryoucode: undefined
 	};
-	bindEnter(dom, conductId, ctx);
+	bindEnter(dom, conductId, at, ctx);
 	bindCancel(dom);
 	bindSearch(dom, at);
 	bindSearchResultSelect(dom, at, ctx);
@@ -39,7 +39,7 @@ function updateName(dom, name){
 	dom.find(nameSelector).text(name);
 }
 
-function bindEnter(dom, conductId, ctx){
+function bindEnter(dom, conductId, at, ctx){
 	dom.on("click", enterSelector, function(event){
 		event.preventDefault();
 		var shinryoucode = ctx.shinryoucode;
@@ -48,18 +48,30 @@ function bindEnter(dom, conductId, ctx){
 			return;
 		}
 		shinryoucode = +shinryoucode;
+		var newConduct;
 		task.run([
 			function(done){
 				service.enterConductShinryou({
 					visit_conduct_id: conductId,
 					shinryoucode: shinryoucode
 				}, done);
+			},
+			function(done){
+				service.getFullConduct(conductId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
 			}
 		], function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
+			dom.trigger("conduct-modified", [conductId, newConduct]);
 		})
 	});
 }
@@ -79,7 +91,6 @@ function bindSearch(dom, at){
 			return;
 		}
 		var searchResult;
-		console.log(text, at);
 		task.run(function(done){
 			service.searchShinryouMaster(text, at, function(err, result){
 				if( err ){

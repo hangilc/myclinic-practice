@@ -10262,7 +10262,7 @@
 				if( typeof cb === "function" ){
 					return cb.apply(listener, args);
 				} else {
-					throw new Exception("cannot find function while broadcasting: " + key);
+					throw "cannot find function while broadcasting: " + key;
 				}
 			}).get();
 		}).get();
@@ -29348,32 +29348,46 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
-	var ConductShinryouList = __webpack_require__(172);
-	var ConductDrugList = __webpack_require__(173);
-	var ConductKizaiList = __webpack_require__(174);
+	var ConductDisp = __webpack_require__(238);
 	var ConductForm = __webpack_require__(229);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
-
 	var tmplSrc = __webpack_require__(175);
-	var tmpl = hogan.compile(tmplSrc);
-	var dispTmplSrc = __webpack_require__(231);
-	var dispTmpl = hogan.compile(dispTmplSrc);
 
 	var dispAreaSelector = "> [mc-name=disp-area]";
 	var workAreaSelector = "> [mc-name=work-area]";
 
+	function extendConductsWithLabel(conduct){
+		conduct = mUtil.assign({}, conduct);
+		conduct.kind_label = mUtil.conductKindToKanji(conduct.kind);
+		conduct.drugs = conduct.drugs.map(function(drug){
+			return mUtil.assign({}, drug, {
+				label: mUtil.conductDrugRep(drug)
+			});
+		});
+		conduct.kizai_list = conduct.kizai_list.map(function(kizai){
+			return mUtil.assign({}, kizai, {
+				label: mUtil.conductKizaiRep(kizai)
+			});
+		});
+		return conduct;
+	}
+
 	exports.create = function(conduct, visitId, at){
 		var visitId = conduct.visit_id;
 		var conductId = conduct.id;
-		var data = mUtil.assign({}, conduct, {
-			kind_label: mUtil.conductKindToKanji(conduct.kind)
-		})
-		var dom = $(tmpl.render(data, {disp: dispTmpl}));
-		ConductShinryouList.setup(dom.find("> [mc-name=disp-area] [mc-name=shinryouList]"), conduct.shinryou_list);
-		ConductDrugList.setup(dom.find("> [mc-name=disp-area] [mc-name=drugs]"), conduct.drugs);
-		ConductKizaiList.setup(dom.find("> [mc-name=disp-area] [mc-name=kizaiList]"), conduct.kizai_list);
+		conduct = extendConductsWithLabel(conduct);
+		var dom = $(tmplSrc);
+		getDispAreaDom(dom).append(ConductDisp.create(conduct));
 		bindClick(dom, visitId, at, conduct);
+		dom.on("conduct-modified", function(event, targetConductId, newConduct){
+			if( conductId === targetConductId ){
+				event.stopPropagation();
+				var newConductEx = extendConductsWithLabel(newConduct);
+				dom.broadcast("rx-conduct-modified", [targetConductId, newConductEx]);
+				return;
+			}
+		});
 		return dom;
 	};
 
@@ -29419,70 +29433,13 @@
 
 
 /***/ },
-/* 172 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-
-	exports.setup = function(dom, shinryouList){
-		dom.html("");
-		shinryouList.forEach(function(shinryou){
-			var e = $("<div></div>");
-			e.text(shinryou.name);
-			dom.append(e);
-		});
-	};
-
-
-
-/***/ },
-/* 173 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var mUtil = __webpack_require__(5);
-
-	exports.setup = function(dom, drugs){
-		dom.html("");
-		drugs.forEach(function(drug){
-			var e = $("<div></div>");
-			e.text(mUtil.conductDrugRep(drug));
-			dom.append(e);
-		});
-	}
-
-
-
-/***/ },
-/* 174 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var mUtil = __webpack_require__(5);
-
-	exports.setup = function(dom, kizaiList){
-		dom.html("");
-		kizaiList.forEach(function(kizai){
-			var e = $("<div></div>");
-			e.text(mUtil.conductKizaiRep(kizai));
-			dom.append(e);
-		});
-
-	};
-
-
-
-/***/ },
+/* 172 */,
+/* 173 */,
+/* 174 */,
 /* 175 */
 /***/ function(module, exports) {
 
-	module.exports = "<div>\r\n\t<div mc-name=\"disp-area\">{{> disp}}</div>\r\n\t<div mc-name=\"work-area\"></div>\r\n</div>\r\n"
+	module.exports = "<div>\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"work-area\"></div>\r\n</div>\r\n"
 
 /***/ },
 /* 176 */
@@ -31712,20 +31669,9 @@
 	var mUtil = __webpack_require__(5);
 	var AddShinryouForm = __webpack_require__(235);
 
-	exports.create = function(conduct, at){
-		conduct = mUtil.assign({}, conduct);
-		conduct.drugs = conduct.drugs.map(function(drug){
-			return mUtil.assign({}, drug, {
-				label: mUtil.conductDrugRep(drug)
-			})
-		});
-		conduct.kizai_list = conduct.kizai_list.map(function(kizai){
-			return mUtil.assign({}, kizai, {
-				label: mUtil.conductKizaiRep(kizai)
-			})
-		});
-		var conductId = conduct.id;
-		var dom = $(tmpl.render(conduct, {
+	exports.create = function(conductEx, at){
+		var conductId = conductEx.id;
+		var dom = $(tmpl.render(conductEx, {
 			shinryouList: shinryouTmpl,
 			drugs: drugTmpl,
 			kizaiList: kizaiTmpl
@@ -31733,6 +31679,12 @@
 		bindAddShinryou(dom, at, conductId);
 		bindClose(dom);
 		bindDelete(dom);
+		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
+			if( conductId !== targetConductId ){
+				return;
+			}
+			dom.replaceWith(exports.create(newConductEx, at));
+		});
 		return dom;
 	};
 
@@ -31789,7 +31741,7 @@
 /* 231 */
 /***/ function(module, exports) {
 
-	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\"></div>\r\n<div mc-name=\"drugs\"></div>\r\n<div mc-name=\"kizaiList\"></div>\r\n"
+	module.exports = "<div>\r\n\t<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n\t<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n\t<div mc-name=\"shinryouList\">\r\n\t\t{{#shinryou_list}}\r\n\t\t\t<div>{{name}}</div>\r\n\t\t{{/shinryou_list}}\r\n\t</div>\r\n\t<div mc-name=\"drugs\">\r\n\t\t{{#drugs}}\r\n\t\t\t<div>{{label}}</div>\r\n\t\t{{/drugs}}\r\n\t</div>\r\n\t<div mc-name=\"kizaiList\">\r\n\t\t{{#kizai_list}}\r\n\t\t\t<div>{{label}}</div>\r\n\t\t{{/kizai_list}}\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
 /* 232 */
@@ -31828,7 +31780,7 @@
 		var ctx = {
 			shinryoucode: undefined
 		};
-		bindEnter(dom, conductId, ctx);
+		bindEnter(dom, conductId, at, ctx);
 		bindCancel(dom);
 		bindSearch(dom, at);
 		bindSearchResultSelect(dom, at, ctx);
@@ -31854,7 +31806,7 @@
 		dom.find(nameSelector).text(name);
 	}
 
-	function bindEnter(dom, conductId, ctx){
+	function bindEnter(dom, conductId, at, ctx){
 		dom.on("click", enterSelector, function(event){
 			event.preventDefault();
 			var shinryoucode = ctx.shinryoucode;
@@ -31863,18 +31815,30 @@
 				return;
 			}
 			shinryoucode = +shinryoucode;
+			var newConduct;
 			task.run([
 				function(done){
 					service.enterConductShinryou({
 						visit_conduct_id: conductId,
 						shinryoucode: shinryoucode
 					}, done);
+				},
+				function(done){
+					service.getFullConduct(conductId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newConduct = result;
+						done();
+					})
 				}
 			], function(err){
 				if( err ){
 					alert(err);
 					return;
 				}
+				dom.trigger("conduct-modified", [conductId, newConduct]);
 			})
 		});
 	}
@@ -31894,7 +31858,6 @@
 				return;
 			}
 			var searchResult;
-			console.log(text, at);
 			task.run(function(done){
 				service.searchShinryouMaster(text, at, function(err, result){
 					if( err ){
@@ -31955,6 +31918,29 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
+
+/***/ },
+/* 238 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(231);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(conductEx){
+		var conductId = conductEx.id;
+		var dom = $(tmpl.render(conductEx));
+		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
+			if( conductId !== targetConductId ){
+				return;
+			}
+			dom.replaceWith(exports.create(newConductEx));
+		});
+		return dom;
+	};
 
 /***/ }
 /******/ ]);

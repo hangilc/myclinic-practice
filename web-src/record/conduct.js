@@ -4,32 +4,46 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
-var ConductShinryouList = require("./conduct-shinryou-list");
-var ConductDrugList = require("./conduct-drug-list");
-var ConductKizaiList = require("./conduct-kizai-list");
+var ConductDisp = require("./conduct-disp");
 var ConductForm = require("./conduct-form");
 var task = require("../task");
 var service = require("../service");
-
 var tmplSrc = require("raw!./conduct.html");
-var tmpl = hogan.compile(tmplSrc);
-var dispTmplSrc = require("raw!./conduct-disp.html");
-var dispTmpl = hogan.compile(dispTmplSrc);
 
 var dispAreaSelector = "> [mc-name=disp-area]";
 var workAreaSelector = "> [mc-name=work-area]";
 
+function extendConductsWithLabel(conduct){
+	conduct = mUtil.assign({}, conduct);
+	conduct.kind_label = mUtil.conductKindToKanji(conduct.kind);
+	conduct.drugs = conduct.drugs.map(function(drug){
+		return mUtil.assign({}, drug, {
+			label: mUtil.conductDrugRep(drug)
+		});
+	});
+	conduct.kizai_list = conduct.kizai_list.map(function(kizai){
+		return mUtil.assign({}, kizai, {
+			label: mUtil.conductKizaiRep(kizai)
+		});
+	});
+	return conduct;
+}
+
 exports.create = function(conduct, visitId, at){
 	var visitId = conduct.visit_id;
 	var conductId = conduct.id;
-	var data = mUtil.assign({}, conduct, {
-		kind_label: mUtil.conductKindToKanji(conduct.kind)
-	})
-	var dom = $(tmpl.render(data, {disp: dispTmpl}));
-	ConductShinryouList.setup(dom.find("> [mc-name=disp-area] [mc-name=shinryouList]"), conduct.shinryou_list);
-	ConductDrugList.setup(dom.find("> [mc-name=disp-area] [mc-name=drugs]"), conduct.drugs);
-	ConductKizaiList.setup(dom.find("> [mc-name=disp-area] [mc-name=kizaiList]"), conduct.kizai_list);
+	conduct = extendConductsWithLabel(conduct);
+	var dom = $(tmplSrc);
+	getDispAreaDom(dom).append(ConductDisp.create(conduct));
 	bindClick(dom, visitId, at, conduct);
+	dom.on("conduct-modified", function(event, targetConductId, newConduct){
+		if( conductId === targetConductId ){
+			event.stopPropagation();
+			var newConductEx = extendConductsWithLabel(newConduct);
+			dom.broadcast("rx-conduct-modified", [targetConductId, newConductEx]);
+			return;
+		}
+	});
 	return dom;
 };
 

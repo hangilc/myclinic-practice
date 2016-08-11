@@ -1,5 +1,19 @@
-<div mc-name="kind">&lt;{{kind_label}}&gt;</div>
-<div mc-name="gazouLabel">{{gazou_label}}</div>
-<div mc-name="shinryouList"></div>
-<div mc-name="drugs"></div>
-<div mc-name="kizaiList"></div>
+<div>
+	<div mc-name="kind">&lt;{{kind_label}}&gt;</div>
+	<div mc-name="gazouLabel">{{gazou_label}}</div>
+	<div mc-name="shinryouList">
+		{{#shinryou_list}}
+			<div>{{name}}</div>
+		{{/shinryou_list}}
+	</div>
+	<div mc-name="drugs">
+		{{#drugs}}
+			<div>{{label}}</div>
+		{{/drugs}}
+	</div>
+	<div mc-name="kizaiList">
+		{{#kizai_list}}
+			<div>{{label}}</div>
+		{{/kizai_list}}
+	</div>
+</div>
