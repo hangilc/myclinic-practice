@@ -248,6 +248,14 @@ exports.deleteConductShinryou = function(conductShinryouId, done){
 	request("delete_conduct_shinryou", {conduct_shinryou_id: conductShinryouId}, "POST", done);
 }
 
+exports.deleteConductDrug = function(conductDrugId, done){
+	request("delete_conduct_drug", {conduct_drug_id: conductDrugId}, "POST", done);
+}
+
+exports.deleteConductKizai = function(conductKizaiId, done){
+	request("delete_conduct_kizai", {conduct_kizai_id: conductKizaiId}, "POST", done);
+}
+
 exports.getKizaiMaster = function(kizaicode, at, cb){
 	request("get_kizai_master", {kizaicode: kizaicode, at: at}, "GET", cb);
 };

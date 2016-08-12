@@ -25124,6 +25124,14 @@
 		request("delete_conduct_shinryou", {conduct_shinryou_id: conductShinryouId}, "POST", done);
 	}
 
+	exports.deleteConductDrug = function(conductDrugId, done){
+		request("delete_conduct_drug", {conduct_drug_id: conductDrugId}, "POST", done);
+	}
+
+	exports.deleteConductKizai = function(conductKizaiId, done){
+		request("delete_conduct_kizai", {conduct_kizai_id: conductKizaiId}, "POST", done);
+	}
+
 	exports.getKizaiMaster = function(kizaicode, at, cb){
 		request("get_kizai_master", {kizaicode: kizaicode, at: at}, "GET", cb);
 	};
@@ -31712,6 +31720,8 @@
 		bindKindChange(dom, at, conductId);
 		bindGazouLabel(dom, at, ctx);
 		bindDeleteShinryou(dom, conductId, at);
+		bindDeleteDrug(dom, conductId, at);
+		bindDeleteKizai(dom, conductId, at);
 		bindClose(dom);
 		bindDelete(dom);
 		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
@@ -31862,6 +31872,74 @@
 			task.run([
 				function(done){
 					service.deleteConductShinryou(id, done);
+				},
+				function(done){
+					service.getFullConduct(conductId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newConduct = result;
+						done();
+					});
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conduct-modified", [conductId, newConduct]);
+			})
+		})
+	}
+
+	function bindDeleteDrug(dom, conductId, at){
+		dom.on("click", deleteDrugLinkSelector, function(event){
+			event.preventDefault();
+			if( !confirm("この処置薬剤を削除しますか？") ){
+				return;
+			}
+			var e = $(this);
+			e.prop("disabled", true);
+			var id = e.attr("id-value");
+			var newConduct;
+			task.run([
+				function(done){
+					service.deleteConductDrug(id, done);
+				},
+				function(done){
+					service.getFullConduct(conductId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newConduct = result;
+						done();
+					});
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conduct-modified", [conductId, newConduct]);
+			})
+		})
+	}
+
+	function bindDeleteKizai(dom, conductId, at){
+		dom.on("click", deleteKizaiLinkSelector, function(event){
+			event.preventDefault();
+			if( !confirm("この処置器材を削除しますか？") ){
+				return;
+			}
+			var e = $(this);
+			e.prop("disabled", true);
+			var id = e.attr("id-value");
+			var newConduct;
+			task.run([
+				function(done){
+					service.deleteConductKizai(id, done);
 				},
 				function(done){
 					service.getFullConduct(conductId, at, function(err, result){
