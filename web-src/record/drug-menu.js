@@ -69,15 +69,15 @@ function bindAddDrug(dom, visit){
 		}
 		wa.html("");
 		var form = DrugForm.createAddForm(visit.visit_id, visit.v_datetime, visit.patient_id);
-		bindAddForm(dom, form);
+		form.on("entered", function(event, newDrug){
+			event.stopPropagation();
+			dom.trigger("drug-entered", [newDrug]);
+		});
+		form.on("cancel", function(event){
+			event.stopPropagation();
+			clearWorkarea(dom);
+		});
 		setWorkarea(dom, "add-drug", form);
-	});
-}
-
-function bindAddForm(dom, form){
-	form.on("cancel-form", function(event){
-		event.stopPropagation();
-		clearWorkarea(dom);
 	});
 }
 

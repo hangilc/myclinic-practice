@@ -104,7 +104,10 @@ function bindEnter(dom, drugs){
 				alert(err);
 				return;
 			}
-			dom.trigger("drugs-batch-entered", [targetVisitId, newlyEnteredDrugs]);
+			//dom.trigger("drugs-batch-entered", [targetVisitId, newlyEnteredDrugs]);
+			newlyEnteredDrugs.forEach(function(newDrug){
+				dom.trigger("drug-entered", [newDrug]);
+			});
 			dom.trigger("close-workarea");
 		})
 	})

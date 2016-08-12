@@ -405,7 +405,7 @@ function bindClear(dom){
 function bindCancel(dom){
 	dom.on("click", "> .workarea-commandbox [mc-name=closeLink]", function(event){
 		event.stopPropagation();
-		dom.trigger("cancel-form");
+		dom.trigger("cancel");
 	});
 }
 
@@ -493,7 +493,7 @@ function bindEnter(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
+			dom.trigger("entered", [newDrug]);
 			clearDisplayConsideringFixedDays(dom);
 		})
 	});
@@ -537,7 +537,7 @@ function bindModify(dom, drugId, at){
 				alert(err);
 				return;
 			}
-			dom.trigger("drug-modified", newDrug);
+			dom.trigger("modified", [newDrug]);
 		})
 	});
 }
@@ -556,7 +556,7 @@ function bindDelete(dom, drugId){
 				alert(err);
 				return;
 			}
-			dom.trigger("drug-deleted");
+			dom.trigger("deleted", [drugId]);
 		})
 	});
 }

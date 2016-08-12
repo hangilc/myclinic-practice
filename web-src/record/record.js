@@ -33,10 +33,10 @@ exports.create = function(visit, currentVisitId, tempVisitId){
 	ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts, visit.visit_id, visit.v_datetime);
 	Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 	bindTextsEntered(dom, visit.visit_id);
-	bindDrugsEntered(dom, visit.visit_id);
-	bindDrugsDeleted(dom, visit.visit_id);
-	bindDrugsModifiedDays(dom, visit.visit_id);
-	bindDrugsNeedRenumbering(dom, visit.visit_id);
+	//bindDrugsEntered(dom, visit.visit_id);
+	//bindDrugsDeleted(dom, visit.visit_id);
+	//bindDrugsModifiedDays(dom, visit.visit_id);
+	//bindDrugsNumbersChanged(dom, visit.visit_id);
 	bindShinryouEntered(dom, visit.visit_id);
 	bindShinryouDeleted(dom, visit.visit_id);
 	bindShinryouDeleteDuplicated(dom, visit.visit_id);
@@ -84,13 +84,18 @@ function bindDrugsDeleted(dom, visitId){
 	})
 }
 
-function bindDrugsNeedRenumbering(dom, visitId){
-	dom.on("drugs-need-renumbering", function(event, targetVisitId){
+function bindDrugsNumbersChanged(dom, visitId){
+	dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
 		if( visitId === targetVisitId ){
-			event.stopPropagation();
-			dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+			var drug
 		}
 	})
+	// dom.on("drugs-need-renumbering", function(event, targetVisitId){
+	// 	if( visitId === targetVisitId ){
+	// 		event.stopPropagation();
+	// 		dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+	// 	}
+	// })
 }
 
 function bindShinryouEntered(dom, visitId){

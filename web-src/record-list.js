@@ -18,18 +18,41 @@ exports.setup = function(dom){
 			})
 		})
 	});
-	bindDrugsBatchEntered(dom);
-	bindNumberOfDrugsChanged(dom);
+	bindDrugEntered(dom);
+	bindDrugModified(dom);
+	bindDrugDeleted(dom);
+
+	//bindDrugsBatchEntered(dom);
+	//bindNumberOfDrugsChanged(dom);
 	bindShinryouBatchEntered(dom);
 	bindConductsBatchEntered(dom);
 };
 
-function bindDrugsBatchEntered(recordListDom){
-	recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
-		event.stopPropagation();
-		recordListDom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
+function bindDrugEntered(recordListDom){
+	recordListDom.on("drug-entered", function(event, newDrug){
+		recordListDom.broadcast("rx-drug-entered", [newDrug]);
 	});
 }
+
+function bindDrugModified(dom){
+	dom.on("drug-modified", function(event, newDrug){
+		dom.broadcast("rx-drug-modified", [newDrug]);
+	});
+}
+
+function bindDrugDeleted(dom){
+	dom.on("drug-deleted", function(event, drugId, visitId){
+		dom.broadcast("rx-drug-deleted", [drugId]);
+		dom.broadcast("rx-number-of-drugs-changed", [visitId]);
+	});
+}
+
+// function bindDrugsBatchEntered(recordListDom){
+// 	recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
+// 		event.stopPropagation();
+// 		recordListDom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
+// 	});
+// }
 
 function bindNumberOfDrugsChanged(recordListDom){
 	recordListDom.on("number-of-drugs-changed", function(event, visitId){

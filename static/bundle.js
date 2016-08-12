@@ -26732,18 +26732,41 @@
 				})
 			})
 		});
-		bindDrugsBatchEntered(dom);
-		bindNumberOfDrugsChanged(dom);
+		bindDrugEntered(dom);
+		bindDrugModified(dom);
+		bindDrugDeleted(dom);
+
+		//bindDrugsBatchEntered(dom);
+		//bindNumberOfDrugsChanged(dom);
 		bindShinryouBatchEntered(dom);
 		bindConductsBatchEntered(dom);
 	};
 
-	function bindDrugsBatchEntered(recordListDom){
-		recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
-			event.stopPropagation();
-			recordListDom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
+	function bindDrugEntered(recordListDom){
+		recordListDom.on("drug-entered", function(event, newDrug){
+			recordListDom.broadcast("rx-drug-entered", [newDrug]);
 		});
 	}
+
+	function bindDrugModified(dom){
+		dom.on("drug-modified", function(event, newDrug){
+			dom.broadcast("rx-drug-modified", [newDrug]);
+		});
+	}
+
+	function bindDrugDeleted(dom){
+		dom.on("drug-deleted", function(event, drugId, visitId){
+			dom.broadcast("rx-drug-deleted", [drugId]);
+			dom.broadcast("rx-number-of-drugs-changed", [visitId]);
+		});
+	}
+
+	// function bindDrugsBatchEntered(recordListDom){
+	// 	recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
+	// 		event.stopPropagation();
+	// 		recordListDom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
+	// 	});
+	// }
 
 	function bindNumberOfDrugsChanged(recordListDom){
 		recordListDom.on("number-of-drugs-changed", function(event, visitId){
@@ -26808,10 +26831,10 @@
 		ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts, visit.visit_id, visit.v_datetime);
 		Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
 		bindTextsEntered(dom, visit.visit_id);
-		bindDrugsEntered(dom, visit.visit_id);
-		bindDrugsDeleted(dom, visit.visit_id);
-		bindDrugsModifiedDays(dom, visit.visit_id);
-		bindDrugsNeedRenumbering(dom, visit.visit_id);
+		//bindDrugsEntered(dom, visit.visit_id);
+		//bindDrugsDeleted(dom, visit.visit_id);
+		//bindDrugsModifiedDays(dom, visit.visit_id);
+		//bindDrugsNumbersChanged(dom, visit.visit_id);
 		bindShinryouEntered(dom, visit.visit_id);
 		bindShinryouDeleted(dom, visit.visit_id);
 		bindShinryouDeleteDuplicated(dom, visit.visit_id);
@@ -26859,13 +26882,18 @@
 		})
 	}
 
-	function bindDrugsNeedRenumbering(dom, visitId){
-		dom.on("drugs-need-renumbering", function(event, targetVisitId){
+	function bindDrugsNumbersChanged(dom, visitId){
+		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
 			if( visitId === targetVisitId ){
-				event.stopPropagation();
-				dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+				var drug
 			}
 		})
+		// dom.on("drugs-need-renumbering", function(event, targetVisitId){
+		// 	if( visitId === targetVisitId ){
+		// 		event.stopPropagation();
+		// 		dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+		// 	}
+		// })
 	}
 
 	function bindShinryouEntered(dom, visitId){
@@ -27615,15 +27643,15 @@
 			}
 			wa.html("");
 			var form = DrugForm.createAddForm(visit.visit_id, visit.v_datetime, visit.patient_id);
-			bindAddForm(dom, form);
+			form.on("entered", function(event, newDrug){
+				event.stopPropagation();
+				dom.trigger("drug-entered", [newDrug]);
+			});
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				clearWorkarea(dom);
+			});
 			setWorkarea(dom, "add-drug", form);
-		});
-	}
-
-	function bindAddForm(dom, form){
-		form.on("cancel-form", function(event){
-			event.stopPropagation();
-			clearWorkarea(dom);
 		});
 	}
 
@@ -27824,7 +27852,10 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drugs-batch-entered", [targetVisitId, enteredDrugs]);
+				//dom.trigger("drugs-batch-entered", [targetVisitId, enteredDrugs]);
+				enteredDrugs.forEach(function(newDrug){
+					dom.trigger("drug-entered", [newDrug]);
+				});
 				exports.hide(dom);
 			})
 		});
@@ -27918,9 +27949,10 @@
 			var e = Drug.create(index++, drug, at, patientId);
 			listDom.append(e);
 		});
-		respondToDrugsBatchEntered(dom, visitId);
+		//respondToDrugsBatchEntered(dom, visitId);
+		respondToDrugEntered(dom, visitId, at, patientId);
 		respondToNumberOfDrugsChanged(dom, visitId);
-		respondToDrugsNeedRenumbering(dom, visitId);
+		//respondToDrugsNeedRenumbering(dom, visitId);
 	};
 
 	function getRpDom(dom){
@@ -27944,26 +27976,41 @@
 		getRpDom(dom).text(text);
 	}
 
-	function respondToDrugsBatchEntered(dom, visitId){
-		dom.listen("rx-drugs-batch-entered", function(targetVisitId, drugs){
-			if( visitId === targetVisitId ){
+	function respondToDrugEntered(dom, visitId, at, patientId){
+		dom.listen("rx-drug-entered", function(newDrug){
+			if( visitId === newDrug.visit_id ){
 				var index = countDrugs(dom, visitId) + 1;
 				var listDom = getListDom(dom);
-				drugs.forEach(function(drug){
-					var e = Drug.create(index++, drug);
-					listDom.append(e);
-				});
+				listDom.append(Drug.create(index, newDrug, at, patientId));
 				updateRp(dom, true);
 			}
 		});
 	}
 
+	// function respondToDrugsBatchEntered(dom, visitId){
+	// 	dom.listen("rx-drugs-batch-entered", function(targetVisitId, drugs){
+	// 		if( visitId === targetVisitId ){
+	// 			var index = countDrugs(dom, visitId) + 1;
+	// 			var listDom = getListDom(dom);
+	// 			drugs.forEach(function(drug){
+	// 				var e = Drug.create(index++, drug);
+	// 				listDom.append(e);
+	// 			});
+	// 			updateRp(dom, true);
+	// 		}
+	// 	});
+	// }
+
 	function respondToNumberOfDrugsChanged(dom, visitId){
 		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
-			if( visitId !== targetVisitId ){
-				return;
+			if( visitId === targetVisitId ){
+				var index = 1;
+				var drugs = lookupDrugs(dom, visitId);
+				updateRp(dom, drugs.length > 0);
+				drugs.forEach(function(drug){
+					dom.broadcast("rx-drug-modify-index", [drug.drug_id, index++]);
+				})
 			}
-			updateRp(dom, countDrugs(dom, visitId) > 0);
 		});
 	}
 
@@ -27996,108 +28043,155 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
+	var DrugDisp = __webpack_require__(245);
 	var DrugForm = __webpack_require__(206);
 
 	var tmplSrc = __webpack_require__(156);
-	var tmpl = hogan.compile(tmplSrc);
+
+	var dispAreaSelector = "> [mc-name=disp-area]";
+	var formAreaSelector = "> [mc-name=form-area]";
+
+	function getDispAreaDom(dom){
+		return dom.find(dispAreaSelector);
+	}
+
+	function getFormAreaDom(dom){
+		return dom.find(formAreaSelector);
+	}
 
 	exports.create = function(index, drug, at, patientId){
-		drug = mUtil.assign({}, drug);
-		var e = $("<div></div>");
-		var html = tmpl.render({
-			index: index,
-			label: mUtil.drugRep(drug)
+		var dom = $(tmplSrc);
+		DrugDisp.setup(getDispAreaDom(dom), index, drug);
+		var ctx = {
+			drug: drug
+		};
+		dom.listen("rx-drug-modified", function(newDrug){
+			if( ctx.drug.drug_id === newDrug.drug_id ){
+				ctx.drug = newDrug;
+			}
 		});
-		e = $(html);
-		e.listen("rx-drug-lookup-for-visit", function(targetVisitId){
+		dom.listen("rx-drug-lookup-for-visit", function(targetVisitId){
 			if( targetVisitId === drug.visit_id ){
 				return {
 					drug_id: drug.drug_id
 				};
 			}
 		});
-		e.listen("rx-drug-deleted", function(drugId){
+		dom.listen("rx-drug-deleted", function(drugId){
 			if( drugId === drug.drug_id ){
-				e.remove();
+				dom.remove();
 			}
 		});
-		e.listen("rx-drug-modified-days", function(drugId, days){
-			if( drugId !== drug.drug_id ){
-				return;
-			}
-			drug.d_days = days;
-			e.find("> [mc-name=disp] [mc-name=label]").text(mUtil.drugRep(drug));
-		});
-		e.listen("rx-drug-modify-index", function(drugId, index){
-			if( drugId !== drug.drug_id ){
-				return;
-			}
-			updateIndex(e, index);
-		});
-		bindClick(e, drug, at, patientId);
-		return e;
+		bindClick(dom, ctx, at, patientId);
+		return dom;
+		// drug = mUtil.assign({}, drug);
+		// var html = tmpl.render({
+		// 	index: index,
+		// 	label: mUtil.drugRep(drug)
+		// });
+		// var e = $(html);
+		// e.listen("rx-drug-lookup-for-visit", function(targetVisitId){
+		// 	if( targetVisitId === drug.visit_id ){
+		// 		return {
+		// 			drug_id: drug.drug_id
+		// 		};
+		// 	}
+		// });
+		// e.listen("rx-drug-deleted", function(drugId){
+		// 	if( drugId === drug.drug_id ){
+		// 		e.remove();
+		// 	}
+		// });
+		// e.listen("rx-drug-modified-days", function(drugId, days){
+		// 	if( drugId !== drug.drug_id ){
+		// 		return;
+		// 	}
+		// 	drug.d_days = days;
+		// 	e.find("> [mc-name=disp] [mc-name=label]").text(mUtil.drugRep(drug));
+		// });
+		// e.listen("rx-drug-modify-index", function(drugId, index){
+		// 	if( drugId !== drug.drug_id ){
+		// 		return;
+		// 	}
+		// 	updateIndex(e, index);
+		// });
+		// bindClick(e, drug, at, patientId);
+		// return e;
 	}
 
-	function updateIndex(dom, index){
-		getDispIndexDom(dom).text(index);
-	}
+	// function updateIndex(dom, index){
+	// 	getDispIndexDom(dom).text(index);
+	// }
 
-	function getDispDom(dom){
-		return dom.find("> [mc-name=disp]");
-	}
+	// function getDispDom(dom){
+	// 	return dom.find("> [mc-name=disp]");
+	// }
 
-	function getDispIndexDom(dom){
-		return getDispDom(dom).find("[mc-name=index]");
-	}
+	// function getDispIndexDom(dom){
+	// 	return getDispDom(dom).find("[mc-name=index]");
+	// }
 
-	function getFormAreaDom(dom){
-		return dom.find("> [mc-name=form-area]");
-	}
+	// function getFormAreaDom(dom){
+	// 	return dom.find("> [mc-name=form-area]");
+	// }
 
-	function bindClick(dom, drug, at, patientId){
-		dom.on("click", "[mc-name=disp]", function(event){
+	function bindClick(dom, ctx, at, patientId){
+		dom.on("click", dispAreaSelector, function(event){
 			event.stopPropagation();
+			var drug = ctx.drug;
 			var message = "（暫定）診察中でありませんが、この薬剤を編集しますか？";
 			if( !dom.inquire("fn-confirm-edit", [drug.visit_id, message]) ){
 				return;
 			}
 			var form = DrugForm.createEditForm(drug, at, patientId);
-			bindFormModified(dom, form);
-			bindFormCancel(dom, form);
-			bindFormDelete(dom, form, drug.visit_id);
-			var formArea = getFormAreaDom(dom).html("");
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				getDispAreaDom(dom).show();
+				getFormAreaDom(dom).empty();
+			});
+			form.on("modified", function(event, newDrug){
+				event.stopPropagation();
+				dom.trigger("drug-modified", [newDrug]);
+				getDispAreaDom(dom).show();
+				getFormAreaDom(dom).empty();
+			});
+			form.on("deleted", function(event){
+				event.stopPropagation();
+				dom.trigger("drug-deleted", [drug.drug_id, drug.visit_id]);
+			});
+			var formArea = getFormAreaDom(dom);
 			formArea.append(form);
-			getDispDom(dom).hide();
+			getDispAreaDom(dom).hide();
 		});
 	}
 
-	function bindFormModified(dom, form){
-		form.on("drug-modified", function(event, newDrug){
-			event.stopPropagation();
-			form.remove();
-			var dispDom = getDispDom(dom);
-			dispDom.find("[mc-name=label]").text(mUtil.drugRep(newDrug));
-			dispDom.show();
-		});
-	}
+	// function bindFormModified(dom, form){
+	// 	form.on("drug-modified", function(event, newDrug){
+	// 		event.stopPropagation();
+	// 		form.remove();
+	// 		var dispDom = getDispDom(dom);
+	// 		dispDom.find("[mc-name=label]").text(mUtil.drugRep(newDrug));
+	// 		dispDom.show();
+	// 	});
+	// }
 
-	function bindFormCancel(dom, form){
-		form.on("cancel-form", function(event){
-			event.stopPropagation();
-			form.remove();
-			getDispDom(dom).show();
-		});
-	}
+	// function bindFormCancel(dom, form){
+	// 	form.on("cancel-form", function(event){
+	// 		event.stopPropagation();
+	// 		form.remove();
+	// 		getDispDom(dom).show();
+	// 	});
+	// }
 
-	function bindFormDelete(dom, form, visitId){
-		form.on("drug-deleted", function(event){
-			event.stopPropagation();
-			var parent = dom.parent();
-			dom.remove();
-			parent.trigger("number-of-drugs-changed", [visitId]);
-			parent.trigger("drugs-need-renumbering", [visitId]);
-		});
-	}
+	// function bindFormDelete(dom, form, visitId){
+	// 	form.on("drug-deleted", function(event){
+	// 		event.stopPropagation();
+	// 		var parent = dom.parent();
+	// 		dom.remove();
+	// 		parent.trigger("number-of-drugs-changed", [visitId]);
+	// 		parent.trigger("drugs-need-renumbering", [visitId]);
+	// 	});
+	// }
 
 
 
@@ -28107,7 +28201,7 @@
 /* 156 */
 /***/ function(module, exports) {
 
-	module.exports = "<div mc-name=\"wrapper\">\r\n\t<div mc-name=\"disp\">\r\n\t\t<span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span>\r\n\t</div>\r\n\t<div mc-name=\"form-area\"></div>\r\n</div>\r\n"
+	module.exports = "<div mc-name=\"wrapper\">\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"form-area\"></div>\r\n</div>\r\n"
 
 /***/ },
 /* 157 */
@@ -30763,7 +30857,7 @@
 	function bindCancel(dom){
 		dom.on("click", "> .workarea-commandbox [mc-name=closeLink]", function(event){
 			event.stopPropagation();
-			dom.trigger("cancel-form");
+			dom.trigger("cancel");
 		});
 	}
 
@@ -30851,7 +30945,7 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drugs-batch-entered", [visitId, [newDrug]]);
+				dom.trigger("entered", [newDrug]);
 				clearDisplayConsideringFixedDays(dom);
 			})
 		});
@@ -30895,7 +30989,7 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drug-modified", newDrug);
+				dom.trigger("modified", [newDrug]);
 			})
 		});
 	}
@@ -30914,7 +31008,7 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drug-deleted");
+				dom.trigger("deleted", [drugId]);
 			})
 		});
 	}
@@ -31041,7 +31135,10 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drugs-batch-entered", [targetVisitId, newlyEnteredDrugs]);
+				//dom.trigger("drugs-batch-entered", [targetVisitId, newlyEnteredDrugs]);
+				newlyEnteredDrugs.forEach(function(newDrug){
+					dom.trigger("drug-entered", [newDrug]);
+				});
 				dom.trigger("close-workarea");
 			})
 		})
@@ -31104,9 +31201,12 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("drugs-batch-deleted", [visitId, deletedDrugIds]);
-				dom.trigger("number-of-drugs-changed", [visitId]);
-				dom.trigger("drugs-need-renumbering", [visitId]);
+				//dom.trigger("drugs-batch-deleted", [visitId, deletedDrugIds]);
+				deletedDrugIds.forEach(function(drugId){
+					dom.trigger("drug-deleted", [drugId, visitId]);
+				});
+				// dom.trigger("number-of-drugs-changed", [visitId]);
+				// dom.trigger("drugs-need-renumbering", [visitId]);
 				dom.trigger("close-workarea");
 			})
 		});
@@ -31134,6 +31234,7 @@
 	var mConst = __webpack_require__(110);
 	var service = __webpack_require__(112);
 	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
 
 	exports.create = function(drugs, visitId, at){
 		drugs = drugs.filter(function(drug){
@@ -31148,12 +31249,12 @@
 			})
 		};
 		var dom = $(tmpl.render(data));
-		bindEnter(dom, drugs, visitId);
+		bindEnter(dom, drugs, visitId, at);
 		bindCancel(dom);
 		return dom;
 	};
 
-	function bindEnter(dom, drugs, visitId){
+	function bindEnter(dom, drugs, visitId, at){
 		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
 			event.preventDefault();
 			event.stopPropagation();
@@ -31169,16 +31270,32 @@
 				alert("日数の入力が適切でありません。");
 				return;
 			}
+			var modifiedDrugs = [];
 			task.run([
 				function(done){
 					service.batchUpdateDrugsDays(checked, +days, done);
+				},
+				function(done){
+					conti.forEach(checked, function(drugId, done){
+						service.getFullDrug(drugId, at, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							modifiedDrugs.push(result);
+							done();
+						})
+					}, done);
 				}
 			], function(err){
 				if( err ){
 					alert(err);
 					return;
 				}
-				dom.trigger("drugs-batch-modified-days", [visitId, checked, days]);
+				//dom.trigger("drugs-batch-modified-days", [visitId, checked, days]);
+				modifiedDrugs.forEach(function(newDrug){
+					dom.trigger("drug-modified", [newDrug]);
+				})
 				dom.trigger("close-workarea");
 			})
 		});
@@ -32376,6 +32493,44 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{kizaicode}}\">{{name}}</option>\r\n{{/list}}"
+
+/***/ },
+/* 245 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(246);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+
+	exports.setup = function(dom, index, drug){
+		var data = {
+			index: index,
+			label: mUtil.drugRep(drug)
+		};
+		dom.html(tmpl.render(data));
+		dom.listen("rx-drug-modified", function(newDrug){
+			if( drug.drug_id === newDrug.drug_id ){
+				data.label = mUtil.drugRep(newDrug);
+				dom.html(tmpl.render(data));
+			}
+		});
+		dom.listen("rx-drug-modify-index", function(drugId, index){
+			if( drug.drug_id === drugId ){
+				data.index = index;
+				dom.html(tmpl.render(data));
+			}
+		});
+	}
+
+/***/ },
+/* 246 */
+/***/ function(module, exports) {
+
+	module.exports = "<span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span>"
 
 /***/ }
 /******/ ]);

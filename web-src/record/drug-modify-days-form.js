@@ -8,6 +8,7 @@ var mUtil = require("../../myclinic-util");
 var mConst = require("myclinic-consts");
 var service = require("../service");
 var task = require("../task");
+var conti = require("conti");
 
 exports.create = function(drugs, visitId, at){
 	drugs = drugs.filter(function(drug){
@@ -22,12 +23,12 @@ exports.create = function(drugs, visitId, at){
 		})
 	};
 	var dom = $(tmpl.render(data));
-	bindEnter(dom, drugs, visitId);
+	bindEnter(dom, drugs, visitId, at);
 	bindCancel(dom);
 	return dom;
 };
 
-function bindEnter(dom, drugs, visitId){
+function bindEnter(dom, drugs, visitId, at){
 	dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
 		event.preventDefault();
 		event.stopPropagation();
@@ -43,16 +44,32 @@ function bindEnter(dom, drugs, visitId){
 			alert("日数の入力が適切でありません。");
 			return;
 		}
+		var modifiedDrugs = [];
 		task.run([
 			function(done){
 				service.batchUpdateDrugsDays(checked, +days, done);
+			},
+			function(done){
+				conti.forEach(checked, function(drugId, done){
+					service.getFullDrug(drugId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						modifiedDrugs.push(result);
+						done();
+					})
+				}, done);
 			}
 		], function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
-			dom.trigger("drugs-batch-modified-days", [visitId, checked, days]);
+			//dom.trigger("drugs-batch-modified-days", [visitId, checked, days]);
+			modifiedDrugs.forEach(function(newDrug){
+				dom.trigger("drug-modified", [newDrug]);
+			})
 			dom.trigger("close-workarea");
 		})
 	});
