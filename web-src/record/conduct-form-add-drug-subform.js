@@ -21,6 +21,7 @@ exports.create = function(at, conductId){
 };
 
 var nameSelector = "> form[mc-name=main-form] [mc-name=name]";
+var amountSelector = "> form[mc-name=main-form] input[mc-name=amount]";
 var unitSelector = "> form[mc-name=main-form] [mc-name=unit]";
 var enterSelector = "> .commandbox [mc-name=enterLink]";
 var cancelSelector = "> .commandbox [mc-name=cancelLink]";
@@ -34,6 +35,10 @@ function getSearchResultDom(dom){
 
 function getSearchText(dom){
 	return dom.find(searchTextSelector).val().trim();
+}
+
+function getAmount(dom){
+	return dom.find(amountSelector).val().trim();
 }
 
 function updateName(dom, name){
@@ -53,13 +58,19 @@ function bindEnter(dom, conductId, at, ctx){
 			return;
 		}
 		iyakuhincode = +iyakuhincode;
-		var amount;
+		var amount = getAmount(dom);
+		if( amount === "" ){
+			alert("用量が設定されていません。");
+			return;
+		}
+		amount = +amount;
 		var newConduct;
 		task.run([
 			function(done){
 				service.enterConductDrug({
 					visit_conduct_id: conductId,
-					iyakuhincode: iyakuhincode
+					iyakuhincode: iyakuhincode,
+					amount: amount
 				}, done);
 			},
 			function(done){
