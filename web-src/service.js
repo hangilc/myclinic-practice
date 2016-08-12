@@ -270,4 +270,12 @@ exports.changeConductKind = function(conductId, kind, done){
 
 exports.setGazouLabel = function(conductId, label, done){
 	request("set_gazou_label", {conduct_id: conductId, label: label}, "POST", done);
-}
+};
+
+exports.enterShinryouByNames = function(visitId, names, cb){
+	var data = {
+		visit_id: visitId,
+		names: names
+	};
+	request("enter_shinryou_by_names", JSON.stringify(data), "POST", cb);
+};

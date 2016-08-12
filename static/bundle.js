@@ -25146,7 +25146,15 @@
 
 	exports.setGazouLabel = function(conductId, label, done){
 		request("set_gazou_label", {conduct_id: conductId, label: label}, "POST", done);
-	}
+	};
+
+	exports.enterShinryouByNames = function(visitId, names, cb){
+		var data = {
+			visit_id: visitId,
+			names: names
+		};
+		request("enter_shinryou_by_names", JSON.stringify(data), "POST", cb);
+	};
 
 
 /***/ },
@@ -28159,10 +28167,11 @@
 					return;
 				}
 				var form = AddRegularForm.create(visitId, at);
-				form.on("entered", function(event, newShinryouList){
+				form.on("entered", function(event, newShinryouList, newConducts){
 					event.stopPropagation();
 					endWork(dom);
 					dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
+					dom.trigger("conducts-batch-entered", [visitId, newConducts]);
 				});
 				form.on("cancel", function(event){
 					event.stopPropagation();
@@ -28521,48 +28530,48 @@
 	}
 
 	function bindEnter(dom, visitId, at){
-		dom.on("click", "> form .workarea-commandbox [mc-name=enter]", function(event){
+		var selector = "> form .workarea-commandbox [mc-name=enter]";
+		dom.on("click", selector, function(event){
 			event.preventDefault();
 			event.stopPropagation();
+			dom.find(selector).prop("disabled", true);
 			var names = dom.find("> form input[name=item]:checked").map(function(){
 				return $(this).val();
 			}).get();
-			var shinryouList, newShinryouIds, newShinryouList = [];
+			var newShinryouIds, newConductIds;
+			var newShinryouList = [], newConductList = [];
 			task.run([
 				function(done){
-					service.batchResolveShinryouNamesAt(names, at, function(err, result){
+					service.enterShinryouByNames(visitId, names, function(err, result){
 						if( err ){
 							done(err);
 							return;
 						}
-						var nameCodeMap = result;
-						shinryouList = names.map(function(name){
-							return {
-								visit_id: visitId,
-								shinryoucode: nameCodeMap[name]
-							}
-						});
-						done();
-					});
-				},
-				function(done){
-					service.batchEnterShinryou(shinryouList, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newShinryouIds = result;
+						newShinryouIds = result.shinryou_ids;
+						newConductIds = result.conduct_ids;
 						done();
 					})
 				},
 				function(done){
-					conti.forEachPara(newShinryouIds, function(shinryouId, done){
-						service.getFullShinryou(shinryouId, at, function(err, result){
+					conti.forEach(newShinryouIds, function(newShinryouId, done){
+						service.getFullShinryou(newShinryouId, at, function(err, result){
 							if( err ){
 								done(err);
 								return;
 							}
 							newShinryouList.push(result);
+							done();
+						})
+					}, done);
+				},
+				function(done){
+					conti.forEach(newConductIds, function(newConductId, done){
+						service.getFullConduct(newConductId, at, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newConductList.push(result);
 							done();
 						})
 					}, done);
@@ -28572,7 +28581,7 @@
 					alert(err);
 					return;
 				}
-				dom.trigger("entered", [newShinryouList]);
+				dom.trigger("entered", [newShinryouList, newConductList]);
 			})
 		})
 	}

@@ -49,10 +49,11 @@ function bindAddRegular(dom, visitId, at){
 				return;
 			}
 			var form = AddRegularForm.create(visitId, at);
-			form.on("entered", function(event, newShinryouList){
+			form.on("entered", function(event, newShinryouList, newConducts){
 				event.stopPropagation();
 				endWork(dom);
 				dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
+				dom.trigger("conducts-batch-entered", [visitId, newConducts]);
 			});
 			form.on("cancel", function(event){
 				event.stopPropagation();
