@@ -243,3 +243,13 @@ exports.copyConducts = function(srcVisitId, dstVisitId, cb){
 exports.deleteConduct = function(conductId, done){
 	request("delete_conduct", {conduct_id: conductId}, "POST", done);
 };
+
+exports.getKizaiMaster = function(kizaicode, at, cb){
+	request("get_kizai_master", {kizaicode: kizaicode, at: at}, "GET", cb);
+};
+
+exports.searchKizaiMaster = function(text, at, cb){
+	request("search_kizai_master", {text: text, at: at}, "GET", cb);
+};
+
+

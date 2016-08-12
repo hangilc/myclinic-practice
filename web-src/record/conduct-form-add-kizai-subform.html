@@ -1,0 +1,36 @@
+<div class="workarea">
+	<div class="title">器材追加</div>
+    <form mc-name="main-form" onsubmit="return false">
+        <table style="width:100%">
+            <tr>
+                <td style="width:3em">名称：</td>
+                <td width="*"><span mc-name="name"></span></td>
+            </tr>
+            <tr>
+                <td style="width:2.5em">用量：</td>
+                <td><input mc-name="amount" size="8" value="1"/>
+                    <span mc-name="unit"></span></td>
+            </tr>
+        </table>
+        <!--
+		<div>
+			<div>名称：<span mc-name="name"></span></div>
+			<div>量：<input mc-name="amount" size="6"> <span mc-name="unit"></span></div>
+		</div>
+		-->
+	</form>
+	<div class="commandbox">
+	    <button mc-name="enterLink">入力</button>
+	    <button mc-name="cancelLink">キャンセル</button>
+	</div>
+	<hr/>
+    <form mc-name="search-form" onsubmit="return false">
+		<div>
+			<input mc-name="searchText"/>
+			<button mc-name="searchLink">検索</button>
+		</div>
+		<div>
+			<select mc-name="searchResult" style="width:100%" size="6"></select>
+		</div>
+	</form>
+</div>

@@ -25120,6 +25120,16 @@
 		request("delete_conduct", {conduct_id: conductId}, "POST", done);
 	};
 
+	exports.getKizaiMaster = function(kizaicode, at, cb){
+		request("get_kizai_master", {kizaicode: kizaicode, at: at}, "GET", cb);
+	};
+
+	exports.searchKizaiMaster = function(text, at, cb){
+		request("search_kizai_master", {text: text, at: at}, "GET", cb);
+	};
+
+
+
 
 /***/ },
 /* 113 */
@@ -31673,6 +31683,7 @@
 	var mUtil = __webpack_require__(5);
 	var AddShinryouForm = __webpack_require__(235);
 	var AddDrugForm = __webpack_require__(239);
+	var AddKizaiForm = __webpack_require__(242);
 
 	exports.create = function(conductEx, at){
 		var conductId = conductEx.id;
@@ -31684,6 +31695,7 @@
 		adaptToKind(dom, conductEx.kind);
 		bindAddShinryou(dom, at, conductId);
 		bindAddDrug(dom, at, conductId);
+		bindAddKizai(dom, at, conductId);
 		bindClose(dom);
 		bindDelete(dom);
 		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
@@ -31736,6 +31748,23 @@
 				return;
 			}
 			var form = AddDrugForm.create(at, conductId);
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				getSubformAreaDom(dom).empty();
+			});
+			dom.find(subformAreaSelector).append(form);
+		})
+	}
+
+	function bindAddKizai(dom, at, conductId){
+		dom.on("click", addKizaiLinkSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var area = getSubformAreaDom(dom);
+			if( !area.is(":empty") ){
+				return;
+			}
+			var form = AddKizaiForm.create(at, conductId);
 			form.on("cancel", function(event){
 				event.stopPropagation();
 				getSubformAreaDom(dom).empty();
@@ -32147,6 +32176,182 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{iyakuhincode}}\">{{name}}</option>\r\n{{/list}}"
+
+/***/ },
+/* 242 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(243);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var resultTmplSrc = __webpack_require__(244);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+
+	exports.create = function(at, conductId){
+		var dom = $(tmplSrc);
+		var ctx = {
+			kizaicode: undefined
+		};
+		bindEnter(dom, conductId, at, ctx);
+		bindCancel(dom);
+		bindSearch(dom, at);
+		bindSearchResultSelect(dom, at, ctx);
+		return dom;
+	};
+
+	var nameSelector = "> form[mc-name=main-form] [mc-name=name]";
+	var amountSelector = "> form[mc-name=main-form] input[mc-name=amount]";
+	var unitSelector = "> form[mc-name=main-form] [mc-name=unit]";
+	var enterSelector = "> .commandbox [mc-name=enterLink]";
+	var cancelSelector = "> .commandbox [mc-name=cancelLink]";
+	var searchFormSelector = "> form[mc-name=search-form]";
+	var searchTextSelector = "> form[mc-name=search-form] input[mc-name=searchText]";
+	var searchResultSelector = "> form[mc-name=search-form] select[mc-name=searchResult]";
+
+	function getSearchResultDom(dom){
+		return dom.find(searchResultSelector);
+	}
+
+	function getSearchText(dom){
+		return dom.find(searchTextSelector).val().trim();
+	}
+
+	function getAmount(dom){
+		return dom.find(amountSelector).val().trim();
+	}
+
+	function updateName(dom, name){
+		dom.find(nameSelector).text(name);
+	}
+
+	function updateUnit(dom, unit){
+		dom.find(unitSelector).text(unit);
+	}
+
+	function bindEnter(dom, conductId, at, ctx){
+		dom.on("click", enterSelector, function(event){
+			event.preventDefault();
+			var kizaicode = ctx.kizaicode;
+			if( !kizaicode ){
+				alert("器材が指定されていません。");
+				return;
+			}
+			kizaicode = +kizaicode;
+			var amount = getAmount(dom);
+			if( amount === "" ){
+				alert("用量が設定されていません。");
+				return;
+			}
+			amount = +amount;
+			var newConduct;
+			task.run([
+				function(done){
+					service.enterConductKizai({
+						visit_conduct_id: conductId,
+						kizaicode: kizaicode,
+						amount: amount
+					}, done);
+				},
+				function(done){
+					service.getFullConduct(conductId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newConduct = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conduct-modified", [conductId, newConduct]);
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			dom.trigger("cancel");
+		})
+	}
+
+	function bindSearch(dom, at){
+		dom.on("submit", searchFormSelector, function(event){
+			event.preventDefault();
+			var text = getSearchText(dom);
+			if( text === "" ){
+				return;
+			}
+			var searchResult;
+			task.run(function(done){
+				service.searchKizaiMaster(text, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					searchResult = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				getSearchResultDom(dom).html(resultTmpl.render({list: searchResult}));
+			})
+		});
+	}
+
+	function setKizai(dom, master, ctx){
+		ctx.kizaicode = master.kizaicode;
+		updateName(dom, master.name);
+		updateUnit(dom, master.unit);
+	}
+
+	function bindSearchResultSelect(dom, at, ctx){
+		dom.on("change", searchResultSelector, function(event){
+			var kizaicode = dom.find(searchResultSelector + " option:selected").val();
+			var master;
+			task.run(function(done){
+				service.getKizaiMaster(kizaicode, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					master = result;
+					done();
+				});
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				setKizai(dom, master, ctx);
+			})
+		});
+	}
+
+
+
+/***/ },
+/* 243 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">器材追加</div>\r\n    <form mc-name=\"main-form\" onsubmit=\"return false\">\r\n        <table style=\"width:100%\">\r\n            <tr>\r\n                <td style=\"width:3em\">名称：</td>\r\n                <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"width:2.5em\">用量：</td>\r\n                <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                    <span mc-name=\"unit\"></span></td>\r\n            </tr>\r\n        </table>\r\n        <!--\r\n\t\t<div>\r\n\t\t\t<div>名称：<span mc-name=\"name\"></span></div>\r\n\t\t\t<div>量：<input mc-name=\"amount\" size=\"6\"> <span mc-name=\"unit\"></span></div>\r\n\t\t</div>\r\n\t\t-->\r\n\t</form>\r\n\t<div class=\"commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t<hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n\t\t<div>\r\n\t\t\t<input mc-name=\"searchText\"/>\r\n\t\t\t<button mc-name=\"searchLink\">検索</button>\r\n\t\t</div>\r\n\t\t<div>\r\n\t\t\t<select mc-name=\"searchResult\" style=\"width:100%\" size=\"6\"></select>\r\n\t\t</div>\r\n\t</form>\r\n</div>"
+
+/***/ },
+/* 244 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{kizaicode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ }
 /******/ ]);

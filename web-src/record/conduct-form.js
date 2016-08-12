@@ -13,6 +13,7 @@ var kizaiTmpl = hogan.compile(kizaiTmplSrc);
 var mUtil = require("../../myclinic-util");
 var AddShinryouForm = require("./conduct-form-add-shinryou-subform");
 var AddDrugForm = require("./conduct-form-add-drug-subform");
+var AddKizaiForm = require("./conduct-form-add-kizai-subform");
 
 exports.create = function(conductEx, at){
 	var conductId = conductEx.id;
@@ -24,6 +25,7 @@ exports.create = function(conductEx, at){
 	adaptToKind(dom, conductEx.kind);
 	bindAddShinryou(dom, at, conductId);
 	bindAddDrug(dom, at, conductId);
+	bindAddKizai(dom, at, conductId);
 	bindClose(dom);
 	bindDelete(dom);
 	dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
@@ -76,6 +78,23 @@ function bindAddDrug(dom, at, conductId){
 			return;
 		}
 		var form = AddDrugForm.create(at, conductId);
+		form.on("cancel", function(event){
+			event.stopPropagation();
+			getSubformAreaDom(dom).empty();
+		});
+		dom.find(subformAreaSelector).append(form);
+	})
+}
+
+function bindAddKizai(dom, at, conductId){
+	dom.on("click", addKizaiLinkSelector, function(event){
+		event.preventDefault();
+		event.stopPropagation();
+		var area = getSubformAreaDom(dom);
+		if( !area.is(":empty") ){
+			return;
+		}
+		var form = AddKizaiForm.create(at, conductId);
 		form.on("cancel", function(event){
 			event.stopPropagation();
 			getSubformAreaDom(dom).empty();
