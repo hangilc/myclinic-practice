@@ -256,4 +256,6 @@ exports.changeConductKind = function(conductId, kind, done){
 	request("change_conduct_kind", {conduct_id: conductId, kind: kind}, "POST", done);
 };
 
-
+exports.setGazouLabel = function(conductId, label, done){
+	request("set_gazou_label", {conduct_id: conductId, label: label}, "POST", done);
+}

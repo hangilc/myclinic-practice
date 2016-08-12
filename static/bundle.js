@@ -25132,7 +25132,9 @@
 		request("change_conduct_kind", {conduct_id: conductId, kind: kind}, "POST", done);
 	};
 
-
+	exports.setGazouLabel = function(conductId, label, done){
+		request("set_gazou_label", {conduct_id: conductId, label: label}, "POST", done);
+	}
 
 
 /***/ },
@@ -31688,6 +31690,7 @@
 	var AddShinryouForm = __webpack_require__(235);
 	var AddDrugForm = __webpack_require__(239);
 	var AddKizaiForm = __webpack_require__(242);
+	var GazouLabelForm = __webpack_require__(247);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 
@@ -31696,18 +31699,22 @@
 		var dom = $("<div></div>");
 		dom.html(tmpl.render(conductEx));
 		adaptToKind(dom, conductEx.kind);
+		var ctx = {
+			conduct: conductEx
+		};
 		bindAddShinryou(dom, at, conductId);
 		bindAddDrug(dom, at, conductId);
 		bindAddKizai(dom, at, conductId);
 		bindKindChange(dom, at, conductId);
+		bindGazouLabel(dom, at, ctx);
 		bindClose(dom);
 		bindDelete(dom);
 		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
-			if( conductId !== targetConductId ){
-				return;
+			if( conductId === targetConductId ){
+				ctx.conduct = newConductEx;
+				dom.html(tmpl.render(newConductEx));
+				adaptToKind(dom, newConductEx.kind);
 			}
-			dom.html(tmpl.render(newConductEx));
-			adaptToKind(dom, newConductEx.kind);
 		});
 		return dom;
 	};
@@ -31716,6 +31723,9 @@
 	var addDrugLinkSelector = "> div > [mc-name=main-area] > .menu-box [mc-name=addDrug]";
 	var addKizaiLinkSelector = "> div > [mc-name=main-area] > .menu-box [mc-name=addKizai]";
 	var kindSelector = "> div > [mc-name=main-area] [mc-name=disp-area] select[mc-name=kind]";
+	var gazouLabelDispSelector = "> div > [mc-name=main-area] [mc-name=disp-area] [mc-name=gazou-label-disp]";
+	var gazouLabelFormSelector = "> div > [mc-name=main-area] [mc-name=disp-area] [mc-name=gazou-label-form]";
+	var editGazouLabelLinkSelector = "> div > [mc-name=main-area] [mc-name=disp-area] [mc-name=editGazouLabelLink]";
 	var subformAreaSelector = "> div > [mc-name=main-area] > [mc-name=subwidget]";
 	var closeLinkSelector = "> div > [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=closeLink]";
 	var deleteLinkSelector = "> div > [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=deleteLink]";
@@ -31811,6 +31821,26 @@
 		});
 	}
 
+	function bindGazouLabel(dom, at, ctx){
+		dom.on("click", editGazouLabelLinkSelector, function(event){
+			event.preventDefault();
+			var dispArea = dom.find(gazouLabelDispSelector);
+			var formArea = dom.find(gazouLabelFormSelector);
+			var form = GazouLabelForm.create(ctx.conduct, at);
+			form.on("modified", function(event, newConduct){
+				event.stopPropagation();
+				dom.trigger("conduct-modified", [ctx.conduct.id, newConduct]);
+			})
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				formArea.empty();
+				dispArea.show();
+			})
+			dispArea.hide();
+			formArea.append(form);
+		})
+	}
+
 	function bindClose(dom){
 		dom.on("click", closeLinkSelector, function(event){
 			event.preventDefault();
@@ -31832,7 +31862,7 @@
 /* 230 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置の編集</div>\r\n    <div mc-name=\"main-area\">\r\n        <div class=\"menu-box\">\r\n            <a mc-name=\"addShinryou\" class=\"cmd-link menu-item\" \r\n               href=\"javascript:void(0)\">診療行為追加</a> |\r\n            <a mc-name=\"addDrug\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">薬剤追加</a> |\r\n            <a mc-name=\"addKizai\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">器材追加</a>\r\n        </div>\r\n        <div mc-name=\"subwidget\" class=\"subwidget-area\"></div>\r\n        <div mc-name=\"disp-area\">\r\n            <div mc-name=\"kind-area\">\r\n                <table style=\"margin-left:0\" padding=\"0\" cellspacing=\"0\">\r\n                    <tr>\r\n                        <td>種類：</td>\r\n                        <td width=\"*\">\r\n                            <select mc-name=\"kind\" style=\"margin: 3px 0\">\r\n                                <option value=\"0\">皮下・筋肉注射</option>\r\n                                <option value=\"1\">静脈注射</option>\r\n                                <option value=\"2\">その他の注射</option>\r\n                                <option value=\"3\">画像</option>\r\n                            </select>\r\n                        </td>\r\n                    </tr>\r\n                    </select>\r\n                </table>\r\n            </div>\r\n            <div mc-name=\"gazouLabelWrapper\" style=\"margin: 3px 0\">\r\n                画像ラベル： <span mc-name=\"gazouLabel\">{{gazou_label}}</span>\r\n                <a mc-name=\"editGazouLabelLink\" class=\"cmd-link\" href=\"javascript:void(0)\">編集</a>\r\n            </div>\r\n            <div mc-name=\"shinryouList\">\r\n                {{#shinryou_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{name}}</span> \r\n                        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n                    </div>\r\n                {{/shinryou_list}}                \r\n            </div>\r\n            <div mc-name=\"drugList\">\r\n                {{#drugs}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span>  \r\n                        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>  \r\n                    </div>\r\n                {{/drugs}}                \r\n            </div>\r\n            <div mc-name=\"kizaiList\">\r\n                {{#kizai_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span> \r\n                        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> \r\n                    </div>\r\n                {{/kizai_list}}                \r\n            </div>\r\n            <hr/>\r\n            <div class=\"workarea-commandbox\">\r\n                <button mc-name=\"closeLink\">閉じる</button>\r\n                <a mc-name=\"deleteLink\" class=\"cmd-link\" href=\"javascript:void(0)\">削除</a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置の編集</div>\r\n    <div mc-name=\"main-area\">\r\n        <div class=\"menu-box\">\r\n            <a mc-name=\"addShinryou\" class=\"cmd-link menu-item\" \r\n               href=\"javascript:void(0)\">診療行為追加</a> |\r\n            <a mc-name=\"addDrug\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">薬剤追加</a> |\r\n            <a mc-name=\"addKizai\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">器材追加</a>\r\n        </div>\r\n        <div mc-name=\"subwidget\" class=\"subwidget-area\"></div>\r\n        <div mc-name=\"disp-area\">\r\n            <div mc-name=\"kind-area\">\r\n                <table style=\"margin-left:0\" padding=\"0\" cellspacing=\"0\">\r\n                    <tr>\r\n                        <td>種類：</td>\r\n                        <td width=\"*\">\r\n                            <select mc-name=\"kind\" style=\"margin: 3px 0\">\r\n                                <option value=\"0\">皮下・筋肉注射</option>\r\n                                <option value=\"1\">静脈注射</option>\r\n                                <option value=\"2\">その他の注射</option>\r\n                                <option value=\"3\">画像</option>\r\n                            </select>\r\n                        </td>\r\n                    </tr>\r\n                    </select>\r\n                </table>\r\n            </div>\r\n            <div mc-name=\"gazouLabelWrapper\" style=\"margin: 3px 0\">\r\n                <div mc-name=\"gazou-label-disp\">\r\n                    画像ラベル： <span mc-name=\"gazouLabel\">{{gazou_label}}</span>\r\n                    <a mc-name=\"editGazouLabelLink\" class=\"cmd-link\" href=\"javascript:void(0)\">編集</a>\r\n                </div>\r\n                <div mc-name=\"gazou-label-form\"></div>\r\n            </div>\r\n            <div mc-name=\"shinryouList\">\r\n                {{#shinryou_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{name}}</span> \r\n                        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n                    </div>\r\n                {{/shinryou_list}}                \r\n            </div>\r\n            <div mc-name=\"drugList\">\r\n                {{#drugs}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span>  \r\n                        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>  \r\n                    </div>\r\n                {{/drugs}}                \r\n            </div>\r\n            <div mc-name=\"kizaiList\">\r\n                {{#kizai_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span> \r\n                        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> \r\n                    </div>\r\n                {{/kizai_list}}                \r\n            </div>\r\n            <hr/>\r\n            <div class=\"workarea-commandbox\">\r\n                <button mc-name=\"closeLink\">閉じる</button>\r\n                <a mc-name=\"deleteLink\" class=\"cmd-link\" href=\"javascript:void(0)\">削除</a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
 /* 231 */
@@ -32414,6 +32444,94 @@
 /***/ function(module, exports) {
 
 	module.exports = "<span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span>"
+
+/***/ },
+/* 247 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(248);
+	var tmpl = hogan.compile(tmplSrc);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
+
+	var labelInputSelector = "input[mc-name=text]";
+	var suggestLinkSelector = "[mc-name=suggestLink]";
+	var examplesWrapperSelector = "[mc-name=selectWrapper]";
+	var examplesSelector = "select[mc-name=select]";
+	var enterSelector = "[mc-name=enter]";
+	var cancelSelector = "[mc-name=cancel]";
+
+	exports.create = function(conduct, at){
+		var dom = $(tmpl.render(conduct));
+		bindEnter(dom, conduct.id, at);
+		bindCancel(dom);
+		bindSuggest(dom);
+		bindSuggestChange(dom);
+		return dom;
+	};
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			dom.trigger("cancel");
+		});
+	}
+
+	function bindEnter(dom, conductId, at){
+		dom.on("click", enterSelector, function(event){
+			event.preventDefault();
+			dom.find(enterSelector).prop("disabled", true);
+			var text = dom.find(labelInputSelector).val().trim();
+			var newConduct;
+			task.run([
+				function(done){
+					service.setGazouLabel(conductId, text, done);
+				},
+				function(done){
+					service.getFullConduct(conductId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newConduct = result;
+						done();
+					});
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("modified", [newConduct]);
+			})
+		});
+	}
+
+	function bindSuggest(dom){
+		dom.on("click", suggestLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(examplesWrapperSelector).toggle();
+		})
+	}
+
+	function bindSuggestChange(dom){
+		dom.on("change", examplesSelector, function(event){
+			var label = dom.find(examplesSelector + " option:selected").val();
+			dom.find(labelInputSelector).val(label);
+		})
+	}
+
+
+/***/ },
+/* 248 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\"> \r\n      <span mc-name=\"label\"></span>  \r\n      <input mc-name=\"text\" value=\"{{gazou_label}}\"/>  \r\n      <a mc-name=\"suggestLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a> \r\n      <div mc-name=\"selectWrapper\" style=\"display:none\"> \r\n        <select mc-name=\"select\" size=\"2\"> \r\n          <option>胸部単純Ｘ線</option> \r\n          <option>腹部単純Ｘ線</option> \r\n        </select> \r\n      </div> \r\n      <br /> \r\n      <a mc-name=\"enter\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a> |  \r\n      <a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>  \r\n</div>\r\n"
 
 /***/ }
 /******/ ]);

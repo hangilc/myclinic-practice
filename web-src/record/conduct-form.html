@@ -28,8 +28,11 @@
                 </table>
             </div>
             <div mc-name="gazouLabelWrapper" style="margin: 3px 0">
-                画像ラベル： <span mc-name="gazouLabel">{{gazou_label}}</span>
-                <a mc-name="editGazouLabelLink" class="cmd-link" href="javascript:void(0)">編集</a>
+                <div mc-name="gazou-label-disp">
+                    画像ラベル： <span mc-name="gazouLabel">{{gazou_label}}</span>
+                    <a mc-name="editGazouLabelLink" class="cmd-link" href="javascript:void(0)">編集</a>
+                </div>
+                <div mc-name="gazou-label-form"></div>
             </div>
             <div mc-name="shinryouList">
                 {{#shinryou_list}}
