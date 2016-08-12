@@ -15,7 +15,6 @@ exports.create = function(conductEx, at){
 	var conductId = conductEx.id;
 	var dom = $("<div></div>");
 	dom.html(tmpl.render(conductEx));
-	console.log("kind", conductEx.kind);
 	adaptToKind(dom, conductEx.kind);
 	bindAddShinryou(dom, at, conductId);
 	bindAddDrug(dom, at, conductId);

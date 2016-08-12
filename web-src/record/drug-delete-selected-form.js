@@ -37,12 +37,9 @@ function bindEnter(dom, visitId){
 				alert(err);
 				return;
 			}
-			//dom.trigger("drugs-batch-deleted", [visitId, deletedDrugIds]);
 			deletedDrugIds.forEach(function(drugId){
 				dom.trigger("drug-deleted", [drugId, visitId]);
 			});
-			// dom.trigger("number-of-drugs-changed", [visitId]);
-			// dom.trigger("drugs-need-renumbering", [visitId]);
 			dom.trigger("close-workarea");
 		})
 	});

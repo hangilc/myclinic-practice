@@ -107,7 +107,6 @@ function bindCopyAll(dom, visitId, at){
 				alert(err);
 				return;
 			}
-			//dom.trigger("drugs-batch-entered", [targetVisitId, enteredDrugs]);
 			enteredDrugs.forEach(function(newDrug){
 				dom.trigger("drug-entered", [newDrug]);
 			});

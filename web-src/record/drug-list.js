@@ -13,10 +13,8 @@ exports.setup = function(dom, drugs, visitId, at, patientId){
 		var e = Drug.create(index++, drug, at, patientId);
 		listDom.append(e);
 	});
-	//respondToDrugsBatchEntered(dom, visitId);
 	respondToDrugEntered(dom, visitId, at, patientId);
 	respondToNumberOfDrugsChanged(dom, visitId);
-	//respondToDrugsNeedRenumbering(dom, visitId);
 };
 
 function getRpDom(dom){
@@ -50,20 +48,6 @@ function respondToDrugEntered(dom, visitId, at, patientId){
 		}
 	});
 }
-
-// function respondToDrugsBatchEntered(dom, visitId){
-// 	dom.listen("rx-drugs-batch-entered", function(targetVisitId, drugs){
-// 		if( visitId === targetVisitId ){
-// 			var index = countDrugs(dom, visitId) + 1;
-// 			var listDom = getListDom(dom);
-// 			drugs.forEach(function(drug){
-// 				var e = Drug.create(index++, drug);
-// 				listDom.append(e);
-// 			});
-// 			updateRp(dom, true);
-// 		}
-// 	});
-// }
 
 function respondToNumberOfDrugsChanged(dom, visitId){
 	dom.listen("rx-number-of-drugs-changed", function(targetVisitId){

@@ -21,9 +21,6 @@ exports.setup = function(dom){
 	bindDrugEntered(dom);
 	bindDrugModified(dom);
 	bindDrugDeleted(dom);
-
-	//bindDrugsBatchEntered(dom);
-	//bindNumberOfDrugsChanged(dom);
 	bindShinryouBatchEntered(dom);
 	bindConductsBatchEntered(dom);
 };
@@ -44,20 +41,6 @@ function bindDrugDeleted(dom){
 	dom.on("drug-deleted", function(event, drugId, visitId){
 		dom.broadcast("rx-drug-deleted", [drugId]);
 		dom.broadcast("rx-number-of-drugs-changed", [visitId]);
-	});
-}
-
-// function bindDrugsBatchEntered(recordListDom){
-// 	recordListDom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
-// 		event.stopPropagation();
-// 		recordListDom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
-// 	});
-// }
-
-function bindNumberOfDrugsChanged(recordListDom){
-	recordListDom.on("number-of-drugs-changed", function(event, visitId){
-		event.stopPropagation();
-		recordListDom.broadcast("rx-number-of-drugs-changed", [visitId]);
 	});
 }
 
