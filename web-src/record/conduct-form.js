@@ -4,12 +4,6 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var tmplSrc = require("raw!./conduct-form.html");
 var tmpl = hogan.compile(tmplSrc);
-var shinryouTmplSrc = require("raw!./conduct-form-shinryou-list.html");
-var shinryouTmpl = hogan.compile(shinryouTmplSrc);
-var drugTmplSrc = require("raw!./conduct-form-drugs.html");
-var drugTmpl = hogan.compile(drugTmplSrc);
-var kizaiTmplSrc = require("raw!./conduct-form-kizai-list.html");
-var kizaiTmpl = hogan.compile(kizaiTmplSrc);
 var mUtil = require("../../myclinic-util");
 var AddShinryouForm = require("./conduct-form-add-shinryou-subform");
 var AddDrugForm = require("./conduct-form-add-drug-subform");
@@ -17,11 +11,7 @@ var AddKizaiForm = require("./conduct-form-add-kizai-subform");
 
 exports.create = function(conductEx, at){
 	var conductId = conductEx.id;
-	var dom = $(tmpl.render(conductEx, {
-		shinryouList: shinryouTmpl,
-		drugs: drugTmpl,
-		kizaiList: kizaiTmpl
-	}));
+	var dom = $("<div></div>").html(tmpl.render(conductEx));
 	adaptToKind(dom, conductEx.kind);
 	bindAddShinryou(dom, at, conductId);
 	bindAddDrug(dom, at, conductId);
@@ -32,18 +22,18 @@ exports.create = function(conductEx, at){
 		if( conductId !== targetConductId ){
 			return;
 		}
-		dom.replaceWith(exports.create(newConductEx, at));
+		dom.html(tmpl.render(newConductEx));
 	});
 	return dom;
 };
 
-var addShinryouLinkSelector = "> [mc-name=main-area] > .menu-box [mc-name=addShinryou]";
-var addDrugLinkSelector = "> [mc-name=main-area] > .menu-box [mc-name=addDrug]";
-var addKizaiLinkSelector = "> [mc-name=main-area] > .menu-box [mc-name=addKizai]";
-var kindSelector = "> [mc-name=main-area] [mc-name=disp-area] select[mc-name=kind]";
-var subformAreaSelector = "> [mc-name=main-area] > [mc-name=subwidget]";
-var closeLinkSelector = "> [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=closeLink]";
-var deleteLinkSelector = "> [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=deleteLink]";
+var addShinryouLinkSelector = "> div > [mc-name=main-area] > .menu-box [mc-name=addShinryou]";
+var addDrugLinkSelector = "> div > [mc-name=main-area] > .menu-box [mc-name=addDrug]";
+var addKizaiLinkSelector = "> div > [mc-name=main-area] > .menu-box [mc-name=addKizai]";
+var kindSelector = "> div > [mc-name=main-area] [mc-name=disp-area] select[mc-name=kind]";
+var subformAreaSelector = "> div > [mc-name=main-area] > [mc-name=subwidget]";
+var closeLinkSelector = "> div > [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=closeLink]";
+var deleteLinkSelector = "> div > [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=deleteLink]";
 
 function getSubformAreaDom(dom){
 	return dom.find(subformAreaSelector);

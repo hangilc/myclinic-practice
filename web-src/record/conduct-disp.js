@@ -7,12 +7,13 @@ var tmpl = hogan.compile(tmplSrc);
 
 exports.create = function(conductEx){
 	var conductId = conductEx.id;
-	var dom = $(tmpl.render(conductEx));
+	var dom = $("<div></div>");
+	dom.html(tmpl.render(conductEx));
 	dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
 		if( conductId !== targetConductId ){
 			return;
 		}
-		dom.replaceWith(exports.create(newConductEx));
+		dom.html(tmpl.render(newConductEx));
 	});
 	return dom;
 };
