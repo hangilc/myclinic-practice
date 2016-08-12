@@ -8,14 +8,19 @@ var mUtil = require("../../myclinic-util");
 var AddShinryouForm = require("./conduct-form-add-shinryou-subform");
 var AddDrugForm = require("./conduct-form-add-drug-subform");
 var AddKizaiForm = require("./conduct-form-add-kizai-subform");
+var task = require("../task");
+var service = require("../service");
 
 exports.create = function(conductEx, at){
 	var conductId = conductEx.id;
-	var dom = $("<div></div>").html(tmpl.render(conductEx));
+	var dom = $("<div></div>");
+	dom.html(tmpl.render(conductEx));
+	console.log("kind", conductEx.kind);
 	adaptToKind(dom, conductEx.kind);
 	bindAddShinryou(dom, at, conductId);
 	bindAddDrug(dom, at, conductId);
 	bindAddKizai(dom, at, conductId);
+	bindKindChange(dom, at, conductId);
 	bindClose(dom);
 	bindDelete(dom);
 	dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
@@ -23,6 +28,7 @@ exports.create = function(conductEx, at){
 			return;
 		}
 		dom.html(tmpl.render(newConductEx));
+		adaptToKind(dom, newConductEx.kind);
 	});
 	return dom;
 };
@@ -38,8 +44,13 @@ var deleteLinkSelector = "> div > [mc-name=main-area] > [mc-name=disp-area] > .w
 function getSubformAreaDom(dom){
 	return dom.find(subformAreaSelector);
 }
+
 function adaptToKind(dom, kind){
 	dom.find(kindSelector + " option[value=" + kind + "]").prop("selected", true);
+}
+
+function getKind(dom){
+	return dom.find(kindSelector + " option:selected").val();
 }
 
 function bindAddShinryou(dom, at, conductId){
@@ -91,6 +102,34 @@ function bindAddKizai(dom, at, conductId){
 		});
 		dom.find(subformAreaSelector).append(form);
 	})
+}
+
+function bindKindChange(dom, at, conductId){
+	dom.on("change", kindSelector, function(event){
+		var kind = getKind(dom);
+		var newConduct;
+		task.run([
+			function(done){
+				service.changeConductKind(conductId, kind, done);
+			},
+			function(done){
+				service.getFullConduct(conductId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("conduct-modified", [conductId, newConduct]);
+		})
+	});
 }
 
 function bindClose(dom){

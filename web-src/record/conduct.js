@@ -33,13 +33,17 @@ exports.create = function(conduct, visitId, at){
 	var visitId = conduct.visit_id;
 	var conductId = conduct.id;
 	conduct = extendConductsWithLabel(conduct);
+	var ctx = {
+		conduct: conduct
+	};
 	var dom = $(tmplSrc);
 	getDispAreaDom(dom).append(ConductDisp.create(conduct));
-	bindClick(dom, visitId, at, conduct);
+	bindClick(dom, visitId, at, ctx);
 	dom.on("conduct-modified", function(event, targetConductId, newConduct){
 		if( conductId === targetConductId ){
 			event.stopPropagation();
 			var newConductEx = extendConductsWithLabel(newConduct);
+			ctx.conduct = newConductEx;
 			dom.broadcast("rx-conduct-modified", [targetConductId, newConductEx]);
 			return;
 		}
@@ -55,9 +59,10 @@ function getWorkAreaDom(dom){
 	return dom.find(workAreaSelector);
 }
 
-function bindClick(dom, visitId, at, conduct){
+function bindClick(dom, visitId, at, ctx){
 	dom.on("click", dispAreaSelector, function(event){
 		event.preventDefault();
+		var conduct = ctx.conduct;
 		var conductId = conduct;
 		var msg = "現在（暫定）診察中でありませんが、この処置を変更しますか？";
 		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){

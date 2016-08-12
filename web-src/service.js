@@ -252,4 +252,8 @@ exports.searchKizaiMaster = function(text, at, cb){
 	request("search_kizai_master", {text: text, at: at}, "GET", cb);
 };
 
+exports.changeConductKind = function(conductId, kind, done){
+	request("change_conduct_kind", {conduct_id: conductId, kind: kind}, "POST", done);
+};
+
 

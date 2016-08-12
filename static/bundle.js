@@ -25128,6 +25128,10 @@
 		request("search_kizai_master", {text: text, at: at}, "GET", cb);
 	};
 
+	exports.changeConductKind = function(conductId, kind, done){
+		request("change_conduct_kind", {conduct_id: conductId, kind: kind}, "POST", done);
+	};
+
 
 
 
@@ -29391,13 +29395,17 @@
 		var visitId = conduct.visit_id;
 		var conductId = conduct.id;
 		conduct = extendConductsWithLabel(conduct);
+		var ctx = {
+			conduct: conduct
+		};
 		var dom = $(tmplSrc);
 		getDispAreaDom(dom).append(ConductDisp.create(conduct));
-		bindClick(dom, visitId, at, conduct);
+		bindClick(dom, visitId, at, ctx);
 		dom.on("conduct-modified", function(event, targetConductId, newConduct){
 			if( conductId === targetConductId ){
 				event.stopPropagation();
 				var newConductEx = extendConductsWithLabel(newConduct);
+				ctx.conduct = newConductEx;
 				dom.broadcast("rx-conduct-modified", [targetConductId, newConductEx]);
 				return;
 			}
@@ -29413,9 +29421,10 @@
 		return dom.find(workAreaSelector);
 	}
 
-	function bindClick(dom, visitId, at, conduct){
+	function bindClick(dom, visitId, at, ctx){
 		dom.on("click", dispAreaSelector, function(event){
 			event.preventDefault();
+			var conduct = ctx.conduct;
 			var conductId = conduct;
 			var msg = "現在（暫定）診察中でありませんが、この処置を変更しますか？";
 			if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
@@ -31678,14 +31687,19 @@
 	var AddShinryouForm = __webpack_require__(235);
 	var AddDrugForm = __webpack_require__(239);
 	var AddKizaiForm = __webpack_require__(242);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
 
 	exports.create = function(conductEx, at){
 		var conductId = conductEx.id;
-		var dom = $("<div></div>").html(tmpl.render(conductEx));
+		var dom = $("<div></div>");
+		dom.html(tmpl.render(conductEx));
+		console.log("kind", conductEx.kind);
 		adaptToKind(dom, conductEx.kind);
 		bindAddShinryou(dom, at, conductId);
 		bindAddDrug(dom, at, conductId);
 		bindAddKizai(dom, at, conductId);
+		bindKindChange(dom, at, conductId);
 		bindClose(dom);
 		bindDelete(dom);
 		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
@@ -31693,6 +31707,7 @@
 				return;
 			}
 			dom.html(tmpl.render(newConductEx));
+			adaptToKind(dom, newConductEx.kind);
 		});
 		return dom;
 	};
@@ -31708,8 +31723,13 @@
 	function getSubformAreaDom(dom){
 		return dom.find(subformAreaSelector);
 	}
+
 	function adaptToKind(dom, kind){
 		dom.find(kindSelector + " option[value=" + kind + "]").prop("selected", true);
+	}
+
+	function getKind(dom){
+		return dom.find(kindSelector + " option:selected").val();
 	}
 
 	function bindAddShinryou(dom, at, conductId){
@@ -31761,6 +31781,34 @@
 			});
 			dom.find(subformAreaSelector).append(form);
 		})
+	}
+
+	function bindKindChange(dom, at, conductId){
+		dom.on("change", kindSelector, function(event){
+			var kind = getKind(dom);
+			var newConduct;
+			task.run([
+				function(done){
+					service.changeConductKind(conductId, kind, done);
+				},
+				function(done){
+					service.getFullConduct(conductId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newConduct = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conduct-modified", [conductId, newConduct]);
+			})
+		});
 	}
 
 	function bindClose(dom){
