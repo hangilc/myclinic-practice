@@ -236,3 +236,114 @@ exports.wqueueStateToName = function(wqState){
     if (state == mConsts.WqueueStateWaitReAppointedExam) return "waitReAppointedExam";
     return "unknown";
 };
+
+exports.shuukeiToMeisaiSection = function(shuukeisaki){
+	switch(shuukeisaki){
+		case mConsts.SHUUKEI_SHOSHIN:
+		case mConsts.SHUUKEI_SAISHIN_SAISHIN:
+		case mConsts.SHUUKEI_SAISHIN_GAIRAIKANRI:
+		case mConsts.SHUUKEI_SAISHIN_JIKANGAI:
+		case mConsts.SHUUKEI_SAISHIN_KYUUJITSU:
+		case mConsts.SHUUKEI_SAISHIN_SHINYA:
+			return "初・再診料";
+		case mConsts.SHUUKEI_SHIDO:
+			return "医学管理等";
+		case mConsts.SHUUKEI_ZAITAKU:
+			return "在宅医療";
+		case mConsts.SHUUKEI_KENSA:
+			return "検査";
+		case mConsts.SHUUKEI_GAZOSHINDAN:
+			return "画像診断";
+		case mConsts.SHUUKEI_TOYAKU_NAIFUKUTONPUKUCHOZAI:
+		case mConsts.SHUUKEI_TOYAKU_GAIYOCHOZAI:
+		case mConsts.SHUUKEI_TOYAKU_SHOHO:
+		case mConsts.SHUUKEI_TOYAKU_MADOKU:
+		case mConsts.SHUUKEI_TOYAKU_CHOKI:
+			return "投薬";
+		case mConsts.SHUUKEI_CHUSHA_SEIBUTSUETC:
+		case mConsts.SHUUKEI_CHUSHA_HIKA:
+		case mConsts.SHUUKEI_CHUSHA_JOMYAKU:
+		case mConsts.SHUUKEI_CHUSHA_OTHERS:
+			return "注射";
+		case mConsts.SHUUKEI_SHOCHI:
+			return "処置";
+		case mConsts.SHUUKEI_SHUJUTSU_SHUJUTSU:
+		case mConsts.SHUUKEI_SHUJUTSU_YUKETSU:
+		case mConsts.SHUUKEI_MASUI:
+		case mConsts.SHUUKEI_OTHERS:
+		default: return "その他";
+	}
+}
+
+exports.touyakuKingakuToTen = function(kingaku){
+    if( kingaku <= 15 ){
+        return 1;
+    } else {
+        return Math.ceil((kingaku - 15)/10 + 1);
+    }
+};
+
+exports.shochiKingakuToTen = function(kingaku){
+		if( kingaku <= 15 )
+			return 0;
+		else
+			return Math.ceil((kingaku - 15)/10 + 1);
+};
+
+exports.kizaiKingakuToTen = function(kingaku){
+    return Math.round(kingaku/10.0);
+}
+
+exports.calcRcptAge = function(bdYear, bdMonth, bdDay, atYear, atMonth){
+    var age;
+	age = atYear - bdYear;
+	if( atMonth < bdMonth ){
+		age -= 1;
+	} else if( atMonth === bdMonth ){
+		if( bdDay != 1 ){
+			age -= 1;
+		}
+	}
+	return age;
+};
+
+exports.calcShahokokuhoFutanWariByAge = function(age){
+    if( age < 3 )
+        return 2;
+    else if( age >= 70 )
+        return 2;
+    else
+        return 3;
+};
+
+exports.kouhiFutanWari = function(futanshaBangou){
+    futanshaBangou = Number(futanshaBangou);
+	if( Math.floor(futanshaBangou / 1000000) === 41 )
+		return 1;
+	else if( Math.floor(futanshaBangou / 1000) === 80136 )
+		return 1;
+	else if( Math.floor(futanshaBangou / 1000) === 80137 )
+		return 0;
+	else if( Math.floor(futanshaBangou / 1000) === 81136 )
+		return 1;
+	else if( Math.floor(futanshaBangou / 1000) === 81137 )
+		return 0;
+	else if( Math.floor(futanshaBangou / 1000000) === 88 )
+		return 0;
+	else{
+		console.log("unknown kouhi futansha: " + futanshaBangou);
+		return 0;
+	}
+};
+
+exports.calcCharge = function(ten, futanWari){
+    var c, r;
+	c = parseInt(ten) * parseInt(futanWari);
+	r = c % 10;
+	if( r < 5 )
+		c -= r;
+	else
+		c += (10 - r);
+	return c;
+}
+

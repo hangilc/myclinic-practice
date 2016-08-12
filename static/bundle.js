@@ -10719,6 +10719,117 @@
 	    return "unknown";
 	};
 
+	exports.shuukeiToMeisaiSection = function(shuukeisaki){
+		switch(shuukeisaki){
+			case mConsts.SHUUKEI_SHOSHIN:
+			case mConsts.SHUUKEI_SAISHIN_SAISHIN:
+			case mConsts.SHUUKEI_SAISHIN_GAIRAIKANRI:
+			case mConsts.SHUUKEI_SAISHIN_JIKANGAI:
+			case mConsts.SHUUKEI_SAISHIN_KYUUJITSU:
+			case mConsts.SHUUKEI_SAISHIN_SHINYA:
+				return "初・再診料";
+			case mConsts.SHUUKEI_SHIDO:
+				return "医学管理等";
+			case mConsts.SHUUKEI_ZAITAKU:
+				return "在宅医療";
+			case mConsts.SHUUKEI_KENSA:
+				return "検査";
+			case mConsts.SHUUKEI_GAZOSHINDAN:
+				return "画像診断";
+			case mConsts.SHUUKEI_TOYAKU_NAIFUKUTONPUKUCHOZAI:
+			case mConsts.SHUUKEI_TOYAKU_GAIYOCHOZAI:
+			case mConsts.SHUUKEI_TOYAKU_SHOHO:
+			case mConsts.SHUUKEI_TOYAKU_MADOKU:
+			case mConsts.SHUUKEI_TOYAKU_CHOKI:
+				return "投薬";
+			case mConsts.SHUUKEI_CHUSHA_SEIBUTSUETC:
+			case mConsts.SHUUKEI_CHUSHA_HIKA:
+			case mConsts.SHUUKEI_CHUSHA_JOMYAKU:
+			case mConsts.SHUUKEI_CHUSHA_OTHERS:
+				return "注射";
+			case mConsts.SHUUKEI_SHOCHI:
+				return "処置";
+			case mConsts.SHUUKEI_SHUJUTSU_SHUJUTSU:
+			case mConsts.SHUUKEI_SHUJUTSU_YUKETSU:
+			case mConsts.SHUUKEI_MASUI:
+			case mConsts.SHUUKEI_OTHERS:
+			default: return "その他";
+		}
+	}
+
+	exports.touyakuKingakuToTen = function(kingaku){
+	    if( kingaku <= 15 ){
+	        return 1;
+	    } else {
+	        return Math.ceil((kingaku - 15)/10 + 1);
+	    }
+	};
+
+	exports.shochiKingakuToTen = function(kingaku){
+			if( kingaku <= 15 )
+				return 0;
+			else
+				return Math.ceil((kingaku - 15)/10 + 1);
+	};
+
+	exports.kizaiKingakuToTen = function(kingaku){
+	    return Math.round(kingaku/10.0);
+	}
+
+	exports.calcRcptAge = function(bdYear, bdMonth, bdDay, atYear, atMonth){
+	    var age;
+		age = atYear - bdYear;
+		if( atMonth < bdMonth ){
+			age -= 1;
+		} else if( atMonth === bdMonth ){
+			if( bdDay != 1 ){
+				age -= 1;
+			}
+		}
+		return age;
+	};
+
+	exports.calcShahokokuhoFutanWariByAge = function(age){
+	    if( age < 3 )
+	        return 2;
+	    else if( age >= 70 )
+	        return 2;
+	    else
+	        return 3;
+	};
+
+	exports.kouhiFutanWari = function(futanshaBangou){
+	    futanshaBangou = Number(futanshaBangou);
+		if( Math.floor(futanshaBangou / 1000000) === 41 )
+			return 1;
+		else if( Math.floor(futanshaBangou / 1000) === 80136 )
+			return 1;
+		else if( Math.floor(futanshaBangou / 1000) === 80137 )
+			return 0;
+		else if( Math.floor(futanshaBangou / 1000) === 81136 )
+			return 1;
+		else if( Math.floor(futanshaBangou / 1000) === 81137 )
+			return 0;
+		else if( Math.floor(futanshaBangou / 1000000) === 88 )
+			return 0;
+		else{
+			console.log("unknown kouhi futansha: " + futanshaBangou);
+			return 0;
+		}
+	};
+
+	exports.calcCharge = function(ten, futanWari){
+	    var c, r;
+		c = parseInt(ten) * parseInt(futanWari);
+		r = c % 10;
+		if( r < 5 )
+			c -= r;
+		else
+			c += (10 - r);
+		return c;
+	}
+
+
 
 /***/ },
 /* 6 */
@@ -25160,6 +25271,20 @@
 		request("calc_meisai", {visit_id: visitId}, "GET", cb);
 	};
 
+	exports.findCharge = function(visitId, cb){
+		request("find_charge", {visit_id: visitId}, "GET", cb);
+	};
+
+	exports.updateCharge = function(charge, done){
+		request("update_charge", JSON.stringify(charge), "POST", done);
+	};
+
+	exports.getCharge = function(visitId, cb){
+		request("get_charge", {visit_id: visitId}, "GET", cb);
+	};
+
+
+
 /***/ },
 /* 113 */
 /***/ function(module, exports, __webpack_require__) {
@@ -29488,15 +29613,26 @@
 		dom.data("setup", 1);
 		// disp events
 		dom.on("v7lug8he-start-edit", function(event){
+			if( !charge ){
+				return;
+			}
 			startEdit(dom, visitId, charge);
 		});
 		// form events
 		dom.on("30g8sm2i-cancel", function(event){
-			dom.empty();
-			dom.append(mkDisp(charge));
+			showDisp();
+		});
+		dom.on("30g8sm2i-modified", function(event, newCharge){
+			charge = newCharge;
+			showDisp();
 		});
 		// initial display
-		dom.append(mkDisp(charge));
+		showDisp();
+
+		function showDisp(){
+			dom.empty();
+			dom.append(mkDisp(charge));
+		}
 	};
 
 	function mkDisp(charge){
@@ -29515,13 +29651,14 @@
 					meisai = result;
 					done();
 				});
-			}
+			},
 		], function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
-			console.log(meisai);
+			dom.empty();
+			dom.append(ChargeForm.create(meisai, charge));
 		});
 	}
 
@@ -32711,15 +32848,28 @@
 	var hogan = __webpack_require__(115);
 	var tmplSrc = __webpack_require__(252);
 	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
 
+	var chargeInputSelector = "input[mc-name=newCharge]";
 	var enterLinkSelector = "[mc-name=enterLink]"
 	var cancelLinkSelector = "[mc-name=cancelLink]"
 
-	exports.create = function(meisai){
+	exports.create = function(meisai, currentCharge){
+		console.log("meisai", meisai);
+		console.log("charge", currentCharge);
 		var data = {
-
+			total_ten: mUtil.formatNumber(meisai.totalTen),
+			futan_wari: meisai.futanWari,
+			current_charge: currentCharge ? mUtil.formatNumber(currentCharge.charge) : "",
+			calc_charge: meisai.charge
 		};
 		var dom = $(tmpl.render(data));
+		dom.on("click", enterLinkSelector, function(event){
+			event.preventDefault();
+			doEnter(dom, currentCharge.visit_id);
+		})
 		dom.on("click", cancelLinkSelector, function(event){
 			event.preventDefault();
 			dom.trigger("30g8sm2i-cancel");
@@ -32727,11 +32877,50 @@
 		return dom;
 	}
 
+	function doEnter(dom, visitId){
+		var input = dom.find(chargeInputSelector).val().trim();
+		if( input === "" ){
+			alert("金額が入力されていません。");
+			return;
+		}
+		if( !/^\d+$/.test(input) ){
+			alert("金額の入力が不適切です。");
+			return;
+		}
+		input = +input;
+		var newCharge;
+		task.run([
+			function(done){
+				var charge = {
+					visit_id: visitId,
+					charge: input
+				};
+				service.updateCharge(charge, done);
+			},
+			function(done){
+				service.getCharge(visitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newCharge = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("30g8sm2i-modified", [newCharge]);
+		});
+	}
+
 /***/ },
 /* 252 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\t\r\n\t<div class=\"title\">請求額の変更</div>\r\n\t<div>診療報酬総点： <span mc-name=\"tensuu\"></span> 点</div>\r\n\t<div>負担割： <span mc-name=\"futanWari\"></span> 割</div>\r\n\t<div>現在の請求額： <span mc-name=\"currentCharge\"></span> 円</div>\r\n\t<div>変更後の請求額： <input mc-name=\"newCharge\"> 円</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t\t<button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\t\r\n\t<div class=\"title\">請求額の変更</div>\r\n\t<div>診療報酬総点： {{total_ten}} 点</div>\r\n\t<div>負担割： {{futan_wari}} 割</div>\r\n\t<div>現在の請求額： {{current_charge}} 円</div>\r\n\t<form onsubmit=\"return false\">\r\n\t<div>変更後の請求額： <input mc-name=\"newCharge\" value=\"{{calc_charge}}\" size=\"4\"> 円</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t\t<button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t</form>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);

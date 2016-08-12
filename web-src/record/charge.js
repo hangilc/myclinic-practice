@@ -15,15 +15,26 @@ exports.setup = function(dom, visitId, charge){
 	dom.data("setup", 1);
 	// disp events
 	dom.on("v7lug8he-start-edit", function(event){
+		if( !charge ){
+			return;
+		}
 		startEdit(dom, visitId, charge);
 	});
 	// form events
 	dom.on("30g8sm2i-cancel", function(event){
-		dom.empty();
-		dom.append(mkDisp(charge));
+		showDisp();
+	});
+	dom.on("30g8sm2i-modified", function(event, newCharge){
+		charge = newCharge;
+		showDisp();
 	});
 	// initial display
-	dom.append(mkDisp(charge));
+	showDisp();
+
+	function showDisp(){
+		dom.empty();
+		dom.append(mkDisp(charge));
+	}
 };
 
 function mkDisp(charge){
@@ -42,12 +53,13 @@ function startEdit(dom, visitId, charge){
 				meisai = result;
 				done();
 			});
-		}
+		},
 	], function(err){
 		if( err ){
 			alert(err);
 			return;
 		}
-		console.log(meisai);
+		dom.empty();
+		dom.append(ChargeForm.create(meisai, charge));
 	});
 }

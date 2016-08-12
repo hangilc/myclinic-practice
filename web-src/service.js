@@ -283,3 +283,16 @@ exports.enterShinryouByNames = function(visitId, names, cb){
 exports.calcMeisai = function(visitId, cb){
 	request("calc_meisai", {visit_id: visitId}, "GET", cb);
 };
+
+exports.findCharge = function(visitId, cb){
+	request("find_charge", {visit_id: visitId}, "GET", cb);
+};
+
+exports.updateCharge = function(charge, done){
+	request("update_charge", JSON.stringify(charge), "POST", done);
+};
+
+exports.getCharge = function(visitId, cb){
+	request("get_charge", {visit_id: visitId}, "GET", cb);
+};
+
