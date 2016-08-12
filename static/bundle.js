@@ -25156,6 +25156,9 @@
 		request("enter_shinryou_by_names", JSON.stringify(data), "POST", cb);
 	};
 
+	exports.calcMeisai = function(visitId, cb){
+		request("calc_meisai", {visit_id: visitId}, "GET", cb);
+	};
 
 /***/ },
 /* 113 */
@@ -26834,12 +26837,8 @@
 			visit.visit_id, visit.v_datetime, visit.patient_id);
 		ConductMenu.setup(dom.find("[mc-name=conductMenu]"), visit.visit_id, visit.v_datetime);
 		ConductList.setup(dom.find("[mc-name=conducts]"), visit.conducts, visit.visit_id, visit.v_datetime);
-		Charge.setup(dom.find("[mc-name=charge]"), visit.charge);
+		Charge.setup(dom.find("[mc-name=charge]"), visit.visit_id, visit.charge);
 		bindTextsEntered(dom, visit.visit_id);
-		//bindDrugsEntered(dom, visit.visit_id);
-		//bindDrugsDeleted(dom, visit.visit_id);
-		//bindDrugsModifiedDays(dom, visit.visit_id);
-		//bindDrugsNumbersChanged(dom, visit.visit_id);
 		bindShinryouEntered(dom, visit.visit_id);
 		bindShinryouDeleted(dom, visit.visit_id);
 		bindShinryouDeleteDuplicated(dom, visit.visit_id);
@@ -26856,50 +26855,50 @@
 		})
 	}
 
-	function bindDrugsEntered(dom, visitId){
-		dom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
-			if( targetVisitId === visitId ){
-				event.stopPropagation();
-				dom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
-			}
-		});
-	}
+	// function bindDrugsEntered(dom, visitId){
+	// 	dom.on("drugs-batch-entered", function(event, targetVisitId, drugs){
+	// 		if( targetVisitId === visitId ){
+	// 			event.stopPropagation();
+	// 			dom.broadcast("rx-drugs-batch-entered", [targetVisitId, drugs]);
+	// 		}
+	// 	});
+	// }
 
-	function bindDrugsModifiedDays(dom, visitId){
-		dom.on("drugs-batch-modified-days", function(event, targetVisitId, drugIds, days){
-			if( visitId === targetVisitId ){
-				event.stopPropagation();
-				drugIds.forEach(function(drugId){
-					dom.broadcast("rx-drug-modified-days", [drugId, days]);
-				});
-			}
-		});
-	}
+	// function bindDrugsModifiedDays(dom, visitId){
+	// 	dom.on("drugs-batch-modified-days", function(event, targetVisitId, drugIds, days){
+	// 		if( visitId === targetVisitId ){
+	// 			event.stopPropagation();
+	// 			drugIds.forEach(function(drugId){
+	// 				dom.broadcast("rx-drug-modified-days", [drugId, days]);
+	// 			});
+	// 		}
+	// 	});
+	// }
 
-	function bindDrugsDeleted(dom, visitId){
-		dom.on("drugs-batch-deleted", function(event, targetVisitId, drugIds){
-			if( targetVisitId === visitId ){
-				event.stopPropagation();
-				drugIds.forEach(function(drugId){
-					dom.broadcast("rx-drug-deleted", [drugId]);
-				})
-			}
-		})
-	}
+	// function bindDrugsDeleted(dom, visitId){
+	// 	dom.on("drugs-batch-deleted", function(event, targetVisitId, drugIds){
+	// 		if( targetVisitId === visitId ){
+	// 			event.stopPropagation();
+	// 			drugIds.forEach(function(drugId){
+	// 				dom.broadcast("rx-drug-deleted", [drugId]);
+	// 			})
+	// 		}
+	// 	})
+	// }
 
-	function bindDrugsNumbersChanged(dom, visitId){
-		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
-			if( visitId === targetVisitId ){
-				var drug
-			}
-		})
-		// dom.on("drugs-need-renumbering", function(event, targetVisitId){
-		// 	if( visitId === targetVisitId ){
-		// 		event.stopPropagation();
-		// 		dom.broadcast("rx-drugs-need-renumbering", [visitId]);
-		// 	}
-		// })
-	}
+	// function bindDrugsNumbersChanged(dom, visitId){
+	// 	dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
+	// 		if( visitId === targetVisitId ){
+	// 			var drug
+	// 		}
+	// 	})
+	// 	// dom.on("drugs-need-renumbering", function(event, targetVisitId){
+	// 	// 	if( visitId === targetVisitId ){
+	// 	// 		event.stopPropagation();
+	// 	// 		dom.broadcast("rx-drugs-need-renumbering", [visitId]);
+	// 	// 	}
+	// 	// })
+	// }
 
 	function bindShinryouEntered(dom, visitId){
 		dom.on("shinryou-batch-entered", function(event, targetVisitId, shinryouList){
@@ -29477,56 +29476,58 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 	var mUtil = __webpack_require__(5);
+	var ChargeDisp = __webpack_require__(249);
+	var ChargeForm = __webpack_require__(251);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
 
-	var tmplSrc = __webpack_require__(177);
-	var tmpl = hogan.compile(tmplSrc);
-
-	exports.setup = function(dom, charge){
-		if( charge ){
-			charge = mUtil.assign({}, charge, {
-				has_charge: true,
-				charge_rep: mUtil.formatNumber(charge.charge)
-			})
-		} else {
-			charge = { has_charge: false };
+	exports.setup = function(dom, visitId, charge){
+		if( dom.data("setup") ){
+			throw new Error("duplicate setup in charge.js");
 		}
-		var html = tmpl.render(charge);
-		dom.html(html);
+		dom.data("setup", 1);
+		// disp events
+		dom.on("v7lug8he-start-edit", function(event){
+			startEdit(dom, visitId, charge);
+		});
+		// form events
+		dom.on("30g8sm2i-cancel", function(event){
+			dom.empty();
+			dom.append(mkDisp(charge));
+		});
+		// initial display
+		dom.append(mkDisp(charge));
 	};
 
-	function Charge(dom){
-		this.dom = dom;
+	function mkDisp(charge){
+		return ChargeDisp.create(charge);
 	}
 
-	Charge.prototype.render = function(){
-		return this;
-	};
+	function startEdit(dom, visitId, charge){
+		var meisai;
+		task.run([
+			function(done){
+				service.calcMeisai(visitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					meisai = result;
+					done();
+				});
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			console.log(meisai);
+		});
+	}
 
-	Charge.prototype.update = function(data){
-		if( data ){
-			data = mUtil.assign({}, data, {
-				has_charge: true,
-				charge_rep: mUtil.formatNumber(data.charge)
-			})
-		} else {
-			data = { has_charge: false };
-		}
-		var html = tmpl.render(data);
-		this.dom.html(html);
-		return this;
-	};
-
-	//module.exports = Charge;
-
-
-
-/***/ },
-/* 177 */
-/***/ function(module, exports) {
-
-	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
+/* 177 */,
 /* 178 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -32661,6 +32662,76 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\"> \r\n      <span mc-name=\"label\"></span>  \r\n      <input mc-name=\"text\" value=\"{{gazou_label}}\"/>  \r\n      <a mc-name=\"suggestLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a> \r\n      <div mc-name=\"selectWrapper\" style=\"display:none\"> \r\n        <select mc-name=\"select\" size=\"2\"> \r\n          <option>胸部単純Ｘ線</option> \r\n          <option>腹部単純Ｘ線</option> \r\n        </select> \r\n      </div> \r\n      <br /> \r\n      <a mc-name=\"enter\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a> |  \r\n      <a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>  \r\n</div>\r\n"
+
+/***/ },
+/* 249 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(250);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+
+	exports.create = function(charge){
+		if( charge ){
+			charge = mUtil.assign({}, charge, {
+				has_charge: true,
+				charge_rep: mUtil.formatNumber(charge.charge)
+			})
+		} else {
+			charge = { has_charge: false };
+		}
+		var dom = $(tmpl.render(charge));
+		bindClick(dom);
+		return dom;
+	};
+
+	function bindClick(dom){
+		dom.click(function(event){
+			dom.trigger("v7lug8he-start-edit");
+		});
+	}
+
+/***/ },
+/* 250 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(252);
+	var tmpl = hogan.compile(tmplSrc);
+
+	var enterLinkSelector = "[mc-name=enterLink]"
+	var cancelLinkSelector = "[mc-name=cancelLink]"
+
+	exports.create = function(meisai){
+		var data = {
+
+		};
+		var dom = $(tmpl.render(data));
+		dom.on("click", cancelLinkSelector, function(event){
+			event.preventDefault();
+			dom.trigger("30g8sm2i-cancel");
+		})
+		return dom;
+	}
+
+/***/ },
+/* 252 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\t\r\n\t<div class=\"title\">請求額の変更</div>\r\n\t<div>診療報酬総点： <span mc-name=\"tensuu\"></span> 点</div>\r\n\t<div>負担割： <span mc-name=\"futanWari\"></span> 割</div>\r\n\t<div>現在の請求額： <span mc-name=\"currentCharge\"></span> 円</div>\r\n\t<div>変更後の請求額： <input mc-name=\"newCharge\"> 円</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t\t<button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);

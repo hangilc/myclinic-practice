@@ -7,7 +7,7 @@
   "scripts": {
     "build": "webpack web-src/main.js static/bundle.js",
     "test-server": "node test-server",
-    "dev": "start cmd /K npm run build -- --watch && start cmd /K node test-server"
+    "make-random": "node make-random"
   },
   "author": "Hangil Chang",
   "license": "MIT",

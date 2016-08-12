@@ -279,3 +279,7 @@ exports.enterShinryouByNames = function(visitId, names, cb){
 	};
 	request("enter_shinryou_by_names", JSON.stringify(data), "POST", cb);
 };
+
+exports.calcMeisai = function(visitId, cb){
+	request("calc_meisai", {visit_id: visitId}, "GET", cb);
+};

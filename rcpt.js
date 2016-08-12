@@ -1,8 +1,9 @@
 "use strict";
 
 var moment = require("moment");
-var util = require("./myclinic-util");
 var fs = require("fs");
+var mConsts = require("myclinic-consts");
+var util = require("./rcpt-util");
 
 var gHoukatsuList = JSON.parse(fs.readFileSync("rcpt-houkatsu.json", "utf-8")).houkatsu;
 
@@ -49,7 +50,7 @@ RcptVisit.prototype.calcTotalTen = function(){
 RcptVisit.prototype.handleConducts = function(){
 	this.visit.conducts.forEach(function(conduct){
 		var sect;
-		if( conduct.kind === util.ConductKindGazou ){
+		if( conduct.kind === mConsts.ConductKindGazou ){
 			sect = "画像診断";
 		} else {
 			sect = "注射";
@@ -64,7 +65,7 @@ RcptVisit.prototype.handleConducts = function(){
 			var label, kingaku, tanka;
 			label = conductDrugLabel(drug);
 			kingaku = Number(drug.yakka) * Number(drug.amount);
-			if( conduct.kind === util.conductKindGazou ){
+			if( conduct.kind === mConsts.conductKindGazou ){
 				tanka = util.shochiKingakuToTen(kingaku);
 			} else {
 				tanka = util.touyakuKingakuToTen(kingaku);
@@ -185,13 +186,13 @@ function classifyDrugs(drugs){
 	};
 	drugs.forEach(function(drug){
 		switch(drug.d_category){
-			case util.DrugCategoryNaifuku: 
+			case mConsts.DrugCategoryNaifuku: 
 				d.naifuku.addDrug(drug);
 				break;
-			case util.DrugCategoryTonpuku:
+			case mConsts.DrugCategoryTonpuku:
 				d.tonpuku.push(drug);
 				break;
-			case util.DrugCategoryGaiyou:
+			case mConsts.DrugCategoryGaiyou:
 				d.gaiyou.push(drug);
 				break;
 			default:
@@ -274,7 +275,7 @@ function classifyShinryou(shinryouList){
 	var simple = [], houkatsuMap = {};
 	shinryouList.forEach(function(shinryou){
 		var houkatsu = shinryou.houkatsukensa;
-		if( houkatsu === util.HOUKATSU_NONE ){
+		if( houkatsu === mConsts.HOUKATSU_NONE ){
 			simple.push(shinryou);
 		} else {
 			if( !(houkatsu in houkatsuMap) ){
@@ -288,7 +289,7 @@ function classifyShinryou(shinryouList){
 
 function makeInitialMeisai(){
 	var meisai = {};
-	util.meisaiSections.forEach(function(sect){
+	mConsts.MeisaiSections.forEach(function(sect){
 		meisai[sect] = [];
 	});
 	return meisai;

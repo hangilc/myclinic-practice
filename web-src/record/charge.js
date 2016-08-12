@@ -3,44 +3,51 @@
 var $ = require("jquery");
 var hogan = require("hogan");
 var mUtil = require("../../myclinic-util");
+var ChargeDisp = require("./charge-disp");
+var ChargeForm = require("./charge-form");
+var service = require("../service");
+var task = require("../task");
 
-var tmplSrc = require("raw!./charge.html");
-var tmpl = hogan.compile(tmplSrc);
-
-exports.setup = function(dom, charge){
-	if( charge ){
-		charge = mUtil.assign({}, charge, {
-			has_charge: true,
-			charge_rep: mUtil.formatNumber(charge.charge)
-		})
-	} else {
-		charge = { has_charge: false };
+exports.setup = function(dom, visitId, charge){
+	if( dom.data("setup") ){
+		throw new Error("duplicate setup in charge.js");
 	}
-	var html = tmpl.render(charge);
-	dom.html(html);
+	dom.data("setup", 1);
+	// disp events
+	dom.on("v7lug8he-start-edit", function(event){
+		startEdit(dom, visitId, charge);
+	});
+	// form events
+	dom.on("30g8sm2i-cancel", function(event){
+		dom.empty();
+		dom.append(mkDisp(charge));
+	});
+	// initial display
+	dom.append(mkDisp(charge));
 };
 
-function Charge(dom){
-	this.dom = dom;
+function mkDisp(charge){
+	return ChargeDisp.create(charge);
 }
 
-Charge.prototype.render = function(){
-	return this;
-};
-
-Charge.prototype.update = function(data){
-	if( data ){
-		data = mUtil.assign({}, data, {
-			has_charge: true,
-			charge_rep: mUtil.formatNumber(data.charge)
-		})
-	} else {
-		data = { has_charge: false };
-	}
-	var html = tmpl.render(data);
-	this.dom.html(html);
-	return this;
-};
-
-//module.exports = Charge;
-
+function startEdit(dom, visitId, charge){
+	var meisai;
+	task.run([
+		function(done){
+			service.calcMeisai(visitId, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				meisai = result;
+				done();
+			});
+		}
+	], function(err){
+		if( err ){
+			alert(err);
+			return;
+		}
+		console.log(meisai);
+	});
+}
