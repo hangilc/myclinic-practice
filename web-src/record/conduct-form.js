@@ -25,6 +25,7 @@ exports.create = function(conductEx, at){
 	bindAddKizai(dom, at, conductId);
 	bindKindChange(dom, at, conductId);
 	bindGazouLabel(dom, at, ctx);
+	bindDeleteShinryou(dom, conductId, at);
 	bindClose(dom);
 	bindDelete(dom);
 	dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
@@ -47,6 +48,9 @@ var editGazouLabelLinkSelector = "> div > [mc-name=main-area] [mc-name=disp-area
 var subformAreaSelector = "> div > [mc-name=main-area] > [mc-name=subwidget]";
 var closeLinkSelector = "> div > [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=closeLink]";
 var deleteLinkSelector = "> div > [mc-name=main-area] > [mc-name=disp-area] > .workarea-commandbox [mc-name=deleteLink]";
+var deleteShinryouLinkSelector = "> div > [mc-name=main-area] [mc-name=shinryouList] [mc-name=deleteShinryouLink]";
+var deleteDrugLinkSelector = "> div > [mc-name=main-area] [mc-name=drugList] [mc-name=deleteDrugLink]";
+var deleteKizaiLinkSelector = "> div > [mc-name=main-area] [mc-name=kizaiList] [mc-name=deleteKizaiLink]";
 
 function getSubformAreaDom(dom){
 	return dom.find(subformAreaSelector);
@@ -156,6 +160,40 @@ function bindGazouLabel(dom, at, ctx){
 		})
 		dispArea.hide();
 		formArea.append(form);
+	})
+}
+
+function bindDeleteShinryou(dom, conductId, at){
+	dom.on("click", deleteShinryouLinkSelector, function(event){
+		event.preventDefault();
+		if( !confirm("この処置診療行為を削除しますか？") ){
+			return;
+		}
+		var e = $(this);
+		e.prop("disabled", true);
+		var id = e.attr("id-value");
+		var newConduct;
+		task.run([
+			function(done){
+				service.deleteConductShinryou(id, done);
+			},
+			function(done){
+				service.getFullConduct(conductId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				});
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("conduct-modified", [conductId, newConduct]);
+		})
 	})
 }
 

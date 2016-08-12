@@ -63,7 +63,7 @@ function bindClick(dom, visitId, at, ctx){
 	dom.on("click", dispAreaSelector, function(event){
 		event.preventDefault();
 		var conduct = ctx.conduct;
-		var conductId = conduct;
+		var conductId = conduct.id;
 		var msg = "現在（暫定）診察中でありませんが、この処置を変更しますか？";
 		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
 			return;

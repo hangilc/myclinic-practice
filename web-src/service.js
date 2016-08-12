@@ -244,6 +244,10 @@ exports.deleteConduct = function(conductId, done){
 	request("delete_conduct", {conduct_id: conductId}, "POST", done);
 };
 
+exports.deleteConductShinryou = function(conductShinryouId, done){
+	request("delete_conduct_shinryou", {conduct_shinryou_id: conductShinryouId}, "POST", done);
+}
+
 exports.getKizaiMaster = function(kizaicode, at, cb){
 	request("get_kizai_master", {kizaicode: kizaicode, at: at}, "GET", cb);
 };
