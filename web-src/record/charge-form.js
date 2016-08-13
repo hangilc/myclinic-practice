@@ -45,11 +45,7 @@ function doEnter(dom, visitId){
 	var newCharge;
 	task.run([
 		function(done){
-			var charge = {
-				visit_id: visitId,
-				charge: input
-			};
-			service.updateCharge(charge, done);
+			service.endExam(visitId, input, done);
 		},
 		function(done){
 			service.getCharge(visitId, function(err, result){

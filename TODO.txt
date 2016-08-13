@@ -1,4 +1,7 @@
-* add to wqueue after changing charge
+-- TODO --
 
+
+-- DONE --
+* add to wqueue after changing charge ; done 2016/08/13
 * implement 骨塩定量 ; done 2016/8/12
 
