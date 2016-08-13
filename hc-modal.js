@@ -59,6 +59,8 @@ dialog.append(content);
 
 $("body").append(screen);
 
+var mouseTarget = handle.get(0).setCapture ? handle : $(document);
+
 handle.on("mousedown", function(event){
     event.preventDefault();
     var offset = dialog.offset();
@@ -66,32 +68,37 @@ handle.on("mousedown", function(event){
     var innerX = origEvent.pageX - offset.left;
     var innerY = origEvent.pageY - offset.top;
     dialog.data({innerX: innerX, innerY: innerY, width: dialog.outerWidth(), height: dialog.outerHeight()});
-    handle.on("mousemove", function(event){
+    mouseTarget.on("mousemove", function(event){
         event.preventDefault();
         var origEvent = event.originalEvent;
         var newLeft = origEvent.pageX - dialog.data("innerX");
         if( newLeft < 0 ){
-            return;
+            newLeft = 0;
         }
         var newTop = origEvent.pageY - dialog.data("innerY");
         if( newTop < 0 ){
-            return;
+            newTop = 0;
         }
         var newRight = newLeft + dialog.data("width");
         if( newRight > screen.innerWidth() ){
-            return;
+            newLeft = screen.innerWidth() - dialog.data("width");
         }
         var newBottom = newTop + dialog.data("height");
         if( newBottom > screen.innerHeight() ){
-            return;
+            newTop = screen.innerHeight() - dialog.data("height");
         }
         dialog.css({left: newLeft, top: newTop})
     })
-    handle[0].setCapture();
+    if( handle.get(0).setCapture ){
+        handle.get(0).setCapture();
+    }
 })
 
-handle.on("mouseup", function(event){
-    handle.off("mousemove");
+mouseTarget.on("mouseup", function(event){
+    mouseTarget.off("mousemove");
+    if( handle.get(0).releaseCapture ){
+        handle.get(0).releaseCapture();
+    }
 })
 
 function reposition() {
@@ -102,13 +109,11 @@ function reposition() {
     dialog.css("max-height", (screen_height - 100) + "px");
 }
 
-exports.open = function(title_str, onOpen, onClose){
-    var dom = $("<div></div>");
+exports.open = function(title_str, dom, onClose){
     title.text(title_str);
     content.html("").append(dom);
     screen.show();
     $("body").append(dialog);
-    onOpen(dom);
     reposition();
     closeBox.on("click", function(event){
         if( onClose ){

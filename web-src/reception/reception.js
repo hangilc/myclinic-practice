@@ -104,13 +104,22 @@ function updateDisp(dom, data){
 }
 
 exports.open = function(){
-	modal.open("受付", function(dom){
-		dom.width("260px");
-		dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
-		bindSearchForm(dom);
-		bindSelect(dom);
-		bindPatientSelected(dom);
-		bindEnter(dom);
-		getSearchTextDom(dom).focus();
-	});
+	var dom = $("<div style='width:260px'></div>");
+	dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+	bindSearchForm(dom);
+	bindSelect(dom);
+	bindPatientSelected(dom);
+	bindEnter(dom);
+	modal.open("受付", dom);
+	getSearchTextDom(dom).focus();
+
+	// modal.open("受付", function(dom){
+	// 	dom.width("260px");
+	// 	dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+	// 	bindSearchForm(dom);
+	// 	bindSelect(dom);
+	// 	bindPatientSelected(dom);
+	// 	bindEnter(dom);
+	// 	getSearchTextDom(dom).focus();
+	// });
 }

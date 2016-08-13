@@ -26743,8 +26743,11 @@
 	"use strict";
 
 	var $ = __webpack_require__(1);
+	var Account = __webpack_require__(255);
 
 	var tmplHtml = __webpack_require__(121);
+
+	var accountLinkSelector = "[mc-name=accountButton]";
 
 	exports.setup = function(dom){
 		dom.listen("rx-start-page", function(appData){
@@ -26753,11 +26756,15 @@
 			} else {
 				dom.html("");
 			}
+		});
+		dom.on("click", accountLinkSelector, function(event){
+			event.preventDefault();
+			console.log("account");
 		})
 		dom.on("click", "[mc-name=endPatientButton]", function(event){
 			event.preventDefault();
 			dom.trigger("end-patient");
-		})
+		});
 	};
 
 
@@ -30266,15 +30273,24 @@
 	}
 
 	exports.open = function(){
-		modal.open("受付", function(dom){
-			dom.width("260px");
-			dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
-			bindSearchForm(dom);
-			bindSelect(dom);
-			bindPatientSelected(dom);
-			bindEnter(dom);
-			getSearchTextDom(dom).focus();
-		});
+		var dom = $("<div style='width:260px'></div>");
+		dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+		bindSearchForm(dom);
+		bindSelect(dom);
+		bindPatientSelected(dom);
+		bindEnter(dom);
+		modal.open("受付", dom);
+		getSearchTextDom(dom).focus();
+
+		// modal.open("受付", function(dom){
+		// 	dom.width("260px");
+		// 	dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+		// 	bindSearchForm(dom);
+		// 	bindSelect(dom);
+		// 	bindPatientSelected(dom);
+		// 	bindEnter(dom);
+		// 	getSearchTextDom(dom).focus();
+		// });
 	}
 
 /***/ },
@@ -30342,6 +30358,8 @@
 
 	$("body").append(screen);
 
+	var mouseTarget = handle.get(0).setCapture ? handle : $(document);
+
 	handle.on("mousedown", function(event){
 	    event.preventDefault();
 	    var offset = dialog.offset();
@@ -30349,32 +30367,37 @@
 	    var innerX = origEvent.pageX - offset.left;
 	    var innerY = origEvent.pageY - offset.top;
 	    dialog.data({innerX: innerX, innerY: innerY, width: dialog.outerWidth(), height: dialog.outerHeight()});
-	    handle.on("mousemove", function(event){
+	    mouseTarget.on("mousemove", function(event){
 	        event.preventDefault();
 	        var origEvent = event.originalEvent;
 	        var newLeft = origEvent.pageX - dialog.data("innerX");
 	        if( newLeft < 0 ){
-	            return;
+	            newLeft = 0;
 	        }
 	        var newTop = origEvent.pageY - dialog.data("innerY");
 	        if( newTop < 0 ){
-	            return;
+	            newTop = 0;
 	        }
 	        var newRight = newLeft + dialog.data("width");
 	        if( newRight > screen.innerWidth() ){
-	            return;
+	            newLeft = screen.innerWidth() - dialog.data("width");
 	        }
 	        var newBottom = newTop + dialog.data("height");
 	        if( newBottom > screen.innerHeight() ){
-	            return;
+	            newTop = screen.innerHeight() - dialog.data("height");
 	        }
 	        dialog.css({left: newLeft, top: newTop})
 	    })
-	    handle[0].setCapture();
+	    if( handle.get(0).setCapture ){
+	        handle.get(0).setCapture();
+	    }
 	})
 
-	handle.on("mouseup", function(event){
-	    handle.off("mousemove");
+	mouseTarget.on("mouseup", function(event){
+	    mouseTarget.off("mousemove");
+	    if( handle.get(0).releaseCapture ){
+	        handle.get(0).releaseCapture();
+	    }
 	})
 
 	function reposition() {
@@ -30385,13 +30408,11 @@
 	    dialog.css("max-height", (screen_height - 100) + "px");
 	}
 
-	exports.open = function(title_str, onOpen, onClose){
-	    var dom = $("<div></div>");
+	exports.open = function(title_str, dom, onClose){
 	    title.text(title_str);
 	    content.html("").append(dom);
 	    screen.show();
 	    $("body").append(dialog);
-	    onOpen(dom);
 	    reposition();
 	    closeBox.on("click", function(event){
 	        if( onClose ){
@@ -32921,6 +32942,33 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\t\r\n\t<div class=\"title\">請求額の変更</div>\r\n\t<div>診療報酬総点： {{total_ten}} 点</div>\r\n\t<div>負担割： {{futan_wari}} 割</div>\r\n\t<div>現在の請求額： {{current_charge}} 円</div>\r\n\t<form onsubmit=\"return false\">\r\n\t<div>変更後の請求額： <input mc-name=\"newCharge\" value=\"{{calc_charge}}\" size=\"4\"> 円</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t\t<button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t</form>\r\n</div>\r\n"
+
+/***/ },
+/* 253 */,
+/* 254 */,
+/* 255 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(256);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(meisai){
+		var data = {
+
+		};
+		var dom = $(tmpl.render(data));
+		return dom;
+	};
+
+/***/ },
+/* 256 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<!-- <div class=\"title\">会計</div> -->\r\n\t<table style=\"max-width:400px; font-size:13px;\">\r\n\t    <tbody mc-name=\"meisai\">\r\n\t    \t{{#sections}}\r\n\t    \t\t<tr><td col-span=\"3\" style=\"font-weight:bold\">{ sect.title }</td></tr>\r\n\t    \t\t{{#items}}\r\n\t\t\t\t\t<tr>\r\n\t\t\t\t\t\t<td style=\"width:2em\">&nbsp;</td>\r\n\t\t\t\t\t\t<td width=\"*\">{{item.label}}</td>\r\n\t\t\t\t\t\t<td style=\"width:7em; text-align:right\">\r\n\t\t\t\t\t\t\t{{item.tanka}}x{{item.count}}={{item.tanka * item.count}}点\r\n\t\t\t\t\t\t</td>\r\n\t\t\t\t\t</tr>;\r\n\t    \t\t{{/items}}\r\n\t    \t{{/sections}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td col-span=\"3\" style=\"text-align:right;border-top:double #999\">\r\n\t\t\t\t\t総点 {{total}} 点\r\n\t\t\t\t</td>\r\n\t\t\t</tr>;\r\n\t    </tbody>\r\n\t</table>\r\n\t<hr/>\r\n\t<div style=\"font-size:13px\">\r\n\t    請求額：<span mc-name=\"charge\"></span> 円 （負担 {{futan_wari} 割）\r\n\t    <a mc-name=\"modifyLink\" href=\"javascript:void(0)\" class=\"cmd-link\">変更</a>\r\n\t</div>\r\n\t<div mc-name=\"modifyWrapper\" style=\"display:none; font-size:13px; margin:4px 0\">\r\n\t    変更額：<input mc-name=\"newCharge\" style=\"width: 4em\" class=\"alpha\"/> 円\r\n\t    <a mc-name=\"modifyEnter\" href=\"javascript:void(0)\" class=\"cmd-link\">適用</a> |\r\n\t    <a mc-name=\"modifyCancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n\r\n"
 
 /***/ }
 /******/ ]);
