@@ -237,6 +237,11 @@ exports.wqueueStateToName = function(wqState){
     return "unknown";
 };
 
+exports.meisaiSections = [
+    "初・再診料", "医学管理等", "在宅医療", "検査", "画像診断",
+    "投薬", "注射", "処置", "その他"       
+];
+
 exports.shuukeiToMeisaiSection = function(shuukeisaki){
 	switch(shuukeisaki){
 		case mConsts.SHUUKEI_SHOSHIN:

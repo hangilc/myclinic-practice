@@ -13,8 +13,6 @@ var enterLinkSelector = "[mc-name=enterLink]"
 var cancelLinkSelector = "[mc-name=cancelLink]"
 
 exports.create = function(meisai, currentCharge){
-	console.log("meisai", meisai);
-	console.log("charge", currentCharge);
 	var data = {
 		total_ten: mUtil.formatNumber(meisai.totalTen),
 		futan_wari: meisai.futanWari,

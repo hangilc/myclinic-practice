@@ -61,6 +61,11 @@ $("body").on("end-patient", function(event){
 	startPage(0, 0);
 });
 
+$("body").on("exam-ended", function(event){
+	appData.clear();
+	startPage(0, 0);
+});
+
 $("body").on("goto-page", function(event, page){
 	appData.gotoPage(page, function(err){
 		if( err ){

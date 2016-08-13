@@ -107,6 +107,11 @@
 		startPage(0, 0);
 	});
 
+	$("body").on("exam-ended", function(event){
+		appData.clear();
+		startPage(0, 0);
+	});
+
 	$("body").on("goto-page", function(event, page){
 		appData.gotoPage(page, function(err){
 			if( err ){
@@ -10718,6 +10723,11 @@
 	    if (state == mConsts.WqueueStateWaitReAppointedExam) return "waitReAppointedExam";
 	    return "unknown";
 	};
+
+	exports.meisaiSections = [
+	    "初・再診料", "医学管理等", "在宅医療", "検査", "画像診断",
+	    "投薬", "注射", "処置", "その他"       
+	];
 
 	exports.shuukeiToMeisaiSection = function(shuukeisaki){
 		switch(shuukeisaki){
@@ -25034,6 +25044,10 @@
 		request("suspend_exam", {visit_id: visitId}, "POST", done);
 	};
 
+	exports.endExam = function(visitId, charge, done){
+		request("end_exam", {visit_id: visitId, charge: charge}, "POST", done);
+	};
+
 	exports.listCurrentFullDiseases = function(patientId, cb){
 		request("list_current_full_diseases", {patient_id: patientId}, "GET", cb);
 	};
@@ -26744,6 +26758,9 @@
 
 	var $ = __webpack_require__(1);
 	var Account = __webpack_require__(255);
+	var modal = __webpack_require__(198);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
 
 	var tmplHtml = __webpack_require__(121);
 
@@ -26759,13 +26776,68 @@
 		});
 		dom.on("click", accountLinkSelector, function(event){
 			event.preventDefault();
-			console.log("account");
+			doAccount(dom);
 		})
 		dom.on("click", "[mc-name=endPatientButton]", function(event){
 			event.preventDefault();
 			dom.trigger("end-patient");
 		});
 	};
+
+	function doAccount(dom){
+		var visitId = dom.inquire("fn-get-current-visit-id");
+		if( !(visitId > 0) ){
+			return;
+		}
+		var charge, meisai;
+		task.run([
+			function(done){
+				service.findCharge(visitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					charge = result;
+					done();
+				})
+			},
+			function(done){
+				if( charge ){
+					done();
+				} else {
+					service.calcMeisai(visitId, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						meisai = result;
+						done();
+					})
+				}
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			if( !meisai ){
+				return;
+			}
+			var account = Account.create(meisai, visitId);
+			modal.open("会計", account);
+		})
+	}
+
+	// account dialog
+	$("body").on("0ms9b2wl-cancel", function(){
+		modal.close();
+	})
+
+	// account dialog
+	$("body").on("0ms9b2wl-entered", function(event){
+		modal.close();
+		$("body").trigger("exam-ended");
+	});
 
 
 /***/ },
@@ -32878,8 +32950,6 @@
 	var cancelLinkSelector = "[mc-name=cancelLink]"
 
 	exports.create = function(meisai, currentCharge){
-		console.log("meisai", meisai);
-		console.log("charge", currentCharge);
 		var data = {
 			total_ten: mUtil.formatNumber(meisai.totalTen),
 			futan_wari: meisai.futanWari,
@@ -32955,20 +33025,107 @@
 	var hogan = __webpack_require__(115);
 	var tmplSrc = __webpack_require__(256);
 	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
 
-	exports.create = function(meisai){
+	var chargeDispSelector = "[mc-name=charge-disp]";
+	var modifyLinkSelector = "[mc-name=modifyLink]";
+	var modifyWrapperSelector = "> [mc-name=modifyWrapper]";
+	var modifyInputSelector = "> [mc-name=modifyWrapper] input[mc-name=newCharge]";
+	var modifyFormSelector = "> [mc-name=modifyWrapper] form";
+	var modifyEnterLinkSelector = "> [mc-name=modifyWrapper] a[mc-name=modifyEnter]";
+	var modifyCancelLinkSelector = "> [mc-name=modifyWrapper] [mc-name=modifyCancel]";
+	var enterLinkSelector = "> .workarea-commandbox [mc-name=enterLink]";
+	var cancelLinkSelector = "> .workarea-commandbox [mc-name=cancelLink]";
+
+	exports.create = function(meisai, visitId){
+		var sections = mUtil.meisaiSections.map(function(sect){
+			return {
+				name: sect,
+				items: meisai.meisai[sect].map(function(item){
+					return {
+						tanka: mUtil.formatNumber(item.tanka),
+						count: item.count,
+						total: mUtil.formatNumber(item.tanka * item.count)
+					}
+				})
+			};
+		}).filter(function(sect){ return sect.items.length > 0; });
 		var data = {
-
+			sections: sections,
+			total_ten: mUtil.formatNumber(meisai.totalTen),
+			charge: mUtil.formatNumber(meisai.charge),
+			futan_wari: meisai.futanWari
 		};
 		var dom = $(tmpl.render(data));
+		dom.on("click", modifyLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(modifyWrapperSelector).toggle();
+		});
+		dom.on("submit", modifyFormSelector, function(event){
+			event.preventDefault();
+			doModify(dom);
+		});
+		dom.on("click", modifyEnterLinkSelector, function(event){
+			event.preventDefault();
+			doModify(dom);
+		});
+		dom.on("click", modifyCancelLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(modifyInputSelector).val("");
+			dom.find(modifyWrapperSelector).hide();
+		});
+		dom.on("click", enterLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(enterLinkSelector).prop("disabled", true);
+			var value = getChargeValue(dom);
+			doEnter(dom, visitId, value);
+		});
+		dom.on("click", cancelLinkSelector, function(event){
+			event.preventDefault();
+			dom.trigger("0ms9b2wl-cancel");
+		})
 		return dom;
 	};
+
+	function doModify(dom){
+		var input = dom.find(modifyInputSelector).val().trim();
+		if( !/^\d+$/.test(input) ){
+			alert("金額の入力が不適切です。");
+			return;
+		}
+		input = +input;
+		dom.find(chargeDispSelector).text(mUtil.formatNumber(input));
+		dom.find(modifyInputSelector).val("");
+		dom.find(modifyWrapperSelector).hide();
+	}
+
+	function getChargeValue(dom){
+		var text = dom.find(chargeDispSelector).text().trim();
+		text = text.replace(/,/g, "");
+		return +text;
+	}
+
+	function doEnter(dom, visitId, charge){
+		task.run([
+			function(done){
+				service.endExam(visitId, charge, done);
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("0ms9b2wl-entered");
+		});
+	}
 
 /***/ },
 /* 256 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n\t<!-- <div class=\"title\">会計</div> -->\r\n\t<table style=\"max-width:400px; font-size:13px;\">\r\n\t    <tbody mc-name=\"meisai\">\r\n\t    \t{{#sections}}\r\n\t    \t\t<tr><td col-span=\"3\" style=\"font-weight:bold\">{ sect.title }</td></tr>\r\n\t    \t\t{{#items}}\r\n\t\t\t\t\t<tr>\r\n\t\t\t\t\t\t<td style=\"width:2em\">&nbsp;</td>\r\n\t\t\t\t\t\t<td width=\"*\">{{item.label}}</td>\r\n\t\t\t\t\t\t<td style=\"width:7em; text-align:right\">\r\n\t\t\t\t\t\t\t{{item.tanka}}x{{item.count}}={{item.tanka * item.count}}点\r\n\t\t\t\t\t\t</td>\r\n\t\t\t\t\t</tr>;\r\n\t    \t\t{{/items}}\r\n\t    \t{{/sections}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td col-span=\"3\" style=\"text-align:right;border-top:double #999\">\r\n\t\t\t\t\t総点 {{total}} 点\r\n\t\t\t\t</td>\r\n\t\t\t</tr>;\r\n\t    </tbody>\r\n\t</table>\r\n\t<hr/>\r\n\t<div style=\"font-size:13px\">\r\n\t    請求額：<span mc-name=\"charge\"></span> 円 （負担 {{futan_wari} 割）\r\n\t    <a mc-name=\"modifyLink\" href=\"javascript:void(0)\" class=\"cmd-link\">変更</a>\r\n\t</div>\r\n\t<div mc-name=\"modifyWrapper\" style=\"display:none; font-size:13px; margin:4px 0\">\r\n\t    変更額：<input mc-name=\"newCharge\" style=\"width: 4em\" class=\"alpha\"/> 円\r\n\t    <a mc-name=\"modifyEnter\" href=\"javascript:void(0)\" class=\"cmd-link\">適用</a> |\r\n\t    <a mc-name=\"modifyCancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n\r\n"
+	module.exports = "<div class=\"workarea\" style=\"min-width:230px\">\r\n\t<!-- <div class=\"title\">会計</div> -->\r\n\t<table style=\"width:100%; max-width:400px; font-size:13px;\">\r\n\t    <tbody mc-name=\"meisai\">\r\n\t    \t{{#sections}}\r\n\t    \t\t<tr><td colspan=\"3\" style=\"font-weight:bold\">{{name}}</td></tr>\r\n\t    \t\t{{#items}}\r\n\t\t\t\t\t<tr>\r\n\t\t\t\t\t\t<td style=\"width:2em\">&nbsp;</td>\r\n\t\t\t\t\t\t<td width=\"*\">{{label}}</td>\r\n\t\t\t\t\t\t<td style=\"width:7em; text-align:right\">\r\n\t\t\t\t\t\t\t{{tanka}}x{{count}} = {{total}} 点\r\n\t\t\t\t\t\t</td>\r\n\t\t\t\t\t</tr>\r\n\t    \t\t{{/items}}\r\n\t    \t{{/sections}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td colspan=\"3\" style=\"text-align:right;border-top:double #999\">\r\n\t\t\t\t\t総点 {{total_ten}} 点\r\n\t\t\t\t</td>\r\n\t\t\t</tr>\r\n\t    </tbody>\r\n\t</table>\r\n\t<hr/>\r\n\t<div style=\"font-size:13px\">\r\n\t    請求額： <span mc-name=\"charge-disp\">{{charge}}</span> 円 （負担 {{futan_wari}} 割）\r\n\t    <a mc-name=\"modifyLink\" href=\"javascript:void(0)\" class=\"cmd-link\">変更</a>\r\n\t</div>\r\n\t<div mc-name=\"modifyWrapper\" style=\"display:none; font-size:13px; margin:4px 0\">\r\n\t\t<form onsubmit=\"return false\">\r\n\t\t    変更額： <input mc-name=\"newCharge\" style=\"width: 4em\" class=\"alpha\"/> 円\r\n\t\t    <a mc-name=\"modifyEnter\" href=\"javascript:void(0)\" class=\"cmd-link\">適用</a> |\r\n\t\t    <a mc-name=\"modifyCancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n\r\n"
 
 /***/ }
 /******/ ]);

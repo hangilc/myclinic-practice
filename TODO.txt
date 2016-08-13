@@ -1,2 +1,4 @@
+* add to wqueue after changing charge
+
 * implement 骨塩定量 ; done 2016/8/12
 

@@ -1,35 +1,37 @@
-<div class="workarea">
+<div class="workarea" style="min-width:230px">
 	<!-- <div class="title">会計</div> -->
-	<table style="max-width:400px; font-size:13px;">
+	<table style="width:100%; max-width:400px; font-size:13px;">
 	    <tbody mc-name="meisai">
 	    	{{#sections}}
-	    		<tr><td col-span="3" style="font-weight:bold">{ sect.title }</td></tr>
+	    		<tr><td colspan="3" style="font-weight:bold">{{name}}</td></tr>
 	    		{{#items}}
 					<tr>
 						<td style="width:2em">&nbsp;</td>
-						<td width="*">{{item.label}}</td>
+						<td width="*">{{label}}</td>
 						<td style="width:7em; text-align:right">
-							{{item.tanka}}x{{item.count}}={{item.tanka * item.count}}点
+							{{tanka}}x{{count}} = {{total}} 点
 						</td>
-					</tr>;
+					</tr>
 	    		{{/items}}
 	    	{{/sections}}
 			<tr>
-				<td col-span="3" style="text-align:right;border-top:double #999">
-					総点 {{total}} 点
+				<td colspan="3" style="text-align:right;border-top:double #999">
+					総点 {{total_ten}} 点
 				</td>
-			</tr>;
+			</tr>
 	    </tbody>
 	</table>
 	<hr/>
 	<div style="font-size:13px">
-	    請求額：<span mc-name="charge"></span> 円 （負担 {{futan_wari} 割）
+	    請求額： <span mc-name="charge-disp">{{charge}}</span> 円 （負担 {{futan_wari}} 割）
 	    <a mc-name="modifyLink" href="javascript:void(0)" class="cmd-link">変更</a>
 	</div>
 	<div mc-name="modifyWrapper" style="display:none; font-size:13px; margin:4px 0">
-	    変更額：<input mc-name="newCharge" style="width: 4em" class="alpha"/> 円
-	    <a mc-name="modifyEnter" href="javascript:void(0)" class="cmd-link">適用</a> |
-	    <a mc-name="modifyCancel" href="javascript:void(0)" class="cmd-link">キャンセル</a>
+		<form onsubmit="return false">
+		    変更額： <input mc-name="newCharge" style="width: 4em" class="alpha"/> 円
+		    <a mc-name="modifyEnter" href="javascript:void(0)" class="cmd-link">適用</a> |
+		    <a mc-name="modifyCancel" href="javascript:void(0)" class="cmd-link">キャンセル</a>
+	    </form>
 	</div>
 	<div class="workarea-commandbox">
 	    <button mc-name="enterLink">入力</button>
