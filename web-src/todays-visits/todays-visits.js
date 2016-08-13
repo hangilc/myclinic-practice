@@ -7,8 +7,8 @@ var task = require("../task");
 var mUtil = require("../../myclinic-util");
 
 var tmplHtml = require("raw!./todays-visits.html");
-var itemTmplSrc = require("raw!./todays-visits-item.html");
-var itemTmpl = hogan.compile(itemTmplSrc);
+var resultTmplSrc = require("raw!./todays-visits-search-result.html");
+var resultTmpl = hogan.compile(resultTmplSrc);
 
 exports.setup = function(dom){
 	dom.html(tmplHtml);
@@ -46,15 +46,24 @@ function bindButton(dom){
 					alert(err);
 					return;
 				}
-				var select = getSelectDom(dom).html("");
-				list.forEach(function(data){
-					var opt = makeOption(data);
-					select.append(opt);
-				});
+				var select = getSelectDom(dom);
+				select.html(searchResult(list));
 				ws.show();
 			});
 		}
 	})
+}
+
+function searchResult(list){
+	var data = list.map(function(item){
+		return {
+			patient_id: item.patient_id,
+			patient_id_label: mUtil.padNumber(item.patient_id, 4),
+			last_name: item.last_name,
+			first_name: item.first_name
+		};
+	})
+	return resultTmpl.render({list: data});
 }
 
 function bindOption(dom){

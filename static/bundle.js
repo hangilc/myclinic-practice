@@ -30064,7 +30064,7 @@
 /* 190 */
 /***/ function(module, exports) {
 
-	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>"
+	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
 /* 191 */
@@ -30157,8 +30157,8 @@
 	var mUtil = __webpack_require__(5);
 
 	var tmplHtml = __webpack_require__(195);
-	var itemTmplSrc = __webpack_require__(196);
-	var itemTmpl = hogan.compile(itemTmplSrc);
+	var resultTmplSrc = __webpack_require__(257);
+	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -30196,15 +30196,24 @@
 						alert(err);
 						return;
 					}
-					var select = getSelectDom(dom).html("");
-					list.forEach(function(data){
-						var opt = makeOption(data);
-						select.append(opt);
-					});
+					var select = getSelectDom(dom);
+					select.html(searchResult(list));
 					ws.show();
 				});
 			}
 		})
+	}
+
+	function searchResult(list){
+		var data = list.map(function(item){
+			return {
+				patient_id: item.patient_id,
+				patient_id_label: mUtil.padNumber(item.patient_id, 4),
+				last_name: item.last_name,
+				first_name: item.first_name
+			};
+		})
+		return resultTmpl.render({list: data});
 	}
 
 	function bindOption(dom){
@@ -30230,12 +30239,7 @@
 	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 196 */
-/***/ function(module, exports) {
-
-	module.exports = "<option value=\"{{patient_id}}\">({{patient_id_label}}) {{last_name}} {{first_name}}</option>\r\n"
-
-/***/ },
+/* 196 */,
 /* 197 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -33122,6 +33126,12 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\" style=\"min-width:230px\">\r\n\t<!-- <div class=\"title\">会計</div> -->\r\n\t<table style=\"width:100%; max-width:400px; font-size:13px;\">\r\n\t    <tbody mc-name=\"meisai\">\r\n\t    \t{{#sections}}\r\n\t    \t\t<tr><td colspan=\"3\" style=\"font-weight:bold\">{{name}}</td></tr>\r\n\t    \t\t{{#items}}\r\n\t\t\t\t\t<tr>\r\n\t\t\t\t\t\t<td style=\"width:2em\">&nbsp;</td>\r\n\t\t\t\t\t\t<td width=\"*\">{{label}}</td>\r\n\t\t\t\t\t\t<td style=\"width:7em; text-align:right\">\r\n\t\t\t\t\t\t\t{{tanka}}x{{count}} = {{total}} 点\r\n\t\t\t\t\t\t</td>\r\n\t\t\t\t\t</tr>\r\n\t    \t\t{{/items}}\r\n\t    \t{{/sections}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td colspan=\"3\" style=\"text-align:right;border-top:double #999\">\r\n\t\t\t\t\t総点 {{total_ten}} 点\r\n\t\t\t\t</td>\r\n\t\t\t</tr>\r\n\t    </tbody>\r\n\t</table>\r\n\t<hr/>\r\n\t<div style=\"font-size:13px\">\r\n\t    請求額： <span mc-name=\"charge-disp\">{{charge}}</span> 円 （負担 {{futan_wari}} 割）\r\n\t    <a mc-name=\"modifyLink\" href=\"javascript:void(0)\" class=\"cmd-link\">変更</a>\r\n\t</div>\r\n\t<div mc-name=\"modifyWrapper\" style=\"display:none; font-size:13px; margin:4px 0\">\r\n\t\t<form onsubmit=\"return false\">\r\n\t\t    変更額： <input mc-name=\"newCharge\" style=\"width: 4em\" class=\"alpha\"/> 円\r\n\t\t    <a mc-name=\"modifyEnter\" href=\"javascript:void(0)\" class=\"cmd-link\">適用</a> |\r\n\t\t    <a mc-name=\"modifyCancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n\r\n"
+
+/***/ },
+/* 257 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}\r\n"
 
 /***/ }
 /******/ ]);
