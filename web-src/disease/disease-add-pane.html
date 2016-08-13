@@ -1,0 +1,35 @@
+<div>
+    <div mc-name="message" class="message"
+         style="display:none;border:1px solid #990;color:#990;margin:4px;padding:4px;"></div>
+    <div style="font-size:13px" mc-name="disp-area">
+        名前：<span mc-name="name"></span>
+    </div>
+    <div class="start-date" style="font-size:13px">
+        <select mc-name="gengou" style="width:auto">
+            <option value="平成">平成</option>
+        </select>
+        <input type="text" mc-name="nen" class="disease-nen alpha">年
+        <input type="text" mc-name="month" class="disease-month alpha">月
+        <input type="text" mc-name="day" class="disease-day alpha">日
+    </div>
+    <div class="commandbox">
+        <button mc-name="enterLink">入力</button>
+        <a mc-name="suspectLink" href="javascript:void(0)" class="cmd-link">の疑い</a> |
+        <a mc-name="deleteAdjLink" href="javascript:void(0)" class="cmd-link">修飾語削除</a>
+    </div>
+    <hr/>
+    <form mc-name="search-form" onsubmit="return false">
+        <div>
+            <input mc-name="searchText" class="kanji" style="width:100px;">
+            <button mc-name="searchLink">検索</button>
+            <a mc-name="exampleLink" href="javascript:void(0)" class="cmd-link">例</a>
+        </div>
+        <div mc-name="modeWrapper">
+            <input type="radio" name="search-kind" value="disease" checked>病名
+            <input type="radio" name="search-kind" value="adj">修飾語
+        </div>
+        <div>
+            <select mc-name="searchResult" size="11"></select>
+        </div>
+    </form>
+</div>

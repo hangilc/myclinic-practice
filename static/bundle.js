@@ -25297,6 +25297,31 @@
 		request("get_charge", {visit_id: visitId}, "GET", cb);
 	};
 
+	exports.searchShoubyoumeiMaster = function(text, at, cb){
+		request("search_shoubyoumei_master", {text: text, at: at}, "GET", cb);
+	};
+
+	exports.searchShuushokugoMaster = function(text, cb){
+		request("search_shuushokugo_master", {text: text}, "GET", cb);
+	};
+
+	exports.getShoubyoumeiMaster = function(shoubyoumeicode, at, cb){
+		request("get_shoubyoumei_master", {shoubyoumeicode: shoubyoumeicode, at: at}, "GET", cb);
+	};
+
+	exports.getShuushokugoMaster = function(shuushokugocode, cb){
+		request("get_shuushokugo_master", {shuushokugocode: shuushokugocode}, "GET", cb);
+	};
+
+	exports.getShoubyoumeiMasterByName = function(name, at, cb){
+		request("get_shoubyoumei_master_by_name", {name: name, at: at}, "GET", cb);
+	};
+
+	exports.getShuushokugoMasterByName = function(name, cb){
+		request("get_shuushokugo_master_by_name", {name: name}, "GET", cb);
+	};
+
+
 
 
 /***/ },
@@ -29750,23 +29775,64 @@
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
+	var moment = __webpack_require__(6);
+	var ListPane = __webpack_require__(180);
+	var AddPane = __webpack_require__(258);
 
 	var tmplHtml = __webpack_require__(179);
 
-	var ListPane = __webpack_require__(180)
+	var workareaSelector = "> div > [mc-name=workarea]";
+	var listLinkSelector = "> div > [mc-name=command-box] [mc-name=listLink]";
+	var addLinkSelector = "> div > [mc-name=command-box] [mc-name=addLink]";
+	var endLinkSelector = "> div > [mc-name=command-box] [mc-name=endLink]";
+	var editLinkSelector = "> div > [mc-name=command-box] [mc-name=editLink]";
 
 	exports.setup = function(dom){
+		if( dom.data("setup") ){
+			throw new Error("duplicate setup for disease");
+		}
+		dom.data("setup", 1);
+
+		dom.html(tmplHtml);
+		var patientId = 0, diseases = [];
+		var at = moment().format("YYYY-MM-DD");
 		dom.listen("rx-start-page", function(appData){
-			var patientId = appData.currentPatientId;
+			patientId = appData.currentPatientId;
 			if( patientId > 0 ){
-				dom.html(tmplHtml);
-				var ws = dom.find("[mc-name=workarea]");
-				ListPane.setup(ws, appData.diseases);
+				diseases = appData.diseases;
+				listPane();
 			} else {
 				dom.html("");
 			}
+		});
+		dom.on("click", listLinkSelector, function(event){
+			event.preventDefault();
+			listPane();
 		})
+		dom.on("click", addLinkSelector, function(event){
+			event.preventDefault();
+			addPane();
+		})
+		dom.on("click", endLinkSelector, function(event){
+			event.preventDefault();
+			console.log("END");
+		})
+		dom.on("click", editLinkSelector, function(event){
+			event.preventDefault();
+			console.log("EDIT");
+		})
+
+		function listPane(){
+			var wa = dom.find(workareaSelector);
+			wa.empty();
+			wa.append(ListPane.create(diseases));
+		}
+
+		function addPane(){
+			var wa = dom.find(workareaSelector);
+			wa.empty();
+			wa.append(AddPane.create(patientId, at));
+		}
 	};
 
 
@@ -29777,7 +29843,7 @@
 /* 179 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">病名</div>\r\n<div mc-name=\"workarea\"></div>\r\n<hr />\r\n<div>\r\n\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">病名</div>\r\n\t<div mc-name=\"workarea\"></div>\r\n\t<hr />\r\n\t<div mc-name=\"command-box\">\r\n\t\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
 /* 180 */
@@ -29793,13 +29859,14 @@
 
 	var DiseaseListItem = __webpack_require__(182);
 
-	exports.setup = function(dom, list){
-		dom.html(tmpl.render({}));
+	exports.create = function(list){
+		var dom = $(tmpl.render({}));
 		var wrapper = dom.find("[mc-name=list]");
 		list.forEach(function(disease){
 			var tr = DiseaseListItem.create(disease);
 			wrapper.append(tr);
 		});
+		return dom;
 	};
 
 
@@ -33132,6 +33199,451 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}\r\n"
+
+/***/ },
+/* 258 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(259);
+	var tmpl = hogan.compile(tmplSrc);
+	var resultTmplSrc = __webpack_require__(260);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var conti = __webpack_require__(4);
+	var moment = __webpack_require__(6);
+	var DateBinder = __webpack_require__(261);
+	var mUtil = __webpack_require__(5);
+
+	var gengouSelector = "> .start-date select[mc-name=gengou]";
+	var nenInputSelector = "> .start-date input[mc-name=nen]";
+	var monthInputSelector = "> .start-date input[mc-name=month]";
+	var dayInputSelector = "> .start-date input[mc-name=day]";
+
+	var dispSelector = "> [mc-name=disp-area] [mc-name=name]";
+	var searchFormSelector = "> form[mc-name=search-form]";
+	var exampleLinkSelector = "> form[mc-name=search-form] [mc-name=exampleLink]";
+	var searchModeInput = "> form[mc-name=search-form] input[type=radio][name=search-kind]"
+	var searchTextSelector = "> form[mc-name=search-form] input[mc-name=searchText]";
+	var searchLinkSelector = "> form[mc-name=search-form] [mc-name=searchLink]";
+	var searchResultSelector = "> form[mc-name=search-form] select[mc-name=searchResult]";
+
+	var diseaseExamplesSrc = [
+	    '急性上気道炎',
+	    '急性気管支炎',
+	    'アレルギー性鼻炎',
+	    'アレルギー性結膜炎',
+	    '気管支喘息',
+	    '急性胃腸炎',
+	    '頭痛',
+	    '糖尿病',
+	    ['糖尿病の疑い', { disease:'糖尿病', adj:['の疑い'] }],
+	    'インフルエンザＡ型',
+	    ['(の疑い)', { adj:['の疑い'] }]
+	];
+
+	var diseaseExamplesData = parseDiseaseExamplesSrc(diseaseExamplesSrc);
+
+	exports.create = function(patientId, at){
+		var dom = $(tmpl.render({}));
+		var ctx = {
+			shoubyoumeiMaster: undefined,
+			shuushokugoMasters: [],
+			dateBinder: DateBinder.bind(mkStartDateMap(dom))
+		};
+		ctx.dateBinder.setDate(moment());
+		bindSearch(dom, ctx.dateBinder);
+		bindExampleLink(dom);
+		bindSearchResult(dom, ctx);
+		return dom;
+	};
+
+	function mkStartDateMap(dom){
+		return {
+			gengouSelect: dom.find(gengouSelector),
+			nenInput: dom.find(nenInputSelector),
+			monthInput: dom.find(monthInputSelector),
+			dayInput: dom.find(dayInputSelector)
+		};
+	}
+
+	function parseDiseaseExamplesSrc(src){
+		return src.map(function(item){
+			if( item instanceof Array ){
+				return {
+					label: item[0],
+					config: item[1]
+				}
+			} else {
+				return {
+					label: item,
+					config: { disease: item, adj: [] }
+				}
+			}
+		});
+	}
+
+	function fillExampleOptions(select){
+		var data = diseaseExamplesData;
+		select.empty();
+		data.forEach(function(item){
+			var opt = $("<option>X</option>");
+			opt.text(item.label);
+			opt.data("config", item.config);
+			opt.data("mode", "example");
+			select.append(opt);
+		})
+	}
+
+	function searchShoubyoumei(dom, text, at){
+		var searchResult;
+		task.run([
+			function(done){
+				service.searchShoubyoumeiMaster(text, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					searchResult = result;
+					done();
+				});
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var list = searchResult.map(function(item){
+				return {
+					name: item.name,
+					mode: "disease",
+					code: item.shoubyoumeicode
+				};
+			});
+			var resultSelect = dom.find(searchResultSelector);
+			resultSelect.html(resultTmpl.render({list: list}));
+		});
+	}
+
+	function searchShuushokugo(dom, text){
+		var searchResult;
+		task.run([
+			function(done){
+				service.searchShuushokugoMaster(text, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					searchResult = result;
+					done();
+				});
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var list = searchResult.map(function(item){
+				return {
+					name: item.name,
+					mode: "adj",
+					code: item.shuushokugocode
+				};
+			});
+			var resultSelect = dom.find(searchResultSelector);
+			resultSelect.html(resultTmpl.render({list: list}));
+		});
+	}
+
+	function getStartDate(dateBinder){
+		var optDate = dateBinder.getDate();
+		if( !optDate.ok ){
+			alert("開始日が適切に設定されていません。\n" + optDate.error);
+			return null;
+		} else {
+			return optDate.sqlDate;
+		}
+	}
+
+	function bindSearch(dom, dateBinder){
+		dom.on("submit", searchFormSelector, function(event){
+			event.preventDefault();
+			var at = getStartDate(dateBinder);
+			if( !at ){
+				return;
+			}
+			var text = dom.find(searchTextSelector).val().trim();
+			if( text === "" ){
+				return;
+			}
+			var mode = dom.find(searchModeInput+":checked").val();
+			if( mode === "disease" ){
+				searchShoubyoumei(dom, text, at);
+			} else if( mode === "adj" ){
+				searchShuushokugo(dom, text);
+			} else {
+				alert("unknown search mode: " + mode);
+				return;
+			}
+		})
+	}
+
+	function bindExampleLink(dom){
+		dom.on("click", exampleLinkSelector, function(event){
+			event.preventDefault();
+			var select = dom.find(searchResultSelector);
+			fillExampleOptions(select);
+		});
+	}
+
+	function updateDisp(dom, ctx){
+		var disease = {
+			name: ctx.shoubyoumeiMaster ? ctx.shoubyoumeiMaster.name : "",
+			adj_list: ctx.shuushokugoMasters
+		};
+		var fullName = mUtil.diseaseFullName(disease);
+		dom.find(dispSelector).text(fullName);
+	}
+
+	function selectShoubyoumei(dom, code, ctx){
+		var at = getStartDate(ctx.dateBinder);
+		if( !at ){
+			return;
+		}
+		var master;
+		task.run([
+			function(done){
+				service.getShoubyoumeiMaster(code, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					master = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				console.log(err);
+				alert("この傷病名は、開始日に有効でありません。");
+				return;
+			}
+			ctx.shoubyoumeiMaster = master;
+			updateDisp(dom, ctx);
+		})
+	}
+
+	function selectShuushokugo(dom, code, ctx){
+		var master;
+		task.run([
+			function(done){
+				service.getShuushokugoMaster(code, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					master = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			ctx.shuushokugoMasters.push(master);
+			updateDisp(dom, ctx);
+		})
+	}
+
+	function selectExample(dom, config, ctx){
+		var shoubyoumeiMaster = null;
+		var shuushokugoMasters = [];
+		var at = getStartDate(ctx.dateBinder);
+		if( !at ){
+			return;
+		}
+		task.run([
+			function(done){
+				if( config.disease ){
+					service.getShoubyoumeiMasterByName(config.disease, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						shoubyoumeiMaster = result;
+						done();
+					})
+				} else {
+					done();
+				}
+			},
+			function(done){
+				if( config.adj && config.adj.length > 0 ){
+					conti.forEach(config.adj, function(name, done){
+						service.getShuushokugoMasterByName(name, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							shuushokugoMasters.push(result);
+							done();
+						})
+					}, done);
+				} else {
+					done();
+				}
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			ctx.shoubyoumeiMaster = shoubyoumeiMaster;
+			ctx.shuushokugoMasters = shuushokugoMasters;
+			updateDisp(dom, ctx);
+		});
+	}
+
+	function bindSearchResult(dom, ctx){
+		dom.on("change", searchResultSelector, function(){
+			var opt = dom.find(searchResultSelector + " option:selected");
+			var code = opt.val();
+			var mode = opt.data("mode");
+			if( mode === "disease" ){
+				selectShoubyoumei(dom, code, ctx);
+			} else if( mode === "adj" ){
+				selectShuushokugo(dom, code, ctx);
+			} else if( mode === "example" ){
+				selectExample(dom, opt.data("config"), ctx);
+			} else {
+				alert("invalid option mode: " + mode);
+				return;
+			}
+		})
+	}
+
+
+
+/***/ },
+/* 259 */
+/***/ function(module, exports) {
+
+	module.exports = "<div>\r\n    <div mc-name=\"message\" class=\"message\"\r\n         style=\"display:none;border:1px solid #990;color:#990;margin:4px;padding:4px;\"></div>\r\n    <div style=\"font-size:13px\" mc-name=\"disp-area\">\r\n        名前：<span mc-name=\"name\"></span>\r\n    </div>\r\n    <div class=\"start-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"gengou\" style=\"width:auto\">\r\n            <option value=\"平成\">平成</option>\r\n        </select>\r\n        <input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\">年\r\n        <input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\">月\r\n        <input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\">日\r\n    </div>\r\n    <div class=\"commandbox\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <a mc-name=\"suspectLink\" href=\"javascript:void(0)\" class=\"cmd-link\">の疑い</a> |\r\n        <a mc-name=\"deleteAdjLink\" href=\"javascript:void(0)\" class=\"cmd-link\">修飾語削除</a>\r\n    </div>\r\n    <hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n        <div>\r\n            <input mc-name=\"searchText\" class=\"kanji\" style=\"width:100px;\">\r\n            <button mc-name=\"searchLink\">検索</button>\r\n            <a mc-name=\"exampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a>\r\n        </div>\r\n        <div mc-name=\"modeWrapper\">\r\n            <input type=\"radio\" name=\"search-kind\" value=\"disease\" checked>病名\r\n            <input type=\"radio\" name=\"search-kind\" value=\"adj\">修飾語\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"11\"></select>\r\n        </div>\r\n    </form>\r\n</div>"
+
+/***/ },
+/* 260 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{code}}\" data-mode=\"{{mode}}\">{{name}}</option>\r\n{{/list}}"
+
+/***/ },
+/* 261 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var kanjidate = __webpack_require__(118);
+	var moment = __webpack_require__(6);
+
+	exports.bind = function(domMap){
+		return new DateBinder(domMap);
+	};
+
+	function DateBinder(domMap){
+		this.domMap = domMap;
+	}
+
+	function analyzeDate(m){
+		var result = {
+			year: m.year(),
+			month: m.month() + 1,
+			day: m.date()
+		};
+		var g = kanjidate.toGengou(result.year, result.month, result.day);
+		result.gengou = g.gengou;
+		result.nen = g.nen;
+		return result;
+	}
+
+	DateBinder.prototype.getGengou = function(){
+		return this.domMap.gengouSelect.val();
+	}
+
+	DateBinder.prototype.setGengou = function(gengou){
+		this.domMap.gengouSelect.val(gengou);
+	}
+
+	DateBinder.prototype.getNen = function(){
+		return this.domMap.nenInput.val();
+	}
+
+	DateBinder.prototype.setNen = function(nen){
+		this.domMap.nenInput.val(nen);
+	}
+
+	DateBinder.prototype.getMonth = function(){
+		return this.domMap.monthInput.val();
+	}
+
+	DateBinder.prototype.setMonth = function(month){
+		this.domMap.monthInput.val(month);
+	}
+
+	DateBinder.prototype.getDay = function(){
+		return this.domMap.dayInput.val();
+	}
+
+	DateBinder.prototype.setDay = function(day){
+		this.domMap.dayInput.val(day);
+	}
+
+	DateBinder.prototype.setDate = function(m){
+		var d = analyzeDate(m);
+		this.setGengou(d.gengou);
+		this.setNen(d.nen);
+		this.setMonth(d.month);
+		this.setDay(d.day);
+	}
+
+	DateBinder.prototype.getDate = function(){
+		var map = this.domMap;
+		var gengou = this.getGengou();
+		var nen = this.getNen();
+		var month = this.getMonth();
+		var day = this.getDay();
+		var err = [];
+		var allDigits = /^\d+$/;
+		if( !allDigits.test(nen) ){
+			err.push("年の入力が適切でありません。");
+		}
+		if( !allDigits.test(month) ){
+			err.push("月の入力が適切でありません。");
+		}
+		if( !allDigits.test(day) ){
+			err.push("日の入力が適切でありません。");
+		}
+		var year = kanjidate.fromGengou(gengou, +nen);
+		var m = moment({year: year, month: month-1, day: day});
+		if( err.length > 0 ){
+			return {
+				ok: false,
+				error: err.join("\n"),
+				isCleared: (nen === "" && month === "" && day === "")
+			};
+		} else {
+			return {
+				ok: true,
+				date: m,
+				sqlDate: m.format("YYYY-MM-DD")
+			}
+		}
+	}
 
 /***/ }
 /******/ ]);

@@ -8,12 +8,13 @@ var tmpl = hogan.compile(tmplSrc);
 
 var DiseaseListItem = require("./disease-list-item");
 
-exports.setup = function(dom, list){
-	dom.html(tmpl.render({}));
+exports.create = function(list){
+	var dom = $(tmpl.render({}));
 	var wrapper = dom.find("[mc-name=list]");
 	list.forEach(function(disease){
 		var tr = DiseaseListItem.create(disease);
 		wrapper.append(tr);
 	});
+	return dom;
 };
 

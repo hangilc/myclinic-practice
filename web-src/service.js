@@ -300,3 +300,28 @@ exports.getCharge = function(visitId, cb){
 	request("get_charge", {visit_id: visitId}, "GET", cb);
 };
 
+exports.searchShoubyoumeiMaster = function(text, at, cb){
+	request("search_shoubyoumei_master", {text: text, at: at}, "GET", cb);
+};
+
+exports.searchShuushokugoMaster = function(text, cb){
+	request("search_shuushokugo_master", {text: text}, "GET", cb);
+};
+
+exports.getShoubyoumeiMaster = function(shoubyoumeicode, at, cb){
+	request("get_shoubyoumei_master", {shoubyoumeicode: shoubyoumeicode, at: at}, "GET", cb);
+};
+
+exports.getShuushokugoMaster = function(shuushokugocode, cb){
+	request("get_shuushokugo_master", {shuushokugocode: shuushokugocode}, "GET", cb);
+};
+
+exports.getShoubyoumeiMasterByName = function(name, at, cb){
+	request("get_shoubyoumei_master_by_name", {name: name, at: at}, "GET", cb);
+};
+
+exports.getShuushokugoMasterByName = function(name, cb){
+	request("get_shuushokugo_master_by_name", {name: name}, "GET", cb);
+};
+
+
