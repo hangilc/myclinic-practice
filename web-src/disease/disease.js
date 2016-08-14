@@ -4,6 +4,8 @@ var $ = require("jquery");
 var moment = require("moment");
 var ListPane = require("./disease-list-pane");
 var AddPane = require("./disease-add-pane");
+var EndPane = require("./disease-end-pane");
+var mConsts = require("myclinic-consts");
 
 var tmplHtml = require("raw!./disease.html");
 
@@ -42,7 +44,7 @@ exports.setup = function(dom){
 	})
 	dom.on("click", endLinkSelector, function(event){
 		event.preventDefault();
-		console.log("END");
+		endPane();
 	})
 	dom.on("click", editLinkSelector, function(event){
 		event.preventDefault();
@@ -51,6 +53,11 @@ exports.setup = function(dom){
 	// from add disease pane
 	dom.on("r6ihx2oq-entered", function(event, newDisease){
 		diseases.push(newDisease);
+	});
+	// from end disease pane
+	dom.on("gvr59xqp-modified", function(event, modifiedDiseases){
+		updateWithModifiedDiseases(diseases, modifiedDiseases);
+		endPane();
 	});
 
 	function listPane(){
@@ -64,7 +71,36 @@ exports.setup = function(dom){
 		wa.empty();
 		wa.append(AddPane.create(patientId, at));
 	}
+
+	function endPane(){
+		var wa = dom.find(workareaSelector);
+		wa.empty();
+		wa.append(EndPane.create(diseases));
+	}
 };
 
+function updateWithModifiedDiseases(diseases, modifiedDiseases){
+	for(var j=0;j<modifiedDiseases.length;j++){
+		var modified = modifiedDiseases[j];
+		var i = findIndex(modified.disease_id);
+		if( i < 0 ){
+			alert("cannot find disease: " + modified.disease_id);
+			return;
+		}
+		if( modified.end_reason !== mConsts.DiseaseEndReasonNotEnded ){
+			diseases.splice(i, 1);
+		} else {
+			disease[i] = modified;
+		}
+	}
 
+	function findIndex(diseaseId){
+		for(var i=0;i<diseases.length;i++){
+			if( diseases[i].disease_id === diseaseId ){
+				return i;
+			}
+		}
+		return -1;
+	}
+}
 

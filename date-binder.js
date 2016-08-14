@@ -87,7 +87,7 @@ DateBinder.prototype.getDate = function(){
 		return {
 			ok: false,
 			error: err.join("\n"),
-			isCleared: (nen === "" && month === "" && day === "")
+			isEmpty: (nen === "" && month === "" && day === "")
 		};
 	} else {
 		return {

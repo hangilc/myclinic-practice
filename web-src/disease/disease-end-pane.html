@@ -1,0 +1,42 @@
+<div>
+	<table class="list">
+	    <tbody mc-name="tbody">
+	    	{{#diseases}}
+	    		<tr>
+		    		<td>
+		    			<input type="checkbox" name="disease" value="{{disease_id}}" />
+		    		</td>
+		    		<td>
+		    			{{name_label}} <span style='color:#999'>({{start_date_label}})</span>
+		    		</td>
+	    		</tr>
+	    	{{/diseases}}
+	    </tbody>
+	</table>
+
+	<div class="end-date" style="font-size:13px">
+		<select mc-name="gengou" style="width:auto"><option value="平成">平成</option></select>
+		<input type="text" mc-name="nen" class="disease-nen alpha"/><a
+	        mc-name="nenLabel" href="javascript:void(0)" class="cmd-link">年</a>
+		<input type="text" mc-name="month" class="disease-month alpha"/><a
+			mc-name="monthLabel" href="javascript:void(0)" class="cmd-link">月</a>
+		<input type="text" mc-name="day" class="disease-day alpha"/><a
+			mc-name="dayLabel" href="javascript:void(0)"
+			class="cmd-link">日</a>
+		<div>
+			<a mc-name="weekLabel" href="javascript:void(0)" class="cmd-link">週</a> |
+			<a mc-name="todayLabel" href="javascript:void(0)" class="cmd-link">今日</a> |
+			<a mc-name="lastMonthLastDayLabel" href="javascript:void(0)" class="cmd-link">先月末</a>
+		</div>	
+	</div>
+	<div mc-name="end-reason-area">
+	    <form style="margin:0;padding:0">
+	    転帰：<input type="radio" value="C" name="end-reason" checked/>治癒
+	          <input type="radio" value="S" name="end-reason"/>中止
+	          <input type="radio" value="D" name="end-reason"/>死亡
+	    </form>
+	</div>
+	<div class="commandbox">
+		<button mc-name="enterLink">入力</button>
+	</div>
+</div>

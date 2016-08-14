@@ -338,4 +338,11 @@ exports.getFullDisease = function(diseaseId, cb){
 	request("get_full_disease", {disease_id: diseaseId}, "GET", cb);
 };
 
+exports.getDisease = function(diseaseId, cb){
+	request("get_disease", {disease_id: diseaseId}, "GET", cb);
+};
+
+exports.batchUpdateDiseases = function(diseases, done){
+	request("batch_update_diseases", JSON.stringify(diseases), "POST", done);
+};
 

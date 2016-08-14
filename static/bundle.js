@@ -25335,6 +25335,13 @@
 		request("get_full_disease", {disease_id: diseaseId}, "GET", cb);
 	};
 
+	exports.getDisease = function(diseaseId, cb){
+		request("get_disease", {disease_id: diseaseId}, "GET", cb);
+	};
+
+	exports.batchUpdateDiseases = function(diseases, done){
+		request("batch_update_diseases", JSON.stringify(diseases), "POST", done);
+	};
 
 
 
@@ -29792,6 +29799,8 @@
 	var moment = __webpack_require__(6);
 	var ListPane = __webpack_require__(180);
 	var AddPane = __webpack_require__(258);
+	var EndPane = __webpack_require__(262);
+	var mConsts = __webpack_require__(110);
 
 	var tmplHtml = __webpack_require__(179);
 
@@ -29830,7 +29839,7 @@
 		})
 		dom.on("click", endLinkSelector, function(event){
 			event.preventDefault();
-			console.log("END");
+			endPane();
 		})
 		dom.on("click", editLinkSelector, function(event){
 			event.preventDefault();
@@ -29839,6 +29848,11 @@
 		// from add disease pane
 		dom.on("r6ihx2oq-entered", function(event, newDisease){
 			diseases.push(newDisease);
+		});
+		// from end disease pane
+		dom.on("gvr59xqp-modified", function(event, modifiedDiseases){
+			updateWithModifiedDiseases(diseases, modifiedDiseases);
+			endPane();
 		});
 
 		function listPane(){
@@ -29852,9 +29866,38 @@
 			wa.empty();
 			wa.append(AddPane.create(patientId, at));
 		}
+
+		function endPane(){
+			var wa = dom.find(workareaSelector);
+			wa.empty();
+			wa.append(EndPane.create(diseases));
+		}
 	};
 
+	function updateWithModifiedDiseases(diseases, modifiedDiseases){
+		for(var j=0;j<modifiedDiseases.length;j++){
+			var modified = modifiedDiseases[j];
+			var i = findIndex(modified.disease_id);
+			if( i < 0 ){
+				alert("cannot find disease: " + modified.disease_id);
+				return;
+			}
+			if( modified.end_reason !== mConsts.DiseaseEndReasonNotEnded ){
+				diseases.splice(i, 1);
+			} else {
+				disease[i] = modified;
+			}
+		}
 
+		function findIndex(diseaseId){
+			for(var i=0;i<diseases.length;i++){
+				if( diseases[i].disease_id === diseaseId ){
+					return i;
+				}
+			}
+			return -1;
+		}
+	}
 
 
 
@@ -33746,7 +33789,7 @@
 			return {
 				ok: false,
 				error: err.join("\n"),
-				isCleared: (nen === "" && month === "" && day === "")
+				isEmpty: (nen === "" && month === "" && day === "")
 			};
 		} else {
 			return {
@@ -33756,6 +33799,129 @@
 			}
 		}
 	}
+
+/***/ },
+/* 262 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(263);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var kanjidate = __webpack_require__(118);
+	var DateBinder = __webpack_require__(261);
+	var moment = __webpack_require__(6);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var conti = __webpack_require__(4);
+
+	var diseaseCheckboxSelector = "> .list input[type=checkbox][name=disease]";
+	var endDateGengouSelector = "> .end-date select[mc-name=gengou]";
+	var endDateNenInputSelector = "> .end-date input[mc-name=nen]";
+	var endDateMonthInputSelector = "> .end-date input[mc-name=month]";
+	var endDateDayInputSelector = "> .end-date input[mc-name=day]";
+	var reasonRadioSelector = "> [mc-name=end-reason-area] input[type=radio][name=end-reason]";
+	var enterLinkSelector = "> .commandbox [mc-name=enterLink]";
+
+	exports.create = function(diseases){
+		var data = {
+			diseases: diseasesData(diseases)
+		};
+		var dom = $(tmpl.render(data));
+		var ctx = {
+			dateBinder: setupDateBinder(dom)
+		}
+		ctx.dateBinder.setDate(moment());
+		bindEnter(dom, ctx);
+		return dom;
+	}
+
+	function diseasesData(diseases){
+		return diseases.map(function(d){
+			return {
+				disease_id: d.disease_id,
+				name_label: mUtil.diseaseFullName(d),
+				start_date_label: kanjidate.format(kanjidate.f3, d.start_date)
+			}
+		})
+	}
+
+	function setupDateBinder(dom){
+		var map = {
+			gengouSelect: dom.find(endDateGengouSelector),
+			nenInput: dom.find(endDateNenInputSelector),
+			monthInput: dom.find(endDateMonthInputSelector),
+			dayInput: dom.find(endDateDayInputSelector),
+		}
+		return DateBinder.bind(map);
+	}
+
+	function bindEnter(dom, ctx){
+		dom.on("click", enterLinkSelector, function(event){
+			event.preventDefault();
+			var diseaseIds = dom.find(diseaseCheckboxSelector + ":checked").map(function(){
+				return +$(this).val();
+			}).get();
+			var dateOpt = ctx.dateBinder.getDate();
+			if( !dateOpt.ok ){
+				alert(dateOpt.error);
+				return;
+			}
+			var endDate = dateOpt.sqlDate;
+			var reason = dom.find(reasonRadioSelector + ":checked").val();
+			console.log(diseaseIds, endDate, reason);
+			var diseases = [], newDiseases = [];
+			task.run([
+				function(done){
+					conti.forEach(diseaseIds, function(diseaseId, done){
+						service.getDisease(diseaseId, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							diseases.push(result);
+							done();
+						})
+					}, done);
+				},
+				function(done){
+					diseases.forEach(function(disease){
+						disease.end_reason = reason;
+						disease.end_date = endDate;
+					});
+					service.batchUpdateDiseases(diseases, done);
+				},
+				function(done){
+					conti.forEach(diseaseIds, function(diseaseId, done){
+						service.getFullDisease(diseaseId, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newDiseases.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("gvr59xqp-modified", [newDiseases]);
+			})
+		})
+	}
+
+
+/***/ },
+/* 263 */
+/***/ function(module, exports) {
+
+	module.exports = "<div>\r\n\t<table class=\"list\">\r\n\t    <tbody mc-name=\"tbody\">\r\n\t    \t{{#diseases}}\r\n\t    \t\t<tr>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t<input type=\"checkbox\" name=\"disease\" value=\"{{disease_id}}\" />\r\n\t\t    \t\t</td>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t{{name_label}} <span style='color:#999'>({{start_date_label}})</span>\r\n\t\t    \t\t</td>\r\n\t    \t\t</tr>\r\n\t    \t{{/diseases}}\r\n\t    </tbody>\r\n\t</table>\r\n\r\n\t<div class=\"end-date\" style=\"font-size:13px\">\r\n\t\t<select mc-name=\"gengou\" style=\"width:auto\"><option value=\"平成\">平成</option></select>\r\n\t\t<input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\"/><a\r\n\t        mc-name=\"nenLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">年</a>\r\n\t\t<input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\"/><a\r\n\t\t\tmc-name=\"monthLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月</a>\r\n\t\t<input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\"/><a\r\n\t\t\tmc-name=\"dayLabel\" href=\"javascript:void(0)\"\r\n\t\t\tclass=\"cmd-link\">日</a>\r\n\t\t<div>\r\n\t\t\t<a mc-name=\"weekLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">週</a> |\r\n\t\t\t<a mc-name=\"todayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">今日</a> |\r\n\t\t\t<a mc-name=\"lastMonthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">先月末</a>\r\n\t\t</div>\t\r\n\t</div>\r\n\t<div mc-name=\"end-reason-area\">\r\n\t    <form style=\"margin:0;padding:0\">\r\n\t    転帰：<input type=\"radio\" value=\"C\" name=\"end-reason\" checked/>治癒\r\n\t          <input type=\"radio\" value=\"S\" name=\"end-reason\"/>中止\r\n\t          <input type=\"radio\" value=\"D\" name=\"end-reason\"/>死亡\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);
