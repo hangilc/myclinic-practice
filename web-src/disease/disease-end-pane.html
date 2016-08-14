@@ -1,16 +1,16 @@
 <div>
 	<table class="list">
 	    <tbody mc-name="tbody">
-	    	{{#diseases}}
-	    		<tr>
-		    		<td>
-		    			<input type="checkbox" name="disease" value="{{disease_id}}" />
-		    		</td>
-		    		<td>
-		    			{{name_label}} <span style='color:#999'>({{start_date_label}})</span>
-		    		</td>
-	    		</tr>
-	    	{{/diseases}}
+			{{#diseases}}
+				<tr>
+					<td>
+						<input type="checkbox" name="disease" value="{{disease_id}}" data-start-date="{{start_date}}" />
+					</td>
+					<td>
+						{{name_label}} <span style='color:#999'>({{start_date_label}})</span>
+					</td>
+				</tr>
+			{{/diseases}}
 	    </tbody>
 	</table>
 

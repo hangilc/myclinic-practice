@@ -33,9 +33,10 @@ exports.create = function(diseases){
 	};
 	var dom = $(tmpl.render(data));
 	var ctx = {
-		dateBinder: setupDateBinder(dom)
+		dateBinder: setupDateBinder(dom),
 	}
 	ctx.dateBinder.setDate(moment());
+	bindSelectionChange(dom, ctx);
 	bindEnter(dom, ctx);
 	return dom;
 }
@@ -45,7 +46,8 @@ function diseasesData(diseases){
 		return {
 			disease_id: d.disease_id,
 			name_label: mUtil.diseaseFullName(d),
-			start_date_label: kanjidate.format(kanjidate.f3, d.start_date)
+			start_date_label: kanjidate.format(kanjidate.f3, d.start_date),
+			start_date: d.start_date
 		}
 	})
 }
@@ -65,6 +67,23 @@ function setupDateBinder(dom){
 		lastMonthLastDayLink: dom.find(endDateLastMonthLastDayLinkSelector)
 	}
 	return DateBinder.bind(map);
+}
+
+function bindSelectionChange(dom, ctx){
+	dom.on("change", diseaseCheckboxSelector, function(){
+		var last = null;
+		dom.find(diseaseCheckboxSelector + ":checked").each(function(){
+			var startDate = $(this).data("start-date");
+			if( !last || startDate > last ){
+				last = startDate;
+			}
+		});
+		if( last ){
+			ctx.dateBinder.setDate(moment(last));
+		} else {
+			ctx.dateBinder.setDate(moment());
+		}
+	})
 }
 
 function bindEnter(dom, ctx){

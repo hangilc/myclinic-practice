@@ -33961,9 +33961,10 @@
 		};
 		var dom = $(tmpl.render(data));
 		var ctx = {
-			dateBinder: setupDateBinder(dom)
+			dateBinder: setupDateBinder(dom),
 		}
 		ctx.dateBinder.setDate(moment());
+		bindSelectionChange(dom, ctx);
 		bindEnter(dom, ctx);
 		return dom;
 	}
@@ -33973,7 +33974,8 @@
 			return {
 				disease_id: d.disease_id,
 				name_label: mUtil.diseaseFullName(d),
-				start_date_label: kanjidate.format(kanjidate.f3, d.start_date)
+				start_date_label: kanjidate.format(kanjidate.f3, d.start_date),
+				start_date: d.start_date
 			}
 		})
 	}
@@ -33993,6 +33995,23 @@
 			lastMonthLastDayLink: dom.find(endDateLastMonthLastDayLinkSelector)
 		}
 		return DateBinder.bind(map);
+	}
+
+	function bindSelectionChange(dom, ctx){
+		dom.on("change", diseaseCheckboxSelector, function(){
+			var last = null;
+			dom.find(diseaseCheckboxSelector + ":checked").each(function(){
+				var startDate = $(this).data("start-date");
+				if( !last || startDate > last ){
+					last = startDate;
+				}
+			});
+			if( last ){
+				ctx.dateBinder.setDate(moment(last));
+			} else {
+				ctx.dateBinder.setDate(moment());
+			}
+		})
 	}
 
 	function bindEnter(dom, ctx){
@@ -34057,7 +34076,7 @@
 /* 263 */
 /***/ function(module, exports) {
 
-	module.exports = "<div>\r\n\t<table class=\"list\">\r\n\t    <tbody mc-name=\"tbody\">\r\n\t    \t{{#diseases}}\r\n\t    \t\t<tr>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t<input type=\"checkbox\" name=\"disease\" value=\"{{disease_id}}\" />\r\n\t\t    \t\t</td>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t{{name_label}} <span style='color:#999'>({{start_date_label}})</span>\r\n\t\t    \t\t</td>\r\n\t    \t\t</tr>\r\n\t    \t{{/diseases}}\r\n\t    </tbody>\r\n\t</table>\r\n\r\n\t<div class=\"end-date\" style=\"font-size:13px\">\r\n\t\t<select mc-name=\"gengou\" style=\"width:auto\"><option value=\"平成\">平成</option></select>\r\n\t\t<input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\"/><a\r\n\t        mc-name=\"nenLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">年</a>\r\n\t\t<input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\"/><a\r\n\t\t\tmc-name=\"monthLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月</a>\r\n\t\t<input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\"/><a\r\n\t\t\tmc-name=\"dayLabel\" href=\"javascript:void(0)\"\r\n\t\t\tclass=\"cmd-link\">日</a>\r\n\t\t<div>\r\n\t\t\t<a mc-name=\"weekLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">週</a> |\r\n\t\t\t<a mc-name=\"todayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">今日</a> |\r\n\t\t\t<a mc-name=\"monthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月末</a> |\r\n\t\t\t<a mc-name=\"lastMonthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">先月末</a>\r\n\t\t</div>\t\r\n\t</div>\r\n\t<div mc-name=\"end-reason-area\">\r\n\t    <form style=\"margin:0;padding:0\">\r\n\t    転帰：<input type=\"radio\" value=\"C\" name=\"end-reason\" checked/>治癒\r\n\t          <input type=\"radio\" value=\"S\" name=\"end-reason\"/>中止\r\n\t          <input type=\"radio\" value=\"D\" name=\"end-reason\"/>死亡\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div>\r\n\t<table class=\"list\">\r\n\t    <tbody mc-name=\"tbody\">\r\n\t\t\t{{#diseases}}\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"disease\" value=\"{{disease_id}}\" data-start-date=\"{{start_date}}\" />\r\n\t\t\t\t\t</td>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t{{name_label}} <span style='color:#999'>({{start_date_label}})</span>\r\n\t\t\t\t\t</td>\r\n\t\t\t\t</tr>\r\n\t\t\t{{/diseases}}\r\n\t    </tbody>\r\n\t</table>\r\n\r\n\t<div class=\"end-date\" style=\"font-size:13px\">\r\n\t\t<select mc-name=\"gengou\" style=\"width:auto\"><option value=\"平成\">平成</option></select>\r\n\t\t<input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\"/><a\r\n\t        mc-name=\"nenLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">年</a>\r\n\t\t<input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\"/><a\r\n\t\t\tmc-name=\"monthLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月</a>\r\n\t\t<input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\"/><a\r\n\t\t\tmc-name=\"dayLabel\" href=\"javascript:void(0)\"\r\n\t\t\tclass=\"cmd-link\">日</a>\r\n\t\t<div>\r\n\t\t\t<a mc-name=\"weekLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">週</a> |\r\n\t\t\t<a mc-name=\"todayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">今日</a> |\r\n\t\t\t<a mc-name=\"monthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月末</a> |\r\n\t\t\t<a mc-name=\"lastMonthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">先月末</a>\r\n\t\t</div>\t\r\n\t</div>\r\n\t<div mc-name=\"end-reason-area\">\r\n\t    <form style=\"margin:0;padding:0\">\r\n\t    転帰：<input type=\"radio\" value=\"C\" name=\"end-reason\" checked/>治癒\r\n\t          <input type=\"radio\" value=\"S\" name=\"end-reason\"/>中止\r\n\t          <input type=\"radio\" value=\"D\" name=\"end-reason\"/>死亡\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);
