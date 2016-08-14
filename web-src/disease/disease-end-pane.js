@@ -15,8 +15,15 @@ var conti = require("conti");
 var diseaseCheckboxSelector = "> .list input[type=checkbox][name=disease]";
 var endDateGengouSelector = "> .end-date select[mc-name=gengou]";
 var endDateNenInputSelector = "> .end-date input[mc-name=nen]";
+var endDateNenLabelSelector = "> .end-date [mc-name=nenLabel]";
 var endDateMonthInputSelector = "> .end-date input[mc-name=month]";
+var endDateMonthLabelSelector = "> .end-date [mc-name=monthLabel]"
 var endDateDayInputSelector = "> .end-date input[mc-name=day]";
+var endDateDayLabelSelector = "> .end-date [mc-name=dayLabel]";
+var endDateWeekLinkSelector = "> .end-date [mc-name=weekLabel]";
+var endDateTodayLinkSelector = "> .end-date [mc-name=todayLabel]";
+var endDateMonthLastDayLinkSelector = "> .end-date [mc-name=monthLastDayLabel]";
+var endDateLastMonthLastDayLinkSelector = "> .end-date [mc-name=lastMonthLastDayLabel]";
 var reasonRadioSelector = "> [mc-name=end-reason-area] input[type=radio][name=end-reason]";
 var enterLinkSelector = "> .commandbox [mc-name=enterLink]";
 
@@ -47,8 +54,15 @@ function setupDateBinder(dom){
 	var map = {
 		gengouSelect: dom.find(endDateGengouSelector),
 		nenInput: dom.find(endDateNenInputSelector),
+		nenLabel: dom.find(endDateNenLabelSelector),
 		monthInput: dom.find(endDateMonthInputSelector),
+		monthLabel: dom.find(endDateMonthLabelSelector),
 		dayInput: dom.find(endDateDayInputSelector),
+		dayLabel: dom.find(endDateDayLabelSelector),
+		weekLink: dom.find(endDateWeekLinkSelector),
+		todayLink: dom.find(endDateTodayLinkSelector),
+		monthLastDayLink: dom.find(endDateMonthLastDayLinkSelector),
+		lastMonthLastDayLink: dom.find(endDateLastMonthLastDayLinkSelector)
 	}
 	return DateBinder.bind(map);
 }

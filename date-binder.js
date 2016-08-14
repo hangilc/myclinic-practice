@@ -10,6 +10,27 @@ exports.bind = function(domMap){
 
 function DateBinder(domMap){
 	this.domMap = domMap;
+	if( "dayLabel" in domMap ){
+		this.bindDayClick(domMap.dayLabel);
+	}
+	if( "monthLabel" in domMap ){
+		this.bindMonthClick(domMap.monthLabel);
+	}
+	if( "nenLabel" in domMap ){
+		this.bindNenClick(domMap.nenLabel);
+	}
+	if( "weekLink" in domMap ){
+		this.bindWeekClick(domMap.weekLink);
+	}
+	if( "todayLink" in domMap ){
+		this.bindTodayClick(domMap.todayLink);
+	}
+	if( "monthLastDayLink" in domMap ){
+		this.bindMonthLastDayClick(domMap.monthLastDayLink);
+	}
+	if( "lastMonthLastDayLink" in domMap ){
+		this.bindLastMonthLastDayClick(domMap.lastMonthLastDayLink);
+	}
 }
 
 function analyzeDate(m){
@@ -22,6 +43,107 @@ function analyzeDate(m){
 	result.gengou = g.gengou;
 	result.nen = g.nen;
 	return result;
+}
+
+DateBinder.prototype.bindDayClick = function(dayLabel){
+	var self = this;
+	dayLabel.on("click", function(event){
+		var dateOpt = self.getDate();
+		if( !dateOpt.ok ){
+			return;
+		}
+		var m = dateOpt.date;
+		var amount = 1;
+		if( event.shiftKey ){
+			amount = -amount;
+		}
+		m.add(amount, "days");
+		self.setDate(m);
+	});
+}
+
+DateBinder.prototype.bindMonthClick = function(monthLabel){
+	var self = this;
+	monthLabel.on("click", function(event){
+		var dateOpt = self.getDate();
+		if( !dateOpt.ok ){
+			return;
+		}
+		var m = dateOpt.date;
+		var amount = 1;
+		if( event.shiftKey ){
+			amount = -amount;
+		}
+		m.add(amount, "months");
+		self.setDate(m);
+	});
+}
+
+DateBinder.prototype.bindNenClick = function(nenLabel){
+	var self = this;
+	nenLabel.on("click", function(event){
+		var dateOpt = self.getDate();
+		if( !dateOpt.ok ){
+			return;
+		}
+		var m = dateOpt.date;
+		var amount = 1;
+		if( event.shiftKey ){
+			amount = -amount;
+		}
+		m.add(amount, "years");
+		self.setDate(m);
+	});
+}
+
+DateBinder.prototype.bindWeekClick = function(weekLink){
+	var self = this;
+	weekLink.on("click", function(event){
+		var dateOpt = self.getDate();
+		if( !dateOpt.ok ){
+			return;
+		}
+		var m = dateOpt.date;
+		var amount = 1;
+		if( event.shiftKey ){
+			amount = -amount;
+		}
+		m.add(amount, "weeks");
+		self.setDate(m);
+	});
+}
+
+DateBinder.prototype.bindTodayClick = function(todayLink){
+	var self = this;
+	todayLink.on("click", function(event){
+		self.setDate(moment());
+	});
+}
+
+DateBinder.prototype.bindMonthLastDayClick = function(link){
+	var self = this;
+	link.on("click", function(event){
+		var dateOpt = self.getDate();
+		if( !dateOpt.ok ){
+			return;
+		}
+		var m = dateOpt.date;
+		m.date(1).add(1, "months").add(-1, "days");
+		self.setDate(m);
+	});
+}
+
+DateBinder.prototype.bindLastMonthLastDayClick = function(link){
+	var self = this;
+	link.on("click", function(event){
+		var dateOpt = self.getDate();
+		if( !dateOpt.ok ){
+			return;
+		}
+		var m = dateOpt.date;
+		m.date(1).add(-1, "days");
+		self.setDate(m);
+	});
 }
 
 DateBinder.prototype.getGengou = function(){

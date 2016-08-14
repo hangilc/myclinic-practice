@@ -33712,6 +33712,27 @@
 
 	function DateBinder(domMap){
 		this.domMap = domMap;
+		if( "dayLabel" in domMap ){
+			this.bindDayClick(domMap.dayLabel);
+		}
+		if( "monthLabel" in domMap ){
+			this.bindMonthClick(domMap.monthLabel);
+		}
+		if( "nenLabel" in domMap ){
+			this.bindNenClick(domMap.nenLabel);
+		}
+		if( "weekLink" in domMap ){
+			this.bindWeekClick(domMap.weekLink);
+		}
+		if( "todayLink" in domMap ){
+			this.bindTodayClick(domMap.todayLink);
+		}
+		if( "monthLastDayLink" in domMap ){
+			this.bindMonthLastDayClick(domMap.monthLastDayLink);
+		}
+		if( "lastMonthLastDayLink" in domMap ){
+			this.bindLastMonthLastDayClick(domMap.lastMonthLastDayLink);
+		}
 	}
 
 	function analyzeDate(m){
@@ -33724,6 +33745,107 @@
 		result.gengou = g.gengou;
 		result.nen = g.nen;
 		return result;
+	}
+
+	DateBinder.prototype.bindDayClick = function(dayLabel){
+		var self = this;
+		dayLabel.on("click", function(event){
+			var dateOpt = self.getDate();
+			if( !dateOpt.ok ){
+				return;
+			}
+			var m = dateOpt.date;
+			var amount = 1;
+			if( event.shiftKey ){
+				amount = -amount;
+			}
+			m.add(amount, "days");
+			self.setDate(m);
+		});
+	}
+
+	DateBinder.prototype.bindMonthClick = function(monthLabel){
+		var self = this;
+		monthLabel.on("click", function(event){
+			var dateOpt = self.getDate();
+			if( !dateOpt.ok ){
+				return;
+			}
+			var m = dateOpt.date;
+			var amount = 1;
+			if( event.shiftKey ){
+				amount = -amount;
+			}
+			m.add(amount, "months");
+			self.setDate(m);
+		});
+	}
+
+	DateBinder.prototype.bindNenClick = function(nenLabel){
+		var self = this;
+		nenLabel.on("click", function(event){
+			var dateOpt = self.getDate();
+			if( !dateOpt.ok ){
+				return;
+			}
+			var m = dateOpt.date;
+			var amount = 1;
+			if( event.shiftKey ){
+				amount = -amount;
+			}
+			m.add(amount, "years");
+			self.setDate(m);
+		});
+	}
+
+	DateBinder.prototype.bindWeekClick = function(weekLink){
+		var self = this;
+		weekLink.on("click", function(event){
+			var dateOpt = self.getDate();
+			if( !dateOpt.ok ){
+				return;
+			}
+			var m = dateOpt.date;
+			var amount = 1;
+			if( event.shiftKey ){
+				amount = -amount;
+			}
+			m.add(amount, "weeks");
+			self.setDate(m);
+		});
+	}
+
+	DateBinder.prototype.bindTodayClick = function(todayLink){
+		var self = this;
+		todayLink.on("click", function(event){
+			self.setDate(moment());
+		});
+	}
+
+	DateBinder.prototype.bindMonthLastDayClick = function(link){
+		var self = this;
+		link.on("click", function(event){
+			var dateOpt = self.getDate();
+			if( !dateOpt.ok ){
+				return;
+			}
+			var m = dateOpt.date;
+			m.date(1).add(1, "months").add(-1, "days");
+			self.setDate(m);
+		});
+	}
+
+	DateBinder.prototype.bindLastMonthLastDayClick = function(link){
+		var self = this;
+		link.on("click", function(event){
+			var dateOpt = self.getDate();
+			if( !dateOpt.ok ){
+				return;
+			}
+			var m = dateOpt.date;
+			m.date(1).add(-1, "days");
+			self.setDate(m);
+		});
 	}
 
 	DateBinder.prototype.getGengou = function(){
@@ -33821,8 +33943,15 @@
 	var diseaseCheckboxSelector = "> .list input[type=checkbox][name=disease]";
 	var endDateGengouSelector = "> .end-date select[mc-name=gengou]";
 	var endDateNenInputSelector = "> .end-date input[mc-name=nen]";
+	var endDateNenLabelSelector = "> .end-date [mc-name=nenLabel]";
 	var endDateMonthInputSelector = "> .end-date input[mc-name=month]";
+	var endDateMonthLabelSelector = "> .end-date [mc-name=monthLabel]"
 	var endDateDayInputSelector = "> .end-date input[mc-name=day]";
+	var endDateDayLabelSelector = "> .end-date [mc-name=dayLabel]";
+	var endDateWeekLinkSelector = "> .end-date [mc-name=weekLabel]";
+	var endDateTodayLinkSelector = "> .end-date [mc-name=todayLabel]";
+	var endDateMonthLastDayLinkSelector = "> .end-date [mc-name=monthLastDayLabel]";
+	var endDateLastMonthLastDayLinkSelector = "> .end-date [mc-name=lastMonthLastDayLabel]";
 	var reasonRadioSelector = "> [mc-name=end-reason-area] input[type=radio][name=end-reason]";
 	var enterLinkSelector = "> .commandbox [mc-name=enterLink]";
 
@@ -33853,8 +33982,15 @@
 		var map = {
 			gengouSelect: dom.find(endDateGengouSelector),
 			nenInput: dom.find(endDateNenInputSelector),
+			nenLabel: dom.find(endDateNenLabelSelector),
 			monthInput: dom.find(endDateMonthInputSelector),
+			monthLabel: dom.find(endDateMonthLabelSelector),
 			dayInput: dom.find(endDateDayInputSelector),
+			dayLabel: dom.find(endDateDayLabelSelector),
+			weekLink: dom.find(endDateWeekLinkSelector),
+			todayLink: dom.find(endDateTodayLinkSelector),
+			monthLastDayLink: dom.find(endDateMonthLastDayLinkSelector),
+			lastMonthLastDayLink: dom.find(endDateLastMonthLastDayLinkSelector)
 		}
 		return DateBinder.bind(map);
 	}
@@ -33921,7 +34057,7 @@
 /* 263 */
 /***/ function(module, exports) {
 
-	module.exports = "<div>\r\n\t<table class=\"list\">\r\n\t    <tbody mc-name=\"tbody\">\r\n\t    \t{{#diseases}}\r\n\t    \t\t<tr>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t<input type=\"checkbox\" name=\"disease\" value=\"{{disease_id}}\" />\r\n\t\t    \t\t</td>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t{{name_label}} <span style='color:#999'>({{start_date_label}})</span>\r\n\t\t    \t\t</td>\r\n\t    \t\t</tr>\r\n\t    \t{{/diseases}}\r\n\t    </tbody>\r\n\t</table>\r\n\r\n\t<div class=\"end-date\" style=\"font-size:13px\">\r\n\t\t<select mc-name=\"gengou\" style=\"width:auto\"><option value=\"平成\">平成</option></select>\r\n\t\t<input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\"/><a\r\n\t        mc-name=\"nenLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">年</a>\r\n\t\t<input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\"/><a\r\n\t\t\tmc-name=\"monthLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月</a>\r\n\t\t<input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\"/><a\r\n\t\t\tmc-name=\"dayLabel\" href=\"javascript:void(0)\"\r\n\t\t\tclass=\"cmd-link\">日</a>\r\n\t\t<div>\r\n\t\t\t<a mc-name=\"weekLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">週</a> |\r\n\t\t\t<a mc-name=\"todayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">今日</a> |\r\n\t\t\t<a mc-name=\"lastMonthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">先月末</a>\r\n\t\t</div>\t\r\n\t</div>\r\n\t<div mc-name=\"end-reason-area\">\r\n\t    <form style=\"margin:0;padding:0\">\r\n\t    転帰：<input type=\"radio\" value=\"C\" name=\"end-reason\" checked/>治癒\r\n\t          <input type=\"radio\" value=\"S\" name=\"end-reason\"/>中止\r\n\t          <input type=\"radio\" value=\"D\" name=\"end-reason\"/>死亡\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div>\r\n\t<table class=\"list\">\r\n\t    <tbody mc-name=\"tbody\">\r\n\t    \t{{#diseases}}\r\n\t    \t\t<tr>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t<input type=\"checkbox\" name=\"disease\" value=\"{{disease_id}}\" />\r\n\t\t    \t\t</td>\r\n\t\t    \t\t<td>\r\n\t\t    \t\t\t{{name_label}} <span style='color:#999'>({{start_date_label}})</span>\r\n\t\t    \t\t</td>\r\n\t    \t\t</tr>\r\n\t    \t{{/diseases}}\r\n\t    </tbody>\r\n\t</table>\r\n\r\n\t<div class=\"end-date\" style=\"font-size:13px\">\r\n\t\t<select mc-name=\"gengou\" style=\"width:auto\"><option value=\"平成\">平成</option></select>\r\n\t\t<input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\"/><a\r\n\t        mc-name=\"nenLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">年</a>\r\n\t\t<input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\"/><a\r\n\t\t\tmc-name=\"monthLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月</a>\r\n\t\t<input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\"/><a\r\n\t\t\tmc-name=\"dayLabel\" href=\"javascript:void(0)\"\r\n\t\t\tclass=\"cmd-link\">日</a>\r\n\t\t<div>\r\n\t\t\t<a mc-name=\"weekLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">週</a> |\r\n\t\t\t<a mc-name=\"todayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">今日</a> |\r\n\t\t\t<a mc-name=\"monthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月末</a> |\r\n\t\t\t<a mc-name=\"lastMonthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">先月末</a>\r\n\t\t</div>\t\r\n\t</div>\r\n\t<div mc-name=\"end-reason-area\">\r\n\t    <form style=\"margin:0;padding:0\">\r\n\t    転帰：<input type=\"radio\" value=\"C\" name=\"end-reason\" checked/>治癒\r\n\t          <input type=\"radio\" value=\"S\" name=\"end-reason\"/>中止\r\n\t          <input type=\"radio\" value=\"D\" name=\"end-reason\"/>死亡\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);
