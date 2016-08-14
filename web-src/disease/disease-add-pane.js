@@ -46,8 +46,8 @@ var diseaseExamplesSrc = [
 
 var diseaseExamplesData = parseDiseaseExamplesSrc(diseaseExamplesSrc);
 
-exports.create = function(patientId){
-	var dom = $(tmpl.render({}));
+exports.create = function(patientId, optMessage){
+	var dom = $(tmpl.render({message: optMessage}));
 	var ctx = {
 		shoubyoumeiMaster: undefined,
 		shuushokugoMasters: [],
@@ -146,8 +146,8 @@ function bindEnter(dom, ctx){
 				return;
 			}
 			var name = dom.find(dispSelector).text();
-			dom.find(messageSelector).text(name + "が入力されました。").show();
-			dom.trigger("r6ihx2oq-entered", [newDisease]);
+			var msg = name + "が入力されました。";
+			dom.trigger("r6ihx2oq-entered", [newDisease, msg]);
 		})
 	})
 }

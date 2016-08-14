@@ -1,6 +1,10 @@
 <div>
+    {{#message}}
     <div mc-name="message" class="message"
-         style="display:none;border:1px solid #990;color:#990;margin:4px;padding:4px;"></div>
+         style="border:1px solid #990;color:#990;margin:4px;padding:4px;">
+         {{message}}
+    </div>
+    {{/message}}
     <div style="font-size:13px" mc-name="disp-area">
         名前：<span mc-name="name"></span>
     </div>

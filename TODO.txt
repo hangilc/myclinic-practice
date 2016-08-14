@@ -1,5 +1,6 @@
 -- TODO --
-
+* implement select preset in add regular shinryou
+* goto item pane by clicking the disease
 
 -- DONE --
 * add to wqueue after changing charge ; done 2016/08/13

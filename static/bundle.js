@@ -29846,188 +29846,138 @@
 		}
 		dom.data("setup", 1);
 
-		var ctx = {
-			patientId: 0,
-			diseases: [],
-			allDiseases: null
-		};
+		var patientId = 0;
 		dom.listen("rx-start-page", function(appData){
-			ctx.patientId = appData.currentPatientId;
-			if( ctx.patientId > 0 ){
-				ctx.diseases = appData.diseases;
-				ctx.allDisease = null;
+			patientId = appData.currentPatientId;
+			if( patientId > 0 ){
 				dom.html(tmplHtml);
-				listPane();
+				listPane(dom, patientId, appData.diseases);
 			} else {
-				ctx.patientId = 0;
-				ctx.diseases = [];
-				ctx.allDiseases = null;
 				dom.html("");
 			}
 		});
 		dom.on("click", listLinkSelector, function(event){
 			event.preventDefault();
-			listPane();
+			listPane(dom, patientId);
 		})
 		dom.on("click", addLinkSelector, function(event){
 			event.preventDefault();
-			addPane();
+			addPane(dom, patientId);
 		})
 		dom.on("click", endLinkSelector, function(event){
 			event.preventDefault();
-			endPane();
+			endPane(dom, patientId);
 		})
 		dom.on("click", editLinkSelector, function(event){
 			event.preventDefault();
-			editPane();
+			editPane(dom, patientId);
 		});
 		// from add disease pane
-		dom.on("r6ihx2oq-entered", function(event, newDisease){
-			ctx.diseases.push(newDisease);
+		dom.on("r6ihx2oq-entered", function(event, newDisease, message){
+			addPane(dom, patientId, message);
 		});
 		// from end disease pane
 		dom.on("gvr59xqp-modified", function(event, modifiedDiseases){
-			updateWithModifiedDiseases(ctx, modifiedDiseases);
-			endPane();
+			endPane(dom, patientId);
 		});
 		// from edi disease pane
 		dom.on("kodrsu7v-selected", function(event, disease){
-			itemPane(disease);
+			itemPane(dom, disease);
 		});
 		// from item disease pane
 		dom.on("cirqgerl-modified", function(event, modifiedDisease){
-			updateWithModifiedDiseases(ctx, [modifiedDisease]);
-			listPane();
+			listPane(dom, patientId);
 		});
 		dom.on("cirqgerl-deleted", function(event, deletedDiseaseId){
-			updateWithDeletedDisease(ctx, deletedDiseaseId);
-			listPane();
+			listPane(dom, patientId);
 		});
-
-		function listPane(){
-			var wa = dom.find(workareaSelector);
-			wa.empty();
-			wa.append(ListPane.create(ctx.diseases));
-		}
-
-		function addPane(){
-			var wa = dom.find(workareaSelector);
-			wa.empty();
-			wa.append(AddPane.create(ctx.patientId));
-		}
-
-		function endPane(){
-			var wa = dom.find(workareaSelector);
-			wa.empty();
-			wa.append(EndPane.create(ctx.diseases));
-		}
-
-		function editPane(){
-			var wa = dom.find(workareaSelector);
-			if( ctx.allDiseases ){
-				wa.empty();
-				wa.append(EditPane.create(ctx.allDiseases));
-			} else {
-				task.run([
-					function(done){
-						service.listAllFullDiseases(ctx.patientId, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							ctx.allDiseases = result;
-							done();
-						})
-					}
-				], function(err){
-					wa.empty();
-					wa.append(EditPane.create(ctx.allDiseases));
-				})
-			}
-		}
-
-		function itemPane(disease){
-			var wa = dom.find(workareaSelector);
-			wa.empty();
-			wa.append(ItemPane.create(disease));
-		}
 	};
 
-	function updateWithModifiedDiseases(ctx, modifiedDiseases){
-		var diseases = ctx.diseases;
-		var allDiseases = ctx.allDiseases;
-
-		for(var i=0;i<modifiedDiseases.length;i++){
-			var modified = modifiedDiseases[i];
-			var j = findIndex(modified.disease_id);
-			if( j >= 0 ){
-				if( modified.end_reason !== mConsts.DiseaseEndReasonNotEnded ){
-					diseases.splice(j, 1);
-				} else {
-					diseases[j] = modified;
+	function listPane(dom, patientId, optDiseases){
+		if( optDiseases ){
+			invoke(optDiseases);
+		} else {
+			var diseases;
+			task.run([
+				function(done){
+					service.listCurrentFullDiseases(patientId, function(err, result){
+						if( err ){
+							alert(err);
+							return;
+						}
+						diseases = result;
+						done();
+					})
 				}
-			}
-
-			if( allDiseases ){
-				var k = findIndexForAll(modified.disease_id);
-				if( k < 0 ){
-					alert("cannot find in all diseases: " + modified.disease_id);
+			], function(err){
+				if( err ){
+					alert(err);
 					return;
 				}
-				allDiseases[k] = modified;
-			}
+				invoke(diseases);
+			})
 		}
 
-		function findIndex(diseaseId){
-			for(var i=0;i<diseases.length;i++){
-				if( diseases[i].disease_id === diseaseId ){
-					return i;
-				}
-			}
-			return -1;
-		}
-
-		function findIndexForAll(diseaseId){
-			for(var i=0;i<allDiseases.length;i++){
-				if( allDiseases[i].disease_id === diseaseId ){
-					return i;
-				}
-			}
-			return -1;
+		function invoke(diseases){
+			var wa = dom.find(workareaSelector).empty();
+			wa.append(ListPane.create(diseases));
 		}
 	}
 
-	function updateWithDeletedDisease(ctx, deletedDiseaseId){
-		var diseases = ctx.diseases;
-		var allDiseases = ctx.allDiseases;
-		var i = findIndex(deletedDiseaseId);
-		if( i >= 0 ){
-			diseases.splice(i, 1);
-		}
-		var j = findIndexForAll(deletedDiseaseId);
-		if( j < 0 ){
-			alert("cannot find disease: " + deletedDiseaseId);
-			return;
-		}
-		allDiseases.splice(j, 1);
+	function addPane(dom, patientId, optMessage){
+		var wa = dom.find(workareaSelector);
+		wa.empty();
+		wa.append(AddPane.create(patientId, optMessage));
+	}
 
-		function findIndex(diseaseId){
-			for(var i=0;i<diseases.length;i++){
-				if( diseases[i].disease_id === diseaseId ){
-					return i;
-				}
+	function endPane(dom, patientId){
+		var diseases;
+		task.run([
+			function(done){
+				service.listCurrentFullDiseases(patientId, function(err, result){
+					if( err ){
+						alert(err);
+						return;
+					}
+					diseases = result;
+					done();
+				})
 			}
-			return -1;
-		}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var wa = dom.find(workareaSelector);
+			wa.empty();
+			wa.append(EndPane.create(diseases));
+		})
+	}
 
-		function findIndexForAll(diseaseId){
-			for(var i=0;i<allDiseases.length;i++){
-				if( allDiseases[i].disease_id === diseaseId ){
-					return i;
-				}
+	function editPane(dom, patientId){
+		var wa = dom.find(workareaSelector);
+		var allDiseases;
+		task.run([
+			function(done){
+				service.listAllFullDiseases(patientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					allDiseases = result;
+					done();
+				})
 			}
-			return -1;
-		}
+		], function(err){
+			wa.empty();
+			wa.append(EditPane.create(allDiseases));
+		})
+	}
+
+	function itemPane(dom, disease){
+		var wa = dom.find(workareaSelector);
+		wa.empty();
+		wa.append(ItemPane.create(disease));
 	}
 
 
@@ -30097,7 +30047,7 @@
 /* 183 */
 /***/ function(module, exports) {
 
-	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\r\n\t\t\tdisease-id=\"{{disease_id}}\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
+	module.exports = "<tr>\n\t<td>\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\n\t\t\tdisease-id=\"{{disease_id}}\">\n\t\t\t{{label}}\n\t\t</a>\n\t\t<span style=\"color:#999\">\n\t\t\t({{start_date_label}})\n\t\t</span>\n\t</td>\n</tr>\n"
 
 /***/ },
 /* 184 */
@@ -33444,8 +33394,8 @@
 
 	var diseaseExamplesData = parseDiseaseExamplesSrc(diseaseExamplesSrc);
 
-	exports.create = function(patientId){
-		var dom = $(tmpl.render({}));
+	exports.create = function(patientId, optMessage){
+		var dom = $(tmpl.render({message: optMessage}));
 		var ctx = {
 			shoubyoumeiMaster: undefined,
 			shuushokugoMasters: [],
@@ -33544,8 +33494,8 @@
 					return;
 				}
 				var name = dom.find(dispSelector).text();
-				dom.find(messageSelector).text(name + "が入力されました。").show();
-				dom.trigger("r6ihx2oq-entered", [newDisease]);
+				var msg = name + "が入力されました。";
+				dom.trigger("r6ihx2oq-entered", [newDisease, msg]);
 			})
 		})
 	}
@@ -33818,7 +33768,7 @@
 /* 259 */
 /***/ function(module, exports) {
 
-	module.exports = "<div>\r\n    <div mc-name=\"message\" class=\"message\"\r\n         style=\"display:none;border:1px solid #990;color:#990;margin:4px;padding:4px;\"></div>\r\n    <div style=\"font-size:13px\" mc-name=\"disp-area\">\r\n        名前：<span mc-name=\"name\"></span>\r\n    </div>\r\n    <div class=\"start-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"gengou\" style=\"width:auto\">\r\n            <option value=\"平成\">平成</option>\r\n        </select>\r\n        <input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\">年\r\n        <input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\">月\r\n        <input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\">日\r\n    </div>\r\n    <div class=\"commandbox\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <a mc-name=\"suspectLink\" href=\"javascript:void(0)\" class=\"cmd-link\">の疑い</a> |\r\n        <a mc-name=\"deleteAdjLink\" href=\"javascript:void(0)\" class=\"cmd-link\">修飾語削除</a>\r\n    </div>\r\n    <hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n        <div>\r\n            <input mc-name=\"searchText\" class=\"kanji\" style=\"width:100px;\">\r\n            <button mc-name=\"searchLink\">検索</button>\r\n            <a mc-name=\"exampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a>\r\n        </div>\r\n        <div mc-name=\"modeWrapper\">\r\n            <input type=\"radio\" name=\"search-kind\" value=\"disease\" checked>病名\r\n            <input type=\"radio\" name=\"search-kind\" value=\"adj\">修飾語\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"11\"></select>\r\n        </div>\r\n    </form>\r\n</div>"
+	module.exports = "<div>\r\n    {{#message}}\r\n    <div mc-name=\"message\" class=\"message\"\r\n         style=\"border:1px solid #990;color:#990;margin:4px;padding:4px;\">\r\n         {{message}}\r\n    </div>\r\n    {{/message}}\r\n    <div style=\"font-size:13px\" mc-name=\"disp-area\">\r\n        名前：<span mc-name=\"name\"></span>\r\n    </div>\r\n    <div class=\"start-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"gengou\" style=\"width:auto\">\r\n            <option value=\"平成\">平成</option>\r\n        </select>\r\n        <input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\">年\r\n        <input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\">月\r\n        <input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\">日\r\n    </div>\r\n    <div class=\"commandbox\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <a mc-name=\"suspectLink\" href=\"javascript:void(0)\" class=\"cmd-link\">の疑い</a> |\r\n        <a mc-name=\"deleteAdjLink\" href=\"javascript:void(0)\" class=\"cmd-link\">修飾語削除</a>\r\n    </div>\r\n    <hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n        <div>\r\n            <input mc-name=\"searchText\" class=\"kanji\" style=\"width:100px;\">\r\n            <button mc-name=\"searchLink\">検索</button>\r\n            <a mc-name=\"exampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a>\r\n        </div>\r\n        <div mc-name=\"modeWrapper\">\r\n            <input type=\"radio\" name=\"search-kind\" value=\"disease\" checked>病名\r\n            <input type=\"radio\" name=\"search-kind\" value=\"adj\">修飾語\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"11\"></select>\r\n        </div>\r\n    </form>\r\n</div>"
 
 /***/ },
 /* 260 */
@@ -34180,7 +34130,6 @@
 			}
 			var endDate = dateOpt.sqlDate;
 			var reason = dom.find(reasonRadioSelector + ":checked").val();
-			console.log(diseaseIds, endDate, reason);
 			var diseases = [], newDiseases = [];
 			task.run([
 				function(done){

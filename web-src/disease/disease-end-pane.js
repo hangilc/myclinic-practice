@@ -99,7 +99,6 @@ function bindEnter(dom, ctx){
 		}
 		var endDate = dateOpt.sqlDate;
 		var reason = dom.find(reasonRadioSelector + ":checked").val();
-		console.log(diseaseIds, endDate, reason);
 		var diseases = [], newDiseases = [];
 		task.run([
 			function(done){
