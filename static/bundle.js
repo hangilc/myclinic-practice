@@ -25321,6 +25321,20 @@
 		request("get_shuushokugo_master_by_name", {name: name}, "GET", cb);
 	};
 
+	exports.enterDisease = function(shoubyoumeicode, patientId, startDate, shuushokugocodes, cb){
+		var data = {
+			shoubyoumeicode: shoubyoumeicode,
+			patient_id: patientId,
+			start_date: startDate,
+			shuushokugocodes: shuushokugocodes
+		};
+		request("enter_disease", JSON.stringify(data), "POST", cb);
+	};
+
+	exports.getFullDisease = function(diseaseId, cb){
+		request("get_full_disease", {disease_id: diseaseId}, "GET", cb);
+	};
+
 
 
 
@@ -29793,13 +29807,14 @@
 		}
 		dom.data("setup", 1);
 
-		dom.html(tmplHtml);
-		var patientId = 0, diseases = [];
+		var patientId = 0;
+		var diseases = [];
 		var at = moment().format("YYYY-MM-DD");
 		dom.listen("rx-start-page", function(appData){
 			patientId = appData.currentPatientId;
 			if( patientId > 0 ){
 				diseases = appData.diseases;
+				dom.html(tmplHtml);
 				listPane();
 			} else {
 				dom.html("");
@@ -29820,7 +29835,11 @@
 		dom.on("click", editLinkSelector, function(event){
 			event.preventDefault();
 			console.log("EDIT");
-		})
+		});
+		// from add disease pane
+		dom.on("r6ihx2oq-entered", function(event, newDisease){
+			diseases.push(newDisease);
+		});
 
 		function listPane(){
 			var wa = dom.find(workareaSelector);
@@ -33224,7 +33243,11 @@
 	var monthInputSelector = "> .start-date input[mc-name=month]";
 	var dayInputSelector = "> .start-date input[mc-name=day]";
 
+	var messageSelector = "> [mc-name=message]";
 	var dispSelector = "> [mc-name=disp-area] [mc-name=name]";
+	var enterLinkSelector = "> .commandbox [mc-name=enterLink]";
+	var addSuspectLinkSelector = "> .commandbox [mc-name=suspectLink]";
+	var deleteAdjLinkSelector = "> .commandbox [mc-name=deleteAdjLink]";
 	var searchFormSelector = "> form[mc-name=search-form]";
 	var exampleLinkSelector = "> form[mc-name=search-form] [mc-name=exampleLink]";
 	var searchModeInput = "> form[mc-name=search-form] input[type=radio][name=search-kind]"
@@ -33253,9 +33276,13 @@
 		var ctx = {
 			shoubyoumeiMaster: undefined,
 			shuushokugoMasters: [],
-			dateBinder: DateBinder.bind(mkStartDateMap(dom))
+			dateBinder: DateBinder.bind(mkStartDateMap(dom)),
+			patientId: patientId
 		};
 		ctx.dateBinder.setDate(moment());
+		bindEnter(dom, ctx);
+		bindAddSusp(dom, ctx);
+		bindDeleteAdj(dom, ctx);
 		bindSearch(dom, ctx.dateBinder);
 		bindExampleLink(dom);
 		bindSearchResult(dom, ctx);
@@ -33296,6 +33323,91 @@
 			opt.data("config", item.config);
 			opt.data("mode", "example");
 			select.append(opt);
+		})
+	}
+
+	function bindEnter(dom, ctx){
+		dom.on("click", enterLinkSelector, function(event){
+			event.preventDefault();
+			if( !ctx.shoubyoumeiMaster ){
+				alert("傷病名が指定されていません。");
+				return;
+			}
+			var shoubyoumeicode = ctx.shoubyoumeiMaster.shoubyoumeicode;
+			var patientId = ctx.patientId;
+			var startDate = getStartDate(ctx.dateBinder);
+			if( !startDate ){
+				alert("開始日の設定が不適切です。");
+				return;
+			}
+			var shuushokugocodes = ctx.shuushokugoMasters.map(function(master){
+				return master.shuushokugocode;
+			});
+			var diseaseId, newDisease;
+			task.run([
+				function(done){
+					service.enterDisease(shoubyoumeicode, patientId, startDate, shuushokugocodes, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						diseaseId = result;
+						done();
+					})
+				},
+				function(done){
+					service.getFullDisease(diseaseId, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newDisease = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var name = dom.find(dispSelector).text();
+				dom.find(messageSelector).text(name + "が入力されました。").show();
+				dom.trigger("r6ihx2oq-entered", [newDisease]);
+			})
+		})
+	}
+
+	function bindAddSusp(dom, ctx){
+		dom.on("click", addSuspectLinkSelector, function(event){
+			event.preventDefault();
+			var master;
+			task.run([
+				function(done){
+					service.getShuushokugoMasterByName("の疑い", function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						master = result;
+						done();
+					});
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				ctx.shuushokugoMasters.push(master);
+				updateDisp(dom, ctx);
+			})
+		})
+	}
+
+	function bindDeleteAdj(dom, ctx){
+		dom.on("click", deleteAdjLinkSelector, function(event){
+			event.preventDefault();
+			ctx.shuushokugoMasters = [];
+			updateDisp(dom, ctx);
 		})
 	}
 

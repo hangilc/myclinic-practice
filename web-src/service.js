@@ -324,4 +324,18 @@ exports.getShuushokugoMasterByName = function(name, cb){
 	request("get_shuushokugo_master_by_name", {name: name}, "GET", cb);
 };
 
+exports.enterDisease = function(shoubyoumeicode, patientId, startDate, shuushokugocodes, cb){
+	var data = {
+		shoubyoumeicode: shoubyoumeicode,
+		patient_id: patientId,
+		start_date: startDate,
+		shuushokugocodes: shuushokugocodes
+	};
+	request("enter_disease", JSON.stringify(data), "POST", cb);
+};
+
+exports.getFullDisease = function(diseaseId, cb){
+	request("get_full_disease", {disease_id: diseaseId}, "GET", cb);
+};
+
 

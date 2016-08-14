@@ -19,13 +19,14 @@ exports.setup = function(dom){
 	}
 	dom.data("setup", 1);
 
-	dom.html(tmplHtml);
-	var patientId = 0, diseases = [];
+	var patientId = 0;
+	var diseases = [];
 	var at = moment().format("YYYY-MM-DD");
 	dom.listen("rx-start-page", function(appData){
 		patientId = appData.currentPatientId;
 		if( patientId > 0 ){
 			diseases = appData.diseases;
+			dom.html(tmplHtml);
 			listPane();
 		} else {
 			dom.html("");
@@ -46,7 +47,11 @@ exports.setup = function(dom){
 	dom.on("click", editLinkSelector, function(event){
 		event.preventDefault();
 		console.log("EDIT");
-	})
+	});
+	// from add disease pane
+	dom.on("r6ihx2oq-entered", function(event, newDisease){
+		diseases.push(newDisease);
+	});
 
 	function listPane(){
 		var wa = dom.find(workareaSelector);

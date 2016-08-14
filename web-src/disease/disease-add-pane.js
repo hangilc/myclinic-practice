@@ -18,7 +18,11 @@ var nenInputSelector = "> .start-date input[mc-name=nen]";
 var monthInputSelector = "> .start-date input[mc-name=month]";
 var dayInputSelector = "> .start-date input[mc-name=day]";
 
+var messageSelector = "> [mc-name=message]";
 var dispSelector = "> [mc-name=disp-area] [mc-name=name]";
+var enterLinkSelector = "> .commandbox [mc-name=enterLink]";
+var addSuspectLinkSelector = "> .commandbox [mc-name=suspectLink]";
+var deleteAdjLinkSelector = "> .commandbox [mc-name=deleteAdjLink]";
 var searchFormSelector = "> form[mc-name=search-form]";
 var exampleLinkSelector = "> form[mc-name=search-form] [mc-name=exampleLink]";
 var searchModeInput = "> form[mc-name=search-form] input[type=radio][name=search-kind]"
@@ -47,9 +51,13 @@ exports.create = function(patientId, at){
 	var ctx = {
 		shoubyoumeiMaster: undefined,
 		shuushokugoMasters: [],
-		dateBinder: DateBinder.bind(mkStartDateMap(dom))
+		dateBinder: DateBinder.bind(mkStartDateMap(dom)),
+		patientId: patientId
 	};
 	ctx.dateBinder.setDate(moment());
+	bindEnter(dom, ctx);
+	bindAddSusp(dom, ctx);
+	bindDeleteAdj(dom, ctx);
 	bindSearch(dom, ctx.dateBinder);
 	bindExampleLink(dom);
 	bindSearchResult(dom, ctx);
@@ -90,6 +98,91 @@ function fillExampleOptions(select){
 		opt.data("config", item.config);
 		opt.data("mode", "example");
 		select.append(opt);
+	})
+}
+
+function bindEnter(dom, ctx){
+	dom.on("click", enterLinkSelector, function(event){
+		event.preventDefault();
+		if( !ctx.shoubyoumeiMaster ){
+			alert("傷病名が指定されていません。");
+			return;
+		}
+		var shoubyoumeicode = ctx.shoubyoumeiMaster.shoubyoumeicode;
+		var patientId = ctx.patientId;
+		var startDate = getStartDate(ctx.dateBinder);
+		if( !startDate ){
+			alert("開始日の設定が不適切です。");
+			return;
+		}
+		var shuushokugocodes = ctx.shuushokugoMasters.map(function(master){
+			return master.shuushokugocode;
+		});
+		var diseaseId, newDisease;
+		task.run([
+			function(done){
+				service.enterDisease(shoubyoumeicode, patientId, startDate, shuushokugocodes, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					diseaseId = result;
+					done();
+				})
+			},
+			function(done){
+				service.getFullDisease(diseaseId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newDisease = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var name = dom.find(dispSelector).text();
+			dom.find(messageSelector).text(name + "が入力されました。").show();
+			dom.trigger("r6ihx2oq-entered", [newDisease]);
+		})
+	})
+}
+
+function bindAddSusp(dom, ctx){
+	dom.on("click", addSuspectLinkSelector, function(event){
+		event.preventDefault();
+		var master;
+		task.run([
+			function(done){
+				service.getShuushokugoMasterByName("の疑い", function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					master = result;
+					done();
+				});
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			ctx.shuushokugoMasters.push(master);
+			updateDisp(dom, ctx);
+		})
+	})
+}
+
+function bindDeleteAdj(dom, ctx){
+	dom.on("click", deleteAdjLinkSelector, function(event){
+		event.preventDefault();
+		ctx.shuushokugoMasters = [];
+		updateDisp(dom, ctx);
 	})
 }
 
