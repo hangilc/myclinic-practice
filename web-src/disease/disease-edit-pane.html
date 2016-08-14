@@ -1,0 +1,33 @@
+<div>
+	<div class="disease-editor">
+		<table>
+			<tbody>
+				<tr>
+					<td style="text-align:right">名前：</td><td><span mc-name="name"></span></td>
+				</tr>
+				<tr>
+					<td style="text-align:right">開始日：</td><td><span mc-name="startDate"></span></td>
+				</tr>
+				<tr>
+					<td style="text-align:right">転帰：</td><td><span mc-name="endReason"></span></td>
+				</tr>
+				<tr>
+					<td style="text-align:right">終了日：</td><td><span mc-name="endDate"></span></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class="commandbox">
+		<button mc-name="editLink">編集</button>
+	</div>
+
+	<div class="disease-list">
+		<select mc-name="select" size="10">
+			{{#diseases}}
+				<option value="{{disease_id}}">
+					[{{end_reason_label}}] {{name_label}} ({{start_date_label}})
+				</option>
+			{{/diseases}}
+		</select>
+	</div>
+</div>

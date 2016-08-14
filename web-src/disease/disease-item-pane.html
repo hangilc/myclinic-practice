@@ -1,0 +1,51 @@
+<div>
+    <div mc-name="name-area" style="font-size:13px">
+        名前：<span mc-name="name"></span>
+    </div>
+    <div class="start-date" style="font-size:13px">
+        <select mc-name="startDateGengou" style="width:auto">
+            <option value="平成">平成</option>
+        </select>
+        <input mc-name="startDateNen" class="disease-nen alpha"/>年
+        <input mc-name="startDateMonth" class="disease-month alpha"/>月
+        <input mc-name="startDateDay" class="disease-day alpha"/>日
+    </div>
+    <div>から</div>
+    <div class="end-date" style="font-size:13px">
+        <select mc-name="endDateGengou" style="width:auto">
+            <option value="昭和">昭和</option>
+            <option value="平成">平成</option>
+        </select>
+        <input mc-name="endDateNen" class="disease-nen alpha">年
+        <input mc-name="endDateMonth" class="disease-month alpha">月
+        <input mc-name="endDateDay" class="disease-day alpha">日
+    </div>
+    <div mc-name="end-reason-area">
+        <select mc-name="endReason" style="width:auto">
+            <option value="N">継続</option>
+            <option value="C">治癒</option>
+            <option value="S">中止</option>
+            <option value="D">死亡</option>
+        </select>
+    </div>
+    <hr/>
+    <div class="command-box">
+        <button mc-name="enterLink">入力</button>
+        <a mc-name="deleteAdjLink" href="javascript:void(0)" class="cmd-link">修飾語削除</a> |
+        <a mc-name="deleteLink" href="javascript:void(0)" class="cmd-link">削除</a>
+    </div>
+    <hr/>
+    <form onsubmit="return false" mc-name="search-form">
+        <div>
+            <input mc-name="searchText" class="kanji" style="width:110px;">
+            <button mc-name="searchLink">検索</button>
+        </div>
+        <div>
+            <input type="radio" name="search-kind" value="disease" checked>病名
+            <input type="radio" name="search-kind" value="adj">修飾語
+        </div>
+        <div>
+            <select mc-name="searchResult" size="10"></select>
+        </div>
+    </form>
+</div>

@@ -46,7 +46,7 @@ var diseaseExamplesSrc = [
 
 var diseaseExamplesData = parseDiseaseExamplesSrc(diseaseExamplesSrc);
 
-exports.create = function(patientId, at){
+exports.create = function(patientId){
 	var dom = $(tmpl.render({}));
 	var ctx = {
 		shoubyoumeiMaster: undefined,

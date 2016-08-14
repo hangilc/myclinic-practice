@@ -213,6 +213,16 @@ exports.diseaseFullName = function(disease) {
     return pre + name + post;
 };
 
+exports.diseaseEndReasonToKanji = function(reason){
+	switch(reason){
+		case mConsts.DiseaseEndReasonNotEnded: return "継続";
+		case mConsts.DiseaseEndReasonCured: return "治癒";
+		case mConsts.DiseaseEndReasonStopped: return "中止";
+		case mConsts.DiseaseEndReasonDead: return "死亡";
+		default: return "不明";
+	}
+}
+
 exports.wqueueStateToKanji = function(wqState) {
     var state = wqState - 0;
     if (state == mConsts.WqueueStateWaitExam) return "診待";

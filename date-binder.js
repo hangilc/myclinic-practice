@@ -60,6 +60,7 @@ DateBinder.prototype.bindDayClick = function(dayLabel){
 		m.add(amount, "days");
 		self.setDate(m);
 	});
+	return this;
 }
 
 DateBinder.prototype.bindMonthClick = function(monthLabel){
@@ -77,6 +78,7 @@ DateBinder.prototype.bindMonthClick = function(monthLabel){
 		m.add(amount, "months");
 		self.setDate(m);
 	});
+	return this;
 }
 
 DateBinder.prototype.bindNenClick = function(nenLabel){
@@ -94,6 +96,7 @@ DateBinder.prototype.bindNenClick = function(nenLabel){
 		m.add(amount, "years");
 		self.setDate(m);
 	});
+	return this;
 }
 
 DateBinder.prototype.bindWeekClick = function(weekLink){
@@ -111,6 +114,7 @@ DateBinder.prototype.bindWeekClick = function(weekLink){
 		m.add(amount, "weeks");
 		self.setDate(m);
 	});
+	return this;
 }
 
 DateBinder.prototype.bindTodayClick = function(todayLink){
@@ -118,6 +122,7 @@ DateBinder.prototype.bindTodayClick = function(todayLink){
 	todayLink.on("click", function(event){
 		self.setDate(moment());
 	});
+	return this;
 }
 
 DateBinder.prototype.bindMonthLastDayClick = function(link){
@@ -131,6 +136,7 @@ DateBinder.prototype.bindMonthLastDayClick = function(link){
 		m.date(1).add(1, "months").add(-1, "days");
 		self.setDate(m);
 	});
+	return this;
 }
 
 DateBinder.prototype.bindLastMonthLastDayClick = function(link){
@@ -144,6 +150,7 @@ DateBinder.prototype.bindLastMonthLastDayClick = function(link){
 		m.date(1).add(-1, "days");
 		self.setDate(m);
 	});
+	return this;
 }
 
 DateBinder.prototype.getGengou = function(){
@@ -152,6 +159,7 @@ DateBinder.prototype.getGengou = function(){
 
 DateBinder.prototype.setGengou = function(gengou){
 	this.domMap.gengouSelect.val(gengou);
+	return this;
 }
 
 DateBinder.prototype.getNen = function(){
@@ -160,6 +168,7 @@ DateBinder.prototype.getNen = function(){
 
 DateBinder.prototype.setNen = function(nen){
 	this.domMap.nenInput.val(nen);
+	return this;
 }
 
 DateBinder.prototype.getMonth = function(){
@@ -168,6 +177,7 @@ DateBinder.prototype.getMonth = function(){
 
 DateBinder.prototype.setMonth = function(month){
 	this.domMap.monthInput.val(month);
+	return this;
 }
 
 DateBinder.prototype.getDay = function(){
@@ -176,6 +186,7 @@ DateBinder.prototype.getDay = function(){
 
 DateBinder.prototype.setDay = function(day){
 	this.domMap.dayInput.val(day);
+	return this;
 }
 
 DateBinder.prototype.setDate = function(m){
@@ -184,6 +195,7 @@ DateBinder.prototype.setDate = function(m){
 	this.setNen(d.nen);
 	this.setMonth(d.month);
 	this.setDay(d.day);
+	return this;
 }
 
 DateBinder.prototype.getDate = function(){
@@ -218,4 +230,15 @@ DateBinder.prototype.getDate = function(){
 			sqlDate: m.format("YYYY-MM-DD")
 		}
 	}
+}
+
+DateBinder.prototype.empty = function(gengouOpt){
+	var map = this.domMap;
+	if( gengouOpt ){
+		map.gengouSelect.val(gengouOpt);
+	}
+	map.nenInput.val("");
+	map.monthInput.val("");
+	map.dayInput.val("");
+	return this;
 }

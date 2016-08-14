@@ -346,3 +346,14 @@ exports.batchUpdateDiseases = function(diseases, done){
 	request("batch_update_diseases", JSON.stringify(diseases), "POST", done);
 };
 
+exports.listAllFullDiseases = function(patientId, cb){
+	request("list_all_full_diseases", {patient_id: patientId}, "GET", cb);
+};
+
+exports.updateDiseaseWithAdj = function(disease, done){
+	request("update_disease_with_adj", JSON.stringify(disease), "POST", done);
+};
+
+
+
+
