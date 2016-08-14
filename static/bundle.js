@@ -25361,6 +25361,10 @@
 		request("update_disease_with_adj", JSON.stringify(disease), "POST", done);
 	};
 
+	exports.deleteDiseaseWithAdj = function(diseaseId, done){
+		request("delete_disease_with_adj", {disease_id: diseaseId}, "POST", done);
+	};
+
 
 
 
@@ -29851,9 +29855,13 @@
 			ctx.patientId = appData.currentPatientId;
 			if( ctx.patientId > 0 ){
 				ctx.diseases = appData.diseases;
+				ctx.allDisease = null;
 				dom.html(tmplHtml);
 				listPane();
 			} else {
+				ctx.patientId = 0;
+				ctx.diseases = [];
+				ctx.allDiseases = null;
 				dom.html("");
 			}
 		});
@@ -29889,6 +29897,10 @@
 		// from item disease pane
 		dom.on("cirqgerl-modified", function(event, modifiedDisease){
 			updateWithModifiedDiseases(ctx, [modifiedDisease]);
+			listPane();
+		});
+		dom.on("cirqgerl-deleted", function(event, deletedDiseaseId){
+			updateWithDeletedDisease(ctx, deletedDiseaseId);
 			listPane();
 		});
 
@@ -29952,7 +29964,7 @@
 				if( modified.end_reason !== mConsts.DiseaseEndReasonNotEnded ){
 					diseases.splice(j, 1);
 				} else {
-					disease[j] = modified;
+					diseases[j] = modified;
 				}
 			}
 
@@ -29985,6 +29997,38 @@
 		}
 	}
 
+	function updateWithDeletedDisease(ctx, deletedDiseaseId){
+		var diseases = ctx.diseases;
+		var allDiseases = ctx.allDiseases;
+		var i = findIndex(deletedDiseaseId);
+		if( i >= 0 ){
+			diseases.splice(i, 1);
+		}
+		var j = findIndexForAll(deletedDiseaseId);
+		if( j < 0 ){
+			alert("cannot find disease: " + deletedDiseaseId);
+			return;
+		}
+		allDiseases.splice(j, 1);
+
+		function findIndex(diseaseId){
+			for(var i=0;i<diseases.length;i++){
+				if( diseases[i].disease_id === diseaseId ){
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		function findIndexForAll(diseaseId){
+			for(var i=0;i<allDiseases.length;i++){
+				if( allDiseases[i].disease_id === diseaseId ){
+					return i;
+				}
+			}
+			return -1;
+		}
+	}
 
 
 /***/ },
@@ -34344,6 +34388,7 @@
 		updateDisp(dom, ctx);
 		bindEnter(dom, ctx);
 		bindDeleteAdj(dom, ctx);
+		bindDelete(dom, ctx);
 		bindSearch(dom, ctx);
 		bindSearchSelect(dom, ctx);
 		return dom;
@@ -34511,6 +34556,27 @@
 			event.preventDefault();
 			ctx.shuushokugoMasters = [];
 			updateDisp(dom, ctx);
+		});
+	}
+
+	function bindDelete(dom, ctx){
+		dom.on("click", deleteLinkSelector, function(event){
+			event.preventDefault();
+			if( !confirm("この傷病名を削除しますか？") ){
+				return;
+			}
+			var diseaseId = ctx.diseaseId;
+			task.run([
+				function(done){
+					service.deleteDiseaseWithAdj(diseaseId, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("cirqgerl-deleted", [diseaseId]);
+			})
 		});
 	}
 

@@ -354,6 +354,10 @@ exports.updateDiseaseWithAdj = function(disease, done){
 	request("update_disease_with_adj", JSON.stringify(disease), "POST", done);
 };
 
+exports.deleteDiseaseWithAdj = function(diseaseId, done){
+	request("delete_disease_with_adj", {disease_id: diseaseId}, "POST", done);
+};
+
 
 
 

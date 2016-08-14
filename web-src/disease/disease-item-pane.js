@@ -46,6 +46,7 @@ exports.create = function(disease){
 	updateDisp(dom, ctx);
 	bindEnter(dom, ctx);
 	bindDeleteAdj(dom, ctx);
+	bindDelete(dom, ctx);
 	bindSearch(dom, ctx);
 	bindSearchSelect(dom, ctx);
 	return dom;
@@ -213,6 +214,27 @@ function bindDeleteAdj(dom, ctx){
 		event.preventDefault();
 		ctx.shuushokugoMasters = [];
 		updateDisp(dom, ctx);
+	});
+}
+
+function bindDelete(dom, ctx){
+	dom.on("click", deleteLinkSelector, function(event){
+		event.preventDefault();
+		if( !confirm("この傷病名を削除しますか？") ){
+			return;
+		}
+		var diseaseId = ctx.diseaseId;
+		task.run([
+			function(done){
+				service.deleteDiseaseWithAdj(diseaseId, done);
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("cirqgerl-deleted", [diseaseId]);
+		})
 	});
 }
 
