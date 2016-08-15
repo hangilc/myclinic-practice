@@ -52,6 +52,10 @@ exports.setup = function(dom){
 		event.preventDefault();
 		editPane(dom, patientId);
 	});
+	// from list disease pane
+	dom.on("3dynuzj3-selected", function(event, disease){
+		itemPane(dom, disease);
+	});
 	// from add disease pane
 	dom.on("r6ihx2oq-entered", function(event, newDisease, message){
 		addPane(dom, patientId, message);

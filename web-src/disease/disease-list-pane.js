@@ -6,7 +6,7 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./disease-list-pane.html");
 var tmpl = hogan.compile(tmplSrc);
 
-var DiseaseListItem = require("./disease-list-item");
+var DiseaseListItem = require("./disease-list-pane-item");
 
 exports.create = function(list){
 	var dom = $(tmpl.render({}));

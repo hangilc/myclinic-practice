@@ -1,8 +1,8 @@
 -- TODO --
 * implement select preset in add regular shinryou
-* goto item pane by clicking the disease
 
 -- DONE --
+* goto item pane by clicking the disease ; done 2017/08/15
 * add to wqueue after changing charge ; done 2016/08/13
 * implement 骨塩定量 ; done 2016/8/12
 

@@ -57,14 +57,14 @@
 
 	var PatientInfo = __webpack_require__(114);
 	var CurrentManip = __webpack_require__(120);
-	var RecordNav = __webpack_require__(122);
-	var RecordList = __webpack_require__(124);
-	var Disease = __webpack_require__(178);
-	var SelectPatient = __webpack_require__(184);
-	var SearchPatient = __webpack_require__(188);
-	var RecentVisits = __webpack_require__(191);
-	var TodaysVisits = __webpack_require__(194);
-	var Reception = __webpack_require__(197);
+	var RecordNav = __webpack_require__(125);
+	var RecordList = __webpack_require__(127);
+	var Disease = __webpack_require__(215);
+	var SelectPatient = __webpack_require__(232);
+	var SearchPatient = __webpack_require__(236);
+	var RecentVisits = __webpack_require__(239);
+	var TodaysVisits = __webpack_require__(242);
+	var Reception = __webpack_require__(245);
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 	CurrentManip.setup($("#current-manip-pane"));
@@ -26828,12 +26828,12 @@
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var Account = __webpack_require__(255);
-	var modal = __webpack_require__(198);
+	var Account = __webpack_require__(121);
+	var modal = __webpack_require__(123);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 
-	var tmplHtml = __webpack_require__(121);
+	var tmplHtml = __webpack_require__(124);
 
 	var accountLinkSelector = "[mc-name=accountButton]";
 
@@ -26913,12 +26913,264 @@
 
 /***/ },
 /* 121 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(122);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+
+	var chargeDispSelector = "[mc-name=charge-disp]";
+	var modifyLinkSelector = "[mc-name=modifyLink]";
+	var modifyWrapperSelector = "> [mc-name=modifyWrapper]";
+	var modifyInputSelector = "> [mc-name=modifyWrapper] input[mc-name=newCharge]";
+	var modifyFormSelector = "> [mc-name=modifyWrapper] form";
+	var modifyEnterLinkSelector = "> [mc-name=modifyWrapper] a[mc-name=modifyEnter]";
+	var modifyCancelLinkSelector = "> [mc-name=modifyWrapper] [mc-name=modifyCancel]";
+	var enterLinkSelector = "> .workarea-commandbox [mc-name=enterLink]";
+	var cancelLinkSelector = "> .workarea-commandbox [mc-name=cancelLink]";
+
+	exports.create = function(meisai, visitId){
+		var sections = mUtil.meisaiSections.map(function(sect){
+			return {
+				name: sect,
+				items: meisai.meisai[sect].map(function(item){
+					return {
+						tanka: mUtil.formatNumber(item.tanka),
+						count: item.count,
+						total: mUtil.formatNumber(item.tanka * item.count)
+					}
+				})
+			};
+		}).filter(function(sect){ return sect.items.length > 0; });
+		var data = {
+			sections: sections,
+			total_ten: mUtil.formatNumber(meisai.totalTen),
+			charge: mUtil.formatNumber(meisai.charge),
+			futan_wari: meisai.futanWari
+		};
+		var dom = $(tmpl.render(data));
+		dom.on("click", modifyLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(modifyWrapperSelector).toggle();
+		});
+		dom.on("submit", modifyFormSelector, function(event){
+			event.preventDefault();
+			doModify(dom);
+		});
+		dom.on("click", modifyEnterLinkSelector, function(event){
+			event.preventDefault();
+			doModify(dom);
+		});
+		dom.on("click", modifyCancelLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(modifyInputSelector).val("");
+			dom.find(modifyWrapperSelector).hide();
+		});
+		dom.on("click", enterLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(enterLinkSelector).prop("disabled", true);
+			var value = getChargeValue(dom);
+			doEnter(dom, visitId, value);
+		});
+		dom.on("click", cancelLinkSelector, function(event){
+			event.preventDefault();
+			dom.trigger("0ms9b2wl-cancel");
+		})
+		return dom;
+	};
+
+	function doModify(dom){
+		var input = dom.find(modifyInputSelector).val().trim();
+		if( !/^\d+$/.test(input) ){
+			alert("金額の入力が不適切です。");
+			return;
+		}
+		input = +input;
+		dom.find(chargeDispSelector).text(mUtil.formatNumber(input));
+		dom.find(modifyInputSelector).val("");
+		dom.find(modifyWrapperSelector).hide();
+	}
+
+	function getChargeValue(dom){
+		var text = dom.find(chargeDispSelector).text().trim();
+		text = text.replace(/,/g, "");
+		return +text;
+	}
+
+	function doEnter(dom, visitId, charge){
+		task.run([
+			function(done){
+				service.endExam(visitId, charge, done);
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("0ms9b2wl-entered");
+		});
+	}
+
+/***/ },
+/* 122 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\" style=\"min-width:230px\">\r\n\t<!-- <div class=\"title\">会計</div> -->\r\n\t<table style=\"width:100%; max-width:400px; font-size:13px;\">\r\n\t    <tbody mc-name=\"meisai\">\r\n\t    \t{{#sections}}\r\n\t    \t\t<tr><td colspan=\"3\" style=\"font-weight:bold\">{{name}}</td></tr>\r\n\t    \t\t{{#items}}\r\n\t\t\t\t\t<tr>\r\n\t\t\t\t\t\t<td style=\"width:2em\">&nbsp;</td>\r\n\t\t\t\t\t\t<td width=\"*\">{{label}}</td>\r\n\t\t\t\t\t\t<td style=\"width:7em; text-align:right\">\r\n\t\t\t\t\t\t\t{{tanka}}x{{count}} = {{total}} 点\r\n\t\t\t\t\t\t</td>\r\n\t\t\t\t\t</tr>\r\n\t    \t\t{{/items}}\r\n\t    \t{{/sections}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td colspan=\"3\" style=\"text-align:right;border-top:double #999\">\r\n\t\t\t\t\t総点 {{total_ten}} 点\r\n\t\t\t\t</td>\r\n\t\t\t</tr>\r\n\t    </tbody>\r\n\t</table>\r\n\t<hr/>\r\n\t<div style=\"font-size:13px\">\r\n\t    請求額： <span mc-name=\"charge-disp\">{{charge}}</span> 円 （負担 {{futan_wari}} 割）\r\n\t    <a mc-name=\"modifyLink\" href=\"javascript:void(0)\" class=\"cmd-link\">変更</a>\r\n\t</div>\r\n\t<div mc-name=\"modifyWrapper\" style=\"display:none; font-size:13px; margin:4px 0\">\r\n\t\t<form onsubmit=\"return false\">\r\n\t\t    変更額： <input mc-name=\"newCharge\" style=\"width: 4em\" class=\"alpha\"/> 円\r\n\t\t    <a mc-name=\"modifyEnter\" href=\"javascript:void(0)\" class=\"cmd-link\">適用</a> |\r\n\t\t    <a mc-name=\"modifyCancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n\r\n"
+
+/***/ },
+/* 123 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var $ = __webpack_require__(1);
+
+	var screen = $('<div></div>').css({
+	    position:"fixed",
+	    backgroundColor:"#999",
+	    width:"100%",
+	    height:"100%",
+	    left:0,
+	    top:0,
+	    opacity:0.5,
+	    filter:"alpha(opacity=50)",
+	    zIndex:10,
+	    display:"none"
+	});
+
+	var dialog = $('<div id="modal-dialog-outer-pane"></div>').css({
+	    position:"absolute",
+	    left:"100px",
+	    top:"50px",
+	    padding:"10px",
+	    border:"2px solid gray",
+	    backgroundColor:"white",
+	    opacity:1.0,
+	    filter:"alpha(opacity=100)",
+	    zIndex:20,
+	    overflow: "auto"
+	});
+	var header = $("<table width='100%' cellpadding='0' cellspacing='0'><tr>" +
+	    "<td width='*'></td><td width='auto'></td></tr></table>").css({
+	        margin:0,
+	        padding:0
+	    });
+	dialog.append(header);
+	var handle = $('<div></div>');
+	var title = $("<div></div>").css({
+	    cursor:"move",
+	    backgroundColor:"#ccc",
+	    fontWeight:"bold",
+	    padding:"6px 4px 4px 4px"
+	});
+	handle.append(title);
+	$(header.find("td")[0]).append(handle);
+	var closeBox = $("<a href='javascript:void(0)'>×</a>").css({
+	    fontSize:"13px",
+	    fontWeight:"bold",
+	    margin:"4px 0 4px 4px",
+	    padding:0,
+	    textDecoration:"none",
+	    color:"#333"
+	});
+	$(header.find("td")[1]).css({
+	    width:"16px",
+	    verticalAlign:"middle"
+	}).append(closeBox);
+	var content = $("<div></div>").css({
+	    marginTop:"10px"
+	});
+	dialog.append(content);
+
+	$("body").append(screen);
+
+	var mouseTarget = handle.get(0).setCapture ? handle : $(document);
+
+	handle.on("mousedown", function(event){
+	    event.preventDefault();
+	    var offset = dialog.offset();
+	    var origEvent = event.originalEvent;
+	    var innerX = origEvent.pageX - offset.left;
+	    var innerY = origEvent.pageY - offset.top;
+	    dialog.data({innerX: innerX, innerY: innerY, width: dialog.outerWidth(), height: dialog.outerHeight()});
+	    mouseTarget.on("mousemove", function(event){
+	        event.preventDefault();
+	        var origEvent = event.originalEvent;
+	        var newLeft = origEvent.pageX - dialog.data("innerX");
+	        if( newLeft < 0 ){
+	            newLeft = 0;
+	        }
+	        var newTop = origEvent.pageY - dialog.data("innerY");
+	        if( newTop < 0 ){
+	            newTop = 0;
+	        }
+	        var newRight = newLeft + dialog.data("width");
+	        if( newRight > screen.innerWidth() ){
+	            newLeft = screen.innerWidth() - dialog.data("width");
+	        }
+	        var newBottom = newTop + dialog.data("height");
+	        if( newBottom > screen.innerHeight() ){
+	            newTop = screen.innerHeight() - dialog.data("height");
+	        }
+	        dialog.css({left: newLeft, top: newTop})
+	    })
+	    if( handle.get(0).setCapture ){
+	        handle.get(0).setCapture();
+	    }
+	})
+
+	mouseTarget.on("mouseup", function(event){
+	    mouseTarget.off("mousemove");
+	    if( handle.get(0).releaseCapture ){
+	        handle.get(0).releaseCapture();
+	    }
+	})
+
+	function reposition() {
+	    var screen_width = $(window).width();
+	    var screen_height = $(window).height();
+	    var dialog_width = dialog.outerWidth();
+	    dialog.css("left", (screen_width - dialog_width) / 2 + "px");
+	    dialog.css("max-height", (screen_height - 100) + "px");
+	}
+
+	exports.open = function(title_str, dom, onClose){
+	    title.text(title_str);
+	    content.html("").append(dom);
+	    screen.show();
+	    $("body").append(dialog);
+	    reposition();
+	    closeBox.on("click", function(event){
+	        if( onClose ){
+	            if( onClose() === false ){
+	                return;
+	            }
+	        }
+	        exports.close();
+	    });
+	};
+
+	exports.close = function(){
+	    closeBox.off("click");
+	    dialog.detach();
+	    screen.hide();
+	    content.html("");
+	};
+
+
+
+/***/ },
+/* 124 */
 /***/ function(module, exports) {
 
 	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n    <a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
 
 /***/ },
-/* 122 */
+/* 125 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26926,7 +27178,7 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
 
-	var tmplSrc = __webpack_require__(123);
+	var tmplSrc = __webpack_require__(126);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom){
@@ -27003,13 +27255,13 @@
 
 
 /***/ },
-/* 123 */
+/* 126 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"gotoFirst\" href=\"javascript:void(0)\" class=\"cmd-link\">&laquo</a>\r\n<a mc-name=\"gotoPrev\" href=\"javascript:void(0)\" class=\"cmd-link\">&lt;</a>\r\n<a mc-name=\"gotoNext\" href=\"javascript:void(0)\" class=\"cmd-link\">&gt;</a>\r\n<a mc-name=\"gotoLast\" href=\"javascript:void(0)\" class=\"cmd-link\">&raquo</a>\r\n<span mc-name=\"status\">[{{page}}/{{total}}]</span>\r\n"
 
 /***/ },
-/* 124 */
+/* 127 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27018,7 +27270,7 @@
 	var hogan = __webpack_require__(115);
 	var service = __webpack_require__(112);
 	var mUtil = __webpack_require__(5);
-	var Record = __webpack_require__(125);
+	var Record = __webpack_require__(128);
 
 	exports.setup = function(dom){
 		["rx-start-page", "rx-goto-page", "rx-delete-visit"].forEach(function(key){
@@ -27076,25 +27328,25 @@
 
 
 /***/ },
-/* 125 */
+/* 128 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(126);
-	var Title = __webpack_require__(127);
-	var TextList = __webpack_require__(204);
-	var TextMenu = __webpack_require__(133);
-	var Hoken = __webpack_require__(135);
-	var DrugMenu = __webpack_require__(140);
-	var DrugList = __webpack_require__(153);
-	var ShinryouMenu = __webpack_require__(157);
-	var ShinryouList = __webpack_require__(165);
-	var ConductMenu = __webpack_require__(168);
-	var ConductList = __webpack_require__(170);
-	var Charge = __webpack_require__(176);
+	var tmplSrc = __webpack_require__(129);
+	var Title = __webpack_require__(130);
+	var TextList = __webpack_require__(132);
+	var TextMenu = __webpack_require__(139);
+	var Hoken = __webpack_require__(141);
+	var DrugMenu = __webpack_require__(146);
+	var DrugList = __webpack_require__(159);
+	var ShinryouMenu = __webpack_require__(165);
+	var ShinryouList = __webpack_require__(178);
+	var ConductMenu = __webpack_require__(183);
+	var ConductList = __webpack_require__(192);
+	var Charge = __webpack_require__(210);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 
@@ -27242,13 +27494,13 @@
 
 
 /***/ },
-/* 126 */
+/* 129 */
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"visit-entry\" width=\"100%\">\r\n    <tbody>\r\n    <tr>\r\n        <td colspan=\"2\" mc-name=\"title\"></td>\r\n    </tr>\r\n    <tr valign=top>\r\n        <td width=\"50%\">\r\n            <div class=\"record-text-wrapper\">\r\n        \t\t<div mc-name=\"texts\"></div>\r\n                <div mc-name=\"text-menu\" class=\"record-text-menu\"></div>\r\n            </div>\r\n        </td>\r\n        <td width=\"50%\">\r\n            <div class=\"record-right-wrapper\">\r\n                <div mc-name=\"hoken\" class=\"hoken\"></div>\r\n                <div mc-name=\"drugMenu\"></div>\r\n                <div mc-name=\"drugs\" class=\"record-drug-wrapper\">\r\n                    <div mc-name=\"rp\"></div>\r\n                </div>\r\n                <div mc-name=\"shinryouMenu\"></div>\r\n                <div mc-name=\"shinryouList\" class=\"record-shinryou-wrapper\"></div>\r\n                <div mc-name=\"conductMenu\"></div>\r\n                <div mc-name=\"conducts\" class=\"record-conduct-wrapper\"></div>\r\n                <div mc-name=\"charge\"></div>\r\n            </div>\r\n        </td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n"
 
 /***/ },
-/* 127 */
+/* 130 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27259,7 +27511,7 @@
 	var service = __webpack_require__(112);
 	var task = __webpack_require__(111);
 
-	var tmplSrc = __webpack_require__(128);
+	var tmplSrc = __webpack_require__(131);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, visit, currentVisitId, tempVisitId){
@@ -27359,22 +27611,48 @@
 
 
 /***/ },
-/* 128 */
+/* 131 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"titleBox\" class=\"visit-date\">\r\n    <a href=\"javascript:void(0)\" class=\"record-title\">\r\n    \t<span mc-name=\"label\">{{label}}</span>\r\n    </a>\r\n</div>\r\n<div mc-name=\"workarea\" class=\"record-title-workarea\" style=\"display:none\">\r\n    <a mc-name=\"deleteVisitLink\" class=\"cmd-link\" href=\"javascript:void(0)\">この診察を削除</a> |\r\n    <a mc-name=\"setCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察設定</a> |\r\n    <a mc-name=\"unsetCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察解除</a>\r\n</div>\r\n"
 
 /***/ },
-/* 129 */
+/* 132 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var Text = __webpack_require__(133);
+
+	exports.setup = function(dom, visitId, texts){
+		batchAdd(dom, texts);
+		dom.listen("rx-texts-batch-entered", function(targetVisitId, texts){
+			if( visitId !== targetVisitId ){
+				return;
+			}
+			batchAdd(dom, texts);
+		})
+	}
+
+	function batchAdd(dom, texts){
+		texts.forEach(function(text){
+			var te = Text.create(text);
+			dom.append(te);
+		});
+	}
+
+/***/ },
+/* 133 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var TextDisp = __webpack_require__(202);
-	var TextForm = __webpack_require__(130);
-	var tmplSrc = __webpack_require__(132);
+	var TextDisp = __webpack_require__(134);
+	var TextForm = __webpack_require__(136);
+	var tmplSrc = __webpack_require__(138);
 
 	exports.create = function(text){
 		var dom = $(tmplSrc);
@@ -27426,14 +27704,51 @@
 
 
 /***/ },
-/* 130 */
+/* 134 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(131);
+	var tmplSrc = __webpack_require__(135);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.setup = function(dom, text){
+		var content = text.content.replace(/\n/g, "<br />\n");
+		if( content === "" ){
+			content = "（空白）"
+		}
+		var data = {
+			content: content
+		};
+		dom.html(tmpl.render(data));
+		bindClick(dom);
+	};
+
+	function bindClick(dom){
+		dom.on("click", function(event){
+			event.stopPropagation();
+			dom.trigger("content-click");
+		})
+	}
+
+
+/***/ },
+/* 135 */
+/***/ function(module, exports) {
+
+	module.exports = "{{& content}}"
+
+/***/ },
+/* 136 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(137);
 	var tmpl = hogan.compile(tmplSrc);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
@@ -27552,27 +27867,27 @@
 	}
 
 /***/ },
-/* 131 */
+/* 137 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t    <a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
-/* 132 */
+/* 138 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<div mc-name=\"disp\" class=\"record-text cursor-pointer\"></div>\r\n\t<div mc-name=\"form\"></div>\r\n</div>\r\n"
 
 /***/ },
-/* 133 */
+/* 139 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplHtml = __webpack_require__(134);
-	var TextForm = __webpack_require__(130);
-	var Text = __webpack_require__(129);
+	var tmplHtml = __webpack_require__(140);
+	var TextForm = __webpack_require__(136);
+	var Text = __webpack_require__(133);
 
 	exports.setup = function(dom, visitId){
 		dom.html(tmplHtml);
@@ -27620,13 +27935,13 @@
 	}
 
 /***/ },
-/* 134 */
+/* 140 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\">\r\n\t<a mc-name=\"addTextLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n</div>\r\n<div mc-name=\"workspace\"></div>\r\n"
 
 /***/ },
-/* 135 */
+/* 141 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27635,11 +27950,11 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
-	var HokenSelectForm = __webpack_require__(136);
+	var HokenSelectForm = __webpack_require__(142);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 
-	var tmplSrc = __webpack_require__(139);
+	var tmplSrc = __webpack_require__(145);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, visit){
@@ -27696,15 +28011,15 @@
 
 
 /***/ },
-/* 136 */
+/* 142 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplHtml = __webpack_require__(137);
-	var itemTmplSrc = __webpack_require__(138);
+	var tmplHtml = __webpack_require__(143);
+	var itemTmplSrc = __webpack_require__(144);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 	var mUtil = __webpack_require__(5);
 	var task = __webpack_require__(111);
@@ -27830,25 +28145,25 @@
 	}
 
 /***/ },
-/* 137 */
+/* 143 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">適用保険の編集</div>\r\n\t<form onsubmit=\"return false\">\r\n\t\t<div mc-name=\"checkboxes\"></div>\r\n\t\t<div class=\"workarea-commandbox\">\r\n\t\t\t<button mc-name=\"enter\">入力</button>\r\n\t\t\t<button mc-name=\"cancel\">キャンセル</button>\r\n\t\t</div>\r\n\t</form>\r\n</div>\r\n\r\n"
 
 /***/ },
-/* 138 */
+/* 144 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<input type=\"checkbox\" name=\"hoken\" data-kind=\"{{kind}}\" value=\"{{value}}\"\r\n\t\t{{#checked}}checked{{/checked}}>\r\n\t\t{{label}}\r\n</div>"
 
 /***/ },
-/* 139 */
+/* 145 */
 /***/ function(module, exports) {
 
 	module.exports = "<span mc-name=\"label\" class=\"cursor-pointer\">{{label}}</span>\r\n"
 
 /***/ },
-/* 140 */
+/* 146 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27857,14 +28172,14 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 	var myclinicUtil = __webpack_require__(5);
-	var Submenu = __webpack_require__(141);
-	var DrugForm = __webpack_require__(206);
+	var Submenu = __webpack_require__(147);
+	var DrugForm = __webpack_require__(149);
 
-	var tmplHtml = __webpack_require__(146);
+	var tmplHtml = __webpack_require__(152);
 
-	var CopySelected = __webpack_require__(209);
-	var ModifyDays = __webpack_require__(212);
-	var DeleteSelected = __webpack_require__(211);
+	var CopySelected = __webpack_require__(153);
+	var ModifyDays = __webpack_require__(155);
+	var DeleteSelected = __webpack_require__(157);
 
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
@@ -28019,14 +28334,14 @@
 	}
 
 /***/ },
-/* 141 */
+/* 147 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	__webpack_require__(3);
-	var tmplHtml = __webpack_require__(142);
+	var tmplHtml = __webpack_require__(148);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 	var mUtil = __webpack_require__(5);
@@ -28188,2620 +28503,13 @@
 	}
 
 /***/ },
-/* 142 */
+/* 148 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">部分コピー</a> |\r\n<a mc-name=\"modifyDays\" href=\"javascript:void(0)\" class=\"cmd-link\">日数変更</a> |\r\n<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n"
 
 /***/ },
-/* 143 */,
-/* 144 */,
-/* 145 */,
-/* 146 */
-/***/ function(module, exports) {
-
-	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div class=\"drug-submenu\" />\r\n<div mc-name=\"workarea\" />\r\n"
-
-/***/ },
-/* 147 */,
-/* 148 */,
-/* 149 */,
-/* 150 */,
-/* 151 */,
-/* 152 */,
-/* 153 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var tmplHtml = __webpack_require__(154);
-	var Drug = __webpack_require__(155);
-
-	exports.setup = function(dom, drugs, visitId, at, patientId){
-		dom.html(tmplHtml);
-		var listDom = getListDom(dom);
-		updateRp(dom, drugs.length > 0);
-		var index = 1;
-		drugs.forEach(function(drug){
-			var e = Drug.create(index++, drug, at, patientId);
-			listDom.append(e);
-		});
-		respondToDrugEntered(dom, visitId, at, patientId);
-		respondToNumberOfDrugsChanged(dom, visitId);
-	};
-
-	function getRpDom(dom){
-		return dom.find("[mc-name=rp]");
-	}
-
-	function getListDom(dom){
-		return dom.find("[mc-name=list]");
-	}
-
-	function lookupDrugs(dom, visitId){
-		return dom.broadcast("rx-drug-lookup-for-visit", [visitId]);
-	}
-
-	function countDrugs(dom, visitId){
-		return lookupDrugs(dom, visitId).length;
-	}
-
-	function updateRp(dom, show){
-		var text = show ? "Rp)" : "";
-		getRpDom(dom).text(text);
-	}
-
-	function respondToDrugEntered(dom, visitId, at, patientId){
-		dom.listen("rx-drug-entered", function(newDrug){
-			if( visitId === newDrug.visit_id ){
-				var index = countDrugs(dom, visitId) + 1;
-				var listDom = getListDom(dom);
-				listDom.append(Drug.create(index, newDrug, at, patientId));
-				updateRp(dom, true);
-			}
-		});
-	}
-
-	function respondToNumberOfDrugsChanged(dom, visitId){
-		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
-			if( visitId === targetVisitId ){
-				var index = 1;
-				var drugs = lookupDrugs(dom, visitId);
-				updateRp(dom, drugs.length > 0);
-				drugs.forEach(function(drug){
-					dom.broadcast("rx-drug-modify-index", [drug.drug_id, index++]);
-				})
-			}
-		});
-	}
-
-	function respondToDrugsNeedRenumbering(dom, visitId){
-		dom.listen("rx-drugs-need-renumbering", function(targetVisitId){
-			if( visitId !== targetVisitId ){
-				return;
-			}
-			var index = 1;
-			var drugs = lookupDrugs(dom, visitId);
-			drugs.forEach(function(drug){
-				dom.broadcast("rx-drug-modify-index", [drug.drug_id, index++]);
-			})
-		});
-	}
-
-/***/ },
-/* 154 */
-/***/ function(module, exports) {
-
-	module.exports = "<div mc-name=\"rp\"></div>\r\n<div mc-name=\"list\"></div>\r\n"
-
-/***/ },
-/* 155 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-	var mUtil = __webpack_require__(5);
-	var DrugDisp = __webpack_require__(245);
-	var DrugForm = __webpack_require__(206);
-
-	var tmplSrc = __webpack_require__(156);
-
-	var dispAreaSelector = "> [mc-name=disp-area]";
-	var formAreaSelector = "> [mc-name=form-area]";
-
-	function getDispAreaDom(dom){
-		return dom.find(dispAreaSelector);
-	}
-
-	function getFormAreaDom(dom){
-		return dom.find(formAreaSelector);
-	}
-
-	exports.create = function(index, drug, at, patientId){
-		var dom = $(tmplSrc);
-		DrugDisp.setup(getDispAreaDom(dom), index, drug);
-		var ctx = {
-			drug: drug
-		};
-		dom.listen("rx-drug-modified", function(newDrug){
-			if( ctx.drug.drug_id === newDrug.drug_id ){
-				ctx.drug = newDrug;
-			}
-		});
-		dom.listen("rx-drug-lookup-for-visit", function(targetVisitId){
-			if( targetVisitId === drug.visit_id ){
-				return {
-					drug_id: drug.drug_id
-				};
-			}
-		});
-		dom.listen("rx-drug-deleted", function(drugId){
-			if( drugId === drug.drug_id ){
-				dom.remove();
-			}
-		});
-		bindClick(dom, ctx, at, patientId);
-		return dom;
-	}
-
-	function bindClick(dom, ctx, at, patientId){
-		dom.on("click", dispAreaSelector, function(event){
-			event.stopPropagation();
-			var drug = ctx.drug;
-			var message = "（暫定）診察中でありませんが、この薬剤を編集しますか？";
-			if( !dom.inquire("fn-confirm-edit", [drug.visit_id, message]) ){
-				return;
-			}
-			var form = DrugForm.createEditForm(drug, at, patientId);
-			form.on("cancel", function(event){
-				event.stopPropagation();
-				getDispAreaDom(dom).show();
-				getFormAreaDom(dom).empty();
-			});
-			form.on("modified", function(event, newDrug){
-				event.stopPropagation();
-				dom.trigger("drug-modified", [newDrug]);
-				getDispAreaDom(dom).show();
-				getFormAreaDom(dom).empty();
-			});
-			form.on("deleted", function(event){
-				event.stopPropagation();
-				dom.trigger("drug-deleted", [drug.drug_id, drug.visit_id]);
-			});
-			var formArea = getFormAreaDom(dom);
-			formArea.append(form);
-			getDispAreaDom(dom).hide();
-		});
-	}
-
-
-
-/***/ },
-/* 156 */
-/***/ function(module, exports) {
-
-	module.exports = "<div mc-name=\"wrapper\">\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"form-area\"></div>\r\n</div>\r\n"
-
-/***/ },
-/* 157 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-	var mUtil = __webpack_require__(5);
-	var AddRegularForm = __webpack_require__(158);
-	var ShinryouAddForm = __webpack_require__(160);
-	var ShinryouCopySelectedForm = __webpack_require__(218);
-	var ShinryouDeleteSelectedForm = __webpack_require__(215);
-	var ShinryouSubmenu = __webpack_require__(162);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var conti = __webpack_require__(4);
-
-	var tmplHtml = __webpack_require__(164);
-
-	exports.setup = function(dom, visitId, at){
-		dom.html(tmplHtml);
-		bindAddRegular(dom, visitId, at);
-		bindSubmenu(dom, visitId, at);
-		bindSubmenuAddForm(dom, visitId, at);
-		bindSubmenuCopyAll(dom, visitId, at);
-		bindSubmenuCopySelected(dom, visitId, at);
-		bindSubmenuDeleteSelectedForm(dom, visitId, at);
-		bindSubmenuDeleteDuplicated(dom, visitId);
-		bindSubmenuCancel(dom);
-		setState(dom, "init");
-	}
-
-	var addShinryouSelector = "> [mc-name=addShinryouLink]";
-	var submenuLinkSelector = "> [mc-name=submenuLink]";
-	var submenuAreaSelector = "> [mc-name=submenu-area]";
-	var workAreaSelector = "> [mc-name=work-area]";
-
-	function bindAddRegular(dom, visitId, at){
-		dom.on("click", addShinryouSelector, function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var state = getState(dom);
-			if( state === "submenu" ){
-				return;
-			} else if( state === "add-regular" ){
-				endWork(dom);
-			} else {
-				var ok = dom.inquire("fn-confirm-edit", [visitId, 
-					"現在（暫定）診療中でありませんが、診療行為を追加しますか？"]);
-				if( !ok ){
-					return;
-				}
-				var form = AddRegularForm.create(visitId, at);
-				form.on("entered", function(event, newShinryouList, newConducts){
-					event.stopPropagation();
-					endWork(dom);
-					dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
-					dom.trigger("conducts-batch-entered", [visitId, newConducts]);
-				});
-				form.on("cancel", function(event){
-					event.stopPropagation();
-					endWork(dom);
-				});
-				startWork(dom, "add-regular", form);
-			}
-		})
-	}
-
-	function bindSubmenu(dom, visitId, at){
-		dom.on("click", submenuLinkSelector, function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var state = getState(dom);
-			if( state === "submenu" ){
-				closeSubmenu(dom);
-				setState(dom, "init");
-			} else if( state === "init" ) {
-				dom.find(submenuAreaSelector).append(ShinryouSubmenu.create());
-				setState(dom, "submenu");
-			}
-		})
-	}
-
-	function bindSubmenuAddForm(dom, visitId, at){
-		dom.on("submenu-add-form", function(event){
-			event.stopPropagation();
-			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を追加しますか？"]) ){
-				return;
-			}
-			var form = ShinryouAddForm.create(visitId, at);
-			form.on("shinryou-entered", function(event, newShinryou){
-				event.stopPropagation();
-				dom.trigger("shinryou-batch-entered", [visitId, [newShinryou]]);
-			});
-			form.on("cancel", function(event){
-				event.stopPropagation();
-				endWork(dom);
-			})
-			closeSubmenu(dom);
-			startWork(dom, "add-search", form);
-		})
-	}
-
-	function batchFetchShinryou(shinryouIds, at, cb){
-		var newShinryouList = [];
-		conti.forEach(shinryouIds, function(shinryouId, done){
-			service.getFullShinryou(shinryouId, at, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				newShinryouList.push(result);
-				done();
-			})
-		}, function(err){
-			if( err ){
-				cb(err);
-				return;
-			}
-			cb(undefined, newShinryouList);
-		});
-	}
-
-	function copy(targetVisitId, srcShinryouList, cb){
-		var targetVisit, dstShinryouCodes = [], dstShinryouList, newShinryouIds, newShinryouList = [];
-		conti.exec([
-			function(done){
-				service.getVisit(targetVisitId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					targetVisit = result;
-					done();
-				})
-			},
-			function(done){
-				var targetAt = targetVisit.v_datetime;
-				conti.forEach(srcShinryouList, function(shinryou, done){
-					service.resolveShinryouMasterAt(shinryou.shinryoucode, targetAt, function(err, result){
-						if( err ){
-							console.log(err);
-							done("コピー先で有効でありません：" + shinryou.name);
-							return;
-						}
-						dstShinryouCodes.push(result.shinryoucode);
-						done();
-					})
-				}, done);
-			},
-			function(done){
-				var dstShinryouList = dstShinryouCodes.map(function(shinryoucode){
-					return {
-						visit_id: targetVisitId,
-						shinryoucode: shinryoucode
-					};
-				});
-				service.batchEnterShinryou(dstShinryouList, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					newShinryouIds = result;
-					done();
-				})
-			},
-			function(done){
-				batchFetchShinryou(newShinryouIds, targetVisit.v_datetime, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					newShinryouList = result;
-					done();
-				})
-			}
-		], function(err){
-			if( err ){
-				cb(err);
-				return;
-			}
-			cb(undefined, newShinryouList);
-		});
-	}
-
-	function bindSubmenuCopyAll(dom, visitId, at){
-		dom.on("submenu-copy-all", function(event){
-			event.stopPropagation();
-			var targetVisitId = dom.inquire("fn-get-target-visit-id");
-			if( !(targetVisitId > 0) ){
-				alert("現在（暫定）診療中でないので、コピーできません。");
-				return;
-			}
-			if( targetVisitId === visitId ){
-				alert("自分自身にはコピーできません。");
-				return;
-			}
-			var srcShinryouList, newShinryouList = [];
-			task.run([
-				function(done){
-					service.listFullShinryouForVisit(visitId, at, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						srcShinryouList = result;
-						done();
-					})
-				},
-				function(done){
-					copy(targetVisitId, srcShinryouList, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newShinryouList = result;
-						done();
-					})
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				closeSubmenu(dom);
-				setState(dom, "init");
-				dom.trigger("shinryou-batch-entered", [targetVisitId, newShinryouList]);
-			})
-		})
-	}
-
-	function bindSubmenuCopySelected(dom, visitId, at){
-		dom.on("submenu-copy-selected", function(event){
-			event.stopPropagation();
-			var targetVisitId = dom.inquire("fn-get-target-visit-id");
-			if( !(targetVisitId > 0) ){
-				alert("現在（暫定）診療中でないので、コピーできません。");
-				return;
-			}
-			if( targetVisitId === visitId ){
-				alert("自分自身にはコピーできません。");
-				return;
-			}
-			var shinryouList;
-			task.run([
-				function(done){
-					service.listFullShinryouForVisit(visitId, at, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						shinryouList = result;
-						done();
-					})
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var form = ShinryouCopySelectedForm.create(shinryouList);
-				form.on("enter", function(event, shinryouIds){
-					var srcShinryouList, newShinryouList;
-					task.run([
-						function(done){
-							batchFetchShinryou(shinryouIds, at, function(err, result){
-								if( err ){
-									done(err);
-									return;
-								}
-								srcShinryouList = result;
-								done();
-							})
-						},
-						function(done){
-							copy(targetVisitId, srcShinryouList, function(err, result){
-								if( err ){
-									done(err);
-									return;
-								}
-								newShinryouList = result;
-								done();
-							})
-						}
-					], function(err){
-						if( err ){
-							alert(err);
-							return;
-						}
-						endWork(dom);
-						dom.trigger("shinryou-batch-entered", [targetVisitId, newShinryouList]);
-					})
-				});
-				form.on("cancel", function(event){
-					event.stopPropagation();
-					endWork(dom);
-				})
-				closeSubmenu(dom);
-				startWork(dom, "copy-selected", form);
-			})		
-		});
-	}
-
-	function bindSubmenuDeleteSelectedForm(dom, visitId, at){
-		dom.on("submenu-delete-selected", function(event){
-			event.stopPropagation();
-			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を削除しますか？"]) ){
-				return;
-			}
-			var shinryouList;
-			task.run(function(done){
-				service.listFullShinryouForVisit(visitId, at, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					shinryouList = result;
-					done();
-				})
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var form = ShinryouDeleteSelectedForm.create(shinryouList);
-				form.on("shinryou-deleted", function(event, deletedShinryouIds){
-					event.stopPropagation();
-					dom.trigger("shinryou-batch-deleted", [visitId, deletedShinryouIds]);
-					endWork(dom);
-				});
-				form.on("cancel", function(event){
-					event.stopPropagation();
-					endWork(dom);
-				})
-				closeSubmenu(dom);
-				startWork(dom, "delete-selected", form);
-			})
-		})
-	}
-
-	function bindSubmenuDeleteDuplicated(dom, visitId){
-		dom.on("submenu-delete-duplicated", function(event){
-			event.stopPropagation();
-			closeSubmenu(dom);
-			setState(dom, "init");
-			dom.trigger("shinryou-delete-duplicated", [visitId]);
-		});
-	}
-
-	function bindSubmenuCancel(dom){
-		dom.on("submenu-cancel", function(event){
-			event.stopPropagation();
-			closeSubmenu(dom);
-			setState(dom, "init");
-		})
-	}
-
-	function setState(dom, state){
-		return dom.data("state", state);
-	}
-
-	function getState(dom){
-		return dom.data("state");
-	}
-
-	function startWork(dom, state, e){
-		setState(dom, state);
-		dom.find(workAreaSelector).append(e);
-	}
-
-	function endWork(dom){
-		dom.find(workAreaSelector).html("");
-		setState(dom, "init");
-	}
-
-	function closeSubmenu(dom){
-		dom.find(submenuAreaSelector).html("");
-	}
-
-	// function bindCloseWorkarea(dom){
-	// 	dom.on("close-workarea", function(event){
-	// 		event.stopPropagation();
-	// 		endWork(dom);
-	// 	})
-	// }
-
-	// function bindShinryouBatchEntered(dom){
-	// 	dom.on("shiryou-batch-entered", function(event){
-	// 		endWork(dom);
-	// 	});
-	// }
-
-
-
-
-/***/ },
-/* 158 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(159);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var conti = __webpack_require__(4);
-
-	exports.create = function(visitId, at){
-		var dom = $(tmplSrc);
-		bindEnter(dom, visitId, at);
-		bindCancel(dom);
-		return dom;
-	}
-
-	function bindEnter(dom, visitId, at){
-		var selector = "> form .workarea-commandbox [mc-name=enter]";
-		dom.on("click", selector, function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.find(selector).prop("disabled", true);
-			var names = dom.find("> form input[name=item]:checked").map(function(){
-				return $(this).val();
-			}).get();
-			var newShinryouIds, newConductIds;
-			var newShinryouList = [], newConductList = [];
-			task.run([
-				function(done){
-					service.enterShinryouByNames(visitId, names, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newShinryouIds = result.shinryou_ids;
-						newConductIds = result.conduct_ids;
-						done();
-					})
-				},
-				function(done){
-					conti.forEach(newShinryouIds, function(newShinryouId, done){
-						service.getFullShinryou(newShinryouId, at, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							newShinryouList.push(result);
-							done();
-						})
-					}, done);
-				},
-				function(done){
-					conti.forEach(newConductIds, function(newConductId, done){
-						service.getFullConduct(newConductId, at, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							newConductList.push(result);
-							done();
-						})
-					}, done);
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("entered", [newShinryouList, newConductList]);
-			})
-		})
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel");
-		});
-	}
-
-/***/ },
-/* 159 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
-
-/***/ },
-/* 160 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var task = __webpack_require__(111);
-	var service = __webpack_require__(112);
-
-	var tmplSrc = __webpack_require__(161);
-	var resultTmplSrc = __webpack_require__(217);
-	var resultTmpl = hogan.compile(resultTmplSrc);
-
-	exports.create = function(visitId, at){
-		var dom = $(tmplSrc);
-		var ctx = {shinryoucode: undefined};
-		bindEnter(dom, visitId, at, ctx);
-		bindCancel(dom);
-		bindSearch(dom, at);
-		bindResult(dom, at, ctx);
-		return dom;
-	}
-
-	var dispNameSelector = "> div[mc-name=disp-area] [mc-name=name]";
-	var enterSelector = "> .workarea-commandbox [mc-name=enter]";
-	var cancelSelector = "> .workarea-commandbox [mc-name=close]";
-	var searchTextInputSelector = "> form[mc-name=search-form] input[mc-name=text]";
-	var searchResultSelector = "> form[mc-name=search-form] select";
-
-	function updateDisp(dom, label){
-		dom.find(dispNameSelector).text(label);
-	}
-
-	function bindEnter(dom, visitId, at, ctx){
-		dom.on("click", enterSelector, function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var shinryoucode = ctx.shinryoucode;
-			if( !shinryoucode ){
-				alert("診療行為が指定されていません。");
-				return;
-			}
-			shinryoucode = +shinryoucode;
-			var newShinryouId, newShinryou;
-			task.run([
-				function(done){
-					service.batchEnterShinryou([{
-						visit_id: visitId,
-						shinryoucode: shinryoucode
-					}], function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newShinryouId = result;
-						done();
-					})
-				},
-				function(done){
-					service.getFullShinryou(newShinryouId, at, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						newShinryou = result;
-						done();
-					})
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("shinryou-entered", [newShinryou]);
-			});
-		})
-	}
-
-	function bindCancel(dom){
-		dom.on("click", cancelSelector, function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel");
-		});
-	}
-
-	function bindSearch(dom, at){
-		dom.on("submit", "> form[mc-name=search-form]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var text = dom.find(searchTextInputSelector).val().trim();
-			if( text === "" ){
-				return;
-			}
-			var list;
-			task.run(function(done){
-				service.searchShinryouMaster(text, at, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					list = result;
-					done();
-				});
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var select = dom.find(searchResultSelector);
-				select.html(resultTmpl.render({list: list}));
-			});
-		});
-	}
-
-	function bindResult(dom, at, ctx){
-		dom.on("change", searchResultSelector, function(event){
-			var shinryoucode = +dom.find(searchResultSelector + " option:selected").val();
-			var master;
-			task.run([
-				function(done){
-					service.resolveShinryouMasterAt(shinryoucode, at, function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						master = result;
-						done();
-					})
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				ctx.shinryoucode = master.shinryoucode;
-				updateDisp(dom, master.name);
-			})
-		});
-	}
-
-/***/ },
-/* 161 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div mc-name=\"disp-area\">\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<form mc-name=\"search-form\">\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</form>\r\n</div>\r\n"
-
-/***/ },
-/* 162 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var tmplSrc = __webpack_require__(163);
-
-	exports.create = function(){
-		var dom = $(tmplSrc);
-		bindAddForm(dom);
-		bindCopyAll(dom);
-		bindCopySelected(dom);
-		bindDeleteSelected(dom);
-		bindDeleteDuplicated(dom);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function bindAddForm(dom){
-		dom.on("click", "> [mc-name=search]", function(event){
-			dom.trigger("submenu-add-form");
-		});
-	}
-
-	function bindCopyAll(dom){
-		dom.on("click", "> [mc-name=copyAll]", function(event){
-			dom.trigger("submenu-copy-all");
-		});
-	}
-
-	function bindCopySelected(dom){
-		dom.on("click", "> [mc-name=copySelected]", function(event){
-			dom.trigger("submenu-copy-selected");
-		});
-	}
-
-	function bindDeleteSelected(dom){
-		dom.on("click", "> [mc-name=deleteSelected]", function(event){
-			dom.trigger("submenu-delete-selected");
-		});
-	}
-
-	function bindDeleteDuplicated(dom){
-		dom.on("click", "> [mc-name=deleteDuplicated]", function(event){
-			dom.trigger("submenu-delete-duplicated");
-		});
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> [mc-name=cancel]", function(event){
-			dom.trigger("submenu-cancel");
-		});
-	}
-
-/***/ },
-/* 163 */
-/***/ function(module, exports) {
-
-	module.exports = "<div>\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"deleteDuplicated\" href=\"javascript:void(0)\" class=\"cmd-link\">重複削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
-
-/***/ },
-/* 164 */
-/***/ function(module, exports) {
-
-	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"work-area\"></div>\r\n"
-
-/***/ },
-/* 165 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var Shinryou = __webpack_require__(166);
-
-	exports.setup = function(dom, shinryouList, visitId, at, patientId){
-		batchAdd(dom, shinryouList);
-		respondToShinryouEntered(dom, visitId);
-	};
-
-	function batchAdd(dom, shinryouList){
-		shinryouList.forEach(function(shinryou){
-			var se = Shinryou.create(shinryou);
-			dom.append(se);
-		});
-	}
-
-	function lookupShinryou(dom, visitId){
-		return dom.broadcast("rx-shinryou-lookup-for-visit", [visitId]);
-	}
-
-	function respondToShinryouEntered(dom, visitId){
-		dom.listen("rx-shinryou-batch-entered", function(targetVisitId, shinryouList){
-			if( visitId === targetVisitId ){
-				var currentList = lookupShinryou(dom, visitId).slice();
-				shinryouList = shinryouList.slice();
-				while( currentList.length > 0 && shinryouList.length > 0 ){
-					var curr = currentList[0];
-					var shin = shinryouList[0];
-					if( shin.shinryoucode < curr.shinryoucode ){
-						curr.dom.before(Shinryou.create(shin));
-						shinryouList.shift();
-					} else {
-						currentList.shift();
-					}
-				}
-				if( currentList.length === 0 ){
-					batchAdd(dom, shinryouList);
-				}
-			}
-		})
-	}
-
-/***/ },
-/* 166 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-	var mUtil = __webpack_require__(5);
-	var ShinryouForm = __webpack_require__(220);
-	var task = __webpack_require__(111);
-	var service = __webpack_require__(112);
-
-	var tmplSrc = __webpack_require__(167);
-	var tmpl = hogan.compile(tmplSrc);
-
-	exports.create = function(shinryou){
-		var dom = $(tmpl.render({
-			label: shinryou.name
-		}));
-		dom.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
-			if( targetVisitId === shinryou.visit_id ){
-				return {
-					shinryou_id: shinryou.shinryou_id,
-					shinryoucode: shinryou.shinryoucode,
-					dom: dom
-				};
-			}
-		});
-		dom.listen("rx-shinryou-deleted", function(targetShinryouId){
-			if( shinryou.shinryou_id === targetShinryouId ){
-				dom.remove();
-			}
-		});
-		bindClick(dom, shinryou);
-		return dom;
-	};
-
-	var dispSelector = "> [mc-name=disp]";
-	var formSelector = "> [mc-name=form]";
-
-	function getDispDom(dom){
-		return dom.find(dispSelector);
-	}
-
-	function getFormDom(dom){
-		return dom.find(formSelector);
-	}
-
-	function taskDeleteShinryou(ctx, opt){
-		opt = opt || {};
-		var keyShinryouId = opt.shinryouId || "shinryouId";
-		return function(done){
-			var shinryouId = ctx[keyShinryouId];
-			service.batchDeleteShinryou([shinryouId], done);
-		}
-	}
-
-	function bindClick(dom, shinryou){
-		dom.on("click", dispSelector, function(event){
-			event.stopPropagation();
-			event.preventDefault();
-			if( !dom.inquire("fn-confirm-edit", [shinryou.visit_id, "現在（限定）診察中でありませんが、この診療行為を編集しますか？"]) ){
-				return;
-			}
-			var form = ShinryouForm.create(shinryou);
-			form.on("delete", function(event){
-				event.stopPropagation();
-				var ctx = {shinryouId: shinryou.shinryou_id};
-				task.run(taskDeleteShinryou(ctx), function(err){
-					dom.trigger("shinryou-batch-deleted", [shinryou.visit_id, [shinryou.shinryou_id]]);
-				});
-			});
-			form.on("cancel", function(event){
-				event.stopPropagation();
-				getFormDom(dom).html("");
-				getDispDom(dom).show();
-			});
-			getDispDom(dom).hide();
-			getFormDom(dom).append(form);
-		})
-	}
-
-
-
-
-/***/ },
-/* 167 */
-/***/ function(module, exports) {
-
-	module.exports = "<div>\r\n\t<div mc-name=\"disp\">{{label}}</div>\r\n\t<div mc-name=\"form\"></div>\r\n</div>"
-
-/***/ },
-/* 168 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-	var myclinicUtil = __webpack_require__(5);
-	var ConductSubmenu = __webpack_require__(222);
-	var ConductAddXpForm = __webpack_require__(224);
-	var ConductAddInjectForm = __webpack_require__(226);
-	var conti = __webpack_require__(4);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var mConsts = __webpack_require__(110);
-
-	var tmplHtml = __webpack_require__(169);
-
-	exports.setup = function(dom, visitId, at){
-		dom.html(tmplHtml);
-		bindTopMenuClick(dom, visitId, at);
-		setState(dom, "init");
-	}
-
-	function setState(dom, state){
-		dom.data("state", state);
-	}
-
-	function getState(dom){
-		return dom.data("state");
-	}
-
-	var topMenuSelector = "> [mc-name=top-menu-area] [mc-name=submenuLink]";
-	var submenuSelector = "> [mc-name=submenu-area]";
-	var workspaceSelector = "> [mc-name=workspace-area]";
-
-	function getSubmenuDom(dom){
-		return dom.find(submenuSelector);
-	}
-
-	function getWorkspaceDom(dom){
-		return dom.find(workspaceSelector);
-	}
-
-	function closeSubmenu(dom){
-		getSubmenuDom(dom).html("");
-	}
-
-	function startWork(dom, state, form){
-		closeSubmenu(dom);
-		getWorkspaceDom(dom).append(form);
-		setState(dom, state);
-	}
-
-	function endWork(dom){
-		getWorkspaceDom(dom).html("");
-		setState(dom, "init");
-	}
-
-	function bindTopMenuClick(dom, visitId, at){
-		dom.on("click", topMenuSelector, function(event){
-			event.preventDefault();
-			var state = getState(dom);
-			if( state === "init" ){
-				var submenu = ConductSubmenu.create();
-				bindSubmenu(dom, submenu, visitId, at);
-				getSubmenuDom(dom).append(submenu);
-				setState(dom, "submenu");
-			} else if( state === "submenu" ){
-				closeSubmenu(dom);
-				setState(dom, "init");
-			}
-		});
-	}
-
-	function enterXp(visitId, at, label, film, cb){
-		var conductId, kizaicode, shinryoucodes = [], newConduct;
-		conti.exec([
-			function(done){
-				var conduct = {
-					visit_id: visitId,
-					kind: mConsts.ConductKindGazou
-				}
-				service.enterConduct(conduct, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					conductId = result;
-					done();
-				})
-			},
-			function(done){
-				var gazouLabel = {
-					visit_conduct_id: conductId,
-					label: label
-				};
-				service.enterGazouLabel(gazouLabel, done);
-			},
-			function(done){
-				service.resolveKizaiNameAt(film, at, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					kizaicode = result;
-					done();
-				})
-			},
-			function(done){
-				var kizai = {
-					visit_conduct_id: conductId,
-					kizaicode: kizaicode,
-					amount: 1
-				};
-				service.enterConductKizai(kizai, done);
-			},
-			function(done){
-				var names = ['単純撮影', '単純撮影診断'];
-				service.batchResolveShinryouNamesAt(names, at, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					names.forEach(function(name){
-						var code = result[name];
-						if( code > 0 ){
-							shinryoucodes.push(code);
-						}
-					});
-					done();
-				})
-			},
-			function(done){
-				var list = shinryoucodes.map(function(shinryoucode){
-					return {
-						visit_conduct_id: conductId,
-						shinryoucode: shinryoucode
-					};
-				});
-				service.batchEnterConductShinryou(list, done);
-			},
-			function(done){
-				service.getFullConduct(conductId, at, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					newConduct = result;
-					done();
-				})
-			}
-		], function(err){
-			if( err ){
-				cb(err);
-				return;
-			}
-			cb(undefined, newConduct);
-		});
-	}
-
-	function doAddXp(dom, visitId, at){
-		var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
-		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
-			return;
-		}
-		var form = ConductAddXpForm.create();
-		form.on("enter", function(event, label, film){
-			event.stopPropagation();
-			var newConduct;
-			task.run(function(done){
-				enterXp(visitId, at, label, film, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					newConduct = result;
-					done();
-				})
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("conducts-batch-entered", [visitId, [newConduct]]);
-				endWork(dom);
-			})
-		});
-		form.on("cancel", function(event){
-			event.stopPropagation();
-			endWork(dom);
-		});
-		startWork(dom, "add-xp", form);
-	}
-
-	function addInject(visitId, at, iyakuhincode, amount, kind, cb){
-		var conductId, newConduct;
-		var shinryouNames = [];
-		if( kind === mConsts.ConductKindHikaChuusha ){
-			shinryouNames.push("皮下筋注");
-		} else if( kind === mConsts.ConductKindJoumyakuChuusha ){
-			shinryouNames.push("静注");
-		}
-		var shinryoucodes = [];
-		conti.exec([
-			function(done){
-				var conduct = {
-					visit_id: visitId,
-					kind: kind
-				};
-				service.enterConduct(conduct, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					conductId = result;
-					done();
-				})
-			},
-			function(done){
-				var names = shinryouNames;
-				service.batchResolveShinryouNamesAt(names, at, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					names.forEach(function(name){
-						var code = result[name];
-						if( code > 0 ){
-							shinryoucodes.push(code);
-						}
-					});
-					done();
-				})
-			},
-			function(done){
-				var list = shinryoucodes.map(function(shinryoucode){
-					return {
-						visit_conduct_id: conductId,
-						shinryoucode: shinryoucode
-					};
-				});
-				service.batchEnterConductShinryou(list, done);
-			},
-			function(done){
-				var drug = {
-					visit_conduct_id: conductId,
-					iyakuhincode: iyakuhincode,
-					amount: amount
-				};
-				service.enterConductDrug(drug, done);
-			},
-			function(done){
-				service.getFullConduct(conductId, at, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					newConduct = result;
-					done();
-				})
-			}
-		], function(err){
-			if( err ){
-				cb(err);
-				return;
-			}
-			cb(undefined, newConduct);
-		})
-	}
-
-	function doAddInject(dom, visitId, at){
-		var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
-		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
-			return;
-		}
-		var form = ConductAddInjectForm.create(at);
-		form.on("enter", function(event, iyakuhincode, amount, kind){
-			event.stopPropagation();
-			var newConduct;
-			task.run(function(done){
-				addInject(visitId, at, iyakuhincode, amount, kind, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					newConduct = result;
-					done();
-				})
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				dom.trigger("conducts-batch-entered", [visitId, [newConduct]]);
-				endWork(dom);
-			});
-		});
-		form.on("cancel", function(event){
-			event.stopPropagation();
-			endWork(dom);
-		});
-		startWork(dom, "add-inject", form);
-	}
-
-	function bindSubmenu(dom, submenu, visitId, at){
-		submenu.on("add-xp", function(event){
-			doAddXp(dom, visitId, at);
-		});
-		submenu.on("add-inject", function(event){
-			doAddInject(dom, visitId, at);
-		});
-		submenu.on("copy-all", function(event){
-			var targetVisitId = dom.inquire("fn-get-target-visit-id");
-			if( !(targetVisitId > 0) ){
-				alert("現在（暫定）診察中でないので、コピーできません。");
-				return;
-			}
-			if( targetVisitId === visitId ){
-				alert("自分自身にコピーすることはできません。");
-				return;
-			}
-			var conductIds, newConducts = [];
-			task.run([
-				function(done){
-					service.copyConducts(visitId, targetVisitId, function(err, result){
-						if( err ){
-							alert(err);
-							return;
-						}
-						conductIds = result;
-						done();
-					})
-				},
-				function(done){
-					conti.forEach(conductIds, function(conductId, done){
-						service.getFullConduct(conductId, at, function(err, result){
-							if( err ){
-								done(err);
-								return;
-							}
-							newConducts.push(result);
-							done();
-						})
-					}, done);
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				closeSubmenu(dom);
-				setState(dom, "init");
-				dom.trigger("conducts-batch-entered", [targetVisitId, newConducts]);
-			});
-		});
-		submenu.on("cancel", function(event){
-			event.stopPropagation();
-			closeSubmenu(dom);
-			setState(dom, "init");
-		});
-	}
-
-
-
-/***/ },
-/* 169 */
-/***/ function(module, exports) {
-
-	module.exports = "<div mc-name=\"top-menu-area\">\r\n\t<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n</div>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"workspace-area\"></div>\r\n"
-
-/***/ },
-/* 170 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var Conduct = __webpack_require__(171);
-
-	exports.setup = function(dom, conducts, visitId, at){
-		batchAdd(dom, conducts, visitId, at);
-		dom.listen("rx-conducts-batch-entered", function(targetVisitId, conducts){
-			if( visitId !== targetVisitId ){
-				return;
-			}
-			batchAdd(dom, conducts, visitId, at);
-		});
-	};
-
-	function batchAdd(dom, conducts, visitId, at){
-		conducts.forEach(function(conduct){
-			var ce = Conduct.create(conduct, visitId, at);
-			dom.append(ce);
-		})
-	}
-
-
-
-
-/***/ },
-/* 171 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-	var mUtil = __webpack_require__(5);
-	var ConductDisp = __webpack_require__(238);
-	var ConductForm = __webpack_require__(229);
-	var task = __webpack_require__(111);
-	var service = __webpack_require__(112);
-	var tmplSrc = __webpack_require__(175);
-
-	var dispAreaSelector = "> [mc-name=disp-area]";
-	var workAreaSelector = "> [mc-name=work-area]";
-
-	function extendConductsWithLabel(conduct){
-		conduct = mUtil.assign({}, conduct);
-		conduct.kind_label = mUtil.conductKindToKanji(conduct.kind);
-		conduct.drugs = conduct.drugs.map(function(drug){
-			return mUtil.assign({}, drug, {
-				label: mUtil.conductDrugRep(drug)
-			});
-		});
-		conduct.kizai_list = conduct.kizai_list.map(function(kizai){
-			return mUtil.assign({}, kizai, {
-				label: mUtil.conductKizaiRep(kizai)
-			});
-		});
-		return conduct;
-	}
-
-	exports.create = function(conduct, visitId, at){
-		var visitId = conduct.visit_id;
-		var conductId = conduct.id;
-		conduct = extendConductsWithLabel(conduct);
-		var ctx = {
-			conduct: conduct
-		};
-		var dom = $(tmplSrc);
-		getDispAreaDom(dom).append(ConductDisp.create(conduct));
-		bindClick(dom, visitId, at, ctx);
-		dom.on("conduct-modified", function(event, targetConductId, newConduct){
-			if( conductId === targetConductId ){
-				event.stopPropagation();
-				var newConductEx = extendConductsWithLabel(newConduct);
-				ctx.conduct = newConductEx;
-				dom.broadcast("rx-conduct-modified", [targetConductId, newConductEx]);
-				return;
-			}
-		});
-		return dom;
-	};
-
-	function getDispAreaDom(dom){
-		return dom.find(dispAreaSelector);
-	}
-
-	function getWorkAreaDom(dom){
-		return dom.find(workAreaSelector);
-	}
-
-	function bindClick(dom, visitId, at, ctx){
-		dom.on("click", dispAreaSelector, function(event){
-			event.preventDefault();
-			var conduct = ctx.conduct;
-			var conductId = conduct.id;
-			var msg = "現在（暫定）診察中でありませんが、この処置を変更しますか？";
-			if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
-				return;
-			}
-			var form = ConductForm.create(conduct, at);
-			form.on("close", function(event){
-				event.stopPropagation();
-				getWorkAreaDom(dom).html("");
-				getDispAreaDom(dom).show();
-			});
-			form.on("delete", function(event){
-				event.stopPropagation();
-				task.run(function(done){
-					service.deleteConduct(conductId, done);
-				}, function(err){
-					if( err ){
-						alert(err);
-						return;
-					}
-					dom.remove();
-				})
-			})
-			getDispAreaDom(dom).hide();
-			getWorkAreaDom(dom).append(form);
-		});
-	}
-
-
-
-/***/ },
-/* 172 */,
-/* 173 */,
-/* 174 */,
-/* 175 */
-/***/ function(module, exports) {
-
-	module.exports = "<div>\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"work-area\"></div>\r\n</div>\r\n"
-
-/***/ },
-/* 176 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var mUtil = __webpack_require__(5);
-	var ChargeDisp = __webpack_require__(249);
-	var ChargeForm = __webpack_require__(251);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-
-	exports.setup = function(dom, visitId, charge){
-		if( dom.data("setup") ){
-			throw new Error("duplicate setup in charge.js");
-		}
-		dom.data("setup", 1);
-		// disp events
-		dom.on("v7lug8he-start-edit", function(event){
-			if( !charge ){
-				return;
-			}
-			startEdit(dom, visitId, charge);
-		});
-		// form events
-		dom.on("30g8sm2i-cancel", function(event){
-			showDisp();
-		});
-		dom.on("30g8sm2i-modified", function(event, newCharge){
-			charge = newCharge;
-			showDisp();
-		});
-		// initial display
-		showDisp();
-
-		function showDisp(){
-			dom.empty();
-			dom.append(mkDisp(charge));
-		}
-	};
-
-	function mkDisp(charge){
-		return ChargeDisp.create(charge);
-	}
-
-	function startEdit(dom, visitId, charge){
-		var meisai;
-		task.run([
-			function(done){
-				service.calcMeisai(visitId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					meisai = result;
-					done();
-				});
-			},
-		], function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			dom.empty();
-			dom.append(ChargeForm.create(meisai, charge));
-		});
-	}
-
-
-/***/ },
-/* 177 */,
-/* 178 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var moment = __webpack_require__(6);
-	var ListPane = __webpack_require__(180);
-	var AddPane = __webpack_require__(258);
-	var EndPane = __webpack_require__(262);
-	var EditPane = __webpack_require__(265);
-	var ItemPane = __webpack_require__(267);
-	var mConsts = __webpack_require__(110);
-	var task = __webpack_require__(111);
-	var service = __webpack_require__(112);
-	var conti = __webpack_require__(4);
-
-	var tmplHtml = __webpack_require__(179);
-
-	var workareaSelector = "> div > [mc-name=workarea]";
-	var listLinkSelector = "> div > [mc-name=command-box] [mc-name=listLink]";
-	var addLinkSelector = "> div > [mc-name=command-box] [mc-name=addLink]";
-	var endLinkSelector = "> div > [mc-name=command-box] [mc-name=endLink]";
-	var editLinkSelector = "> div > [mc-name=command-box] [mc-name=editLink]";
-
-	exports.setup = function(dom){
-		if( dom.data("setup") ){
-			throw new Error("duplicate setup for disease");
-		}
-		dom.data("setup", 1);
-
-		var patientId = 0;
-		dom.listen("rx-start-page", function(appData){
-			patientId = appData.currentPatientId;
-			if( patientId > 0 ){
-				dom.html(tmplHtml);
-				listPane(dom, patientId, appData.diseases);
-			} else {
-				dom.html("");
-			}
-		});
-		dom.on("click", listLinkSelector, function(event){
-			event.preventDefault();
-			listPane(dom, patientId);
-		})
-		dom.on("click", addLinkSelector, function(event){
-			event.preventDefault();
-			addPane(dom, patientId);
-		})
-		dom.on("click", endLinkSelector, function(event){
-			event.preventDefault();
-			endPane(dom, patientId);
-		})
-		dom.on("click", editLinkSelector, function(event){
-			event.preventDefault();
-			editPane(dom, patientId);
-		});
-		// from add disease pane
-		dom.on("r6ihx2oq-entered", function(event, newDisease, message){
-			addPane(dom, patientId, message);
-		});
-		// from end disease pane
-		dom.on("gvr59xqp-modified", function(event, modifiedDiseases){
-			endPane(dom, patientId);
-		});
-		// from edi disease pane
-		dom.on("kodrsu7v-selected", function(event, disease){
-			itemPane(dom, disease);
-		});
-		// from item disease pane
-		dom.on("cirqgerl-modified", function(event, modifiedDisease){
-			listPane(dom, patientId);
-		});
-		dom.on("cirqgerl-deleted", function(event, deletedDiseaseId){
-			listPane(dom, patientId);
-		});
-	};
-
-	function listPane(dom, patientId, optDiseases){
-		if( optDiseases ){
-			invoke(optDiseases);
-		} else {
-			var diseases;
-			task.run([
-				function(done){
-					service.listCurrentFullDiseases(patientId, function(err, result){
-						if( err ){
-							alert(err);
-							return;
-						}
-						diseases = result;
-						done();
-					})
-				}
-			], function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				invoke(diseases);
-			})
-		}
-
-		function invoke(diseases){
-			var wa = dom.find(workareaSelector).empty();
-			wa.append(ListPane.create(diseases));
-		}
-	}
-
-	function addPane(dom, patientId, optMessage){
-		var wa = dom.find(workareaSelector);
-		wa.empty();
-		wa.append(AddPane.create(patientId, optMessage));
-	}
-
-	function endPane(dom, patientId){
-		var diseases;
-		task.run([
-			function(done){
-				service.listCurrentFullDiseases(patientId, function(err, result){
-					if( err ){
-						alert(err);
-						return;
-					}
-					diseases = result;
-					done();
-				})
-			}
-		], function(err){
-			if( err ){
-				alert(err);
-				return;
-			}
-			var wa = dom.find(workareaSelector);
-			wa.empty();
-			wa.append(EndPane.create(diseases));
-		})
-	}
-
-	function editPane(dom, patientId){
-		var wa = dom.find(workareaSelector);
-		var allDiseases;
-		task.run([
-			function(done){
-				service.listAllFullDiseases(patientId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					allDiseases = result;
-					done();
-				})
-			}
-		], function(err){
-			wa.empty();
-			wa.append(EditPane.create(allDiseases));
-		})
-	}
-
-	function itemPane(dom, disease){
-		var wa = dom.find(workareaSelector);
-		wa.empty();
-		wa.append(ItemPane.create(disease));
-	}
-
-
-/***/ },
-/* 179 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">病名</div>\r\n\t<div mc-name=\"workarea\"></div>\r\n\t<hr />\r\n\t<div mc-name=\"command-box\">\r\n\t\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n\t</div>\r\n</div>\r\n"
-
-/***/ },
-/* 180 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-
-	var tmplSrc = __webpack_require__(181);
-	var tmpl = hogan.compile(tmplSrc);
-
-	var DiseaseListItem = __webpack_require__(182);
-
-	exports.create = function(list){
-		var dom = $(tmpl.render({}));
-		var wrapper = dom.find("[mc-name=list]");
-		list.forEach(function(disease){
-			var tr = DiseaseListItem.create(disease);
-			wrapper.append(tr);
-		});
-		return dom;
-	};
-
-
-
-/***/ },
-/* 181 */
-/***/ function(module, exports) {
-
-	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
-
-/***/ },
-/* 182 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-	var mUtil = __webpack_require__(5);
-
-	var tmplSrc = __webpack_require__(183);
-	var tmpl = hogan.compile(tmplSrc);
-
-	exports.create = function(data){
-		data = mUtil.assign({}, data, {
-			label: mUtil.diseaseFullName(data),
-			start_date_label: kanjidate.format("{G:a}{N}.{M}.{D}.", data.start_date)
-		});
-		return $(tmpl.render(data));
-	}
-
-
-
-/***/ },
-/* 183 */
-/***/ function(module, exports) {
-
-	module.exports = "<tr>\n\t<td>\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\"\n\t\t\tdisease-id=\"{{disease_id}}\">\n\t\t\t{{label}}\n\t\t</a>\n\t\t<span style=\"color:#999\">\n\t\t\t({{start_date_label}})\n\t\t</span>\n\t</td>\n</tr>\n"
-
-/***/ },
-/* 184 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var SelectPatientItem = __webpack_require__(185);
-
-	var tmplHtml = __webpack_require__(187);
-
-	exports.setup = function(dom){
-		dom.html(tmplHtml);
-		bindButton(dom);
-		bindOption(dom);
-	};
-
-	function getWorkspaceDom(dom){
-		return dom.find("[mc-name=selectWrapper]");
-	};
-
-	function getSelectDom(dom){
-		return dom.find("[mc-name=selectWrapper] select");
-	}
-
-	function bindButton(dom){
-		dom.on("click", "[mc-name=button]", function(event){
-			event.preventDefault();
-			var ws = getWorkspaceDom(dom);
-			if( ws.is(":visible") ){
-				getSelectDom(dom).html("");
-				ws.hide();
-			} else {
-				var list;
-				task.run(function(done){
-					service.listFullWqueueForExam(function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						list = result;
-						done();
-					});
-				}, function(err){
-					if( err ){
-						alert(err);
-						return;
-					}
-					var select = getSelectDom(dom).html("");
-					list.forEach(function(wq){
-						var e = $("<option></option>").val(wq.visit_id);
-						var e = SelectPatientItem.create(wq);
-						select.append(e);
-					});
-					ws.show();
-				})
-			}
-		});
-	}
-
-	function bindOption(dom){
-		dom.on("dblclick", "option", function(event){
-			var opt = $(this);
-			var values = opt.val().split(",");
-			var patientId = +values[0];
-			var visitId = +values[1];
-			opt.trigger("start-exam", [patientId, visitId]);
-		});
-		dom.listen("rx-start-page", function(){
-			getSelectDom(dom).html("");
-			getWorkspaceDom(dom).hide();
-		});
-	};
-
-
-
-/***/ },
-/* 185 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var mUtil = __webpack_require__(5);
-
-	var tmplSrc = __webpack_require__(186);
-	var tmpl = hogan.compile(tmplSrc);
-
-	exports.create = function(data){
-		data = mUtil.assign({}, data, {
-			state_label: mUtil.wqueueStateToKanji(data.wait_state)
-		});
-		var e = $(tmpl.render(data));
-		return e;
-	};
-
-
-
-/***/ },
-/* 186 */
-/***/ function(module, exports) {
-
-	module.exports = "<option value=\"{{patient_id}},{{visit_id}}\">[{{state_label}}] {{last_name}} {{first_name}}</option>"
-
-/***/ },
-/* 187 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
-
-/***/ },
-/* 188 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var mUtil = __webpack_require__(5);
-
-	var tmplHtml = __webpack_require__(189);
-
-	var itemTmplSrc = __webpack_require__(190);
-	var itemTmpl = hogan.compile(itemTmplSrc);
-
-	exports.setup = function(dom){
-		dom.html(tmplHtml);
-		bindButton(dom);
-		bindForm(dom);
-		bindOption(dom);
-	};
-
-	function hideWorkspace(dom){
-		getWorkspaceDom(dom).hide();
-		getInputDom(dom).val("");
-		getSelectDom(dom).html("");
-	};
-
-	function getWorkspaceDom(dom){
-		return dom.find("[mc-name=workspace]");
-	};
-
-	function getInputDom(dom){
-		return dom.find("[mc-name=searchForm] input.search-patient-input");
-	};
-
-	function getSelectDom(dom){
-		return dom.find("select");
-	};
-
-	function bindButton(dom){
-		dom.on("click", "[mc-name=button]", function(){
-			var ws = getWorkspaceDom(dom);
-			if( ws.is(":visible") ){
-				hideWorkspace(dom);
-			} else {
-				ws.show();
-				getInputDom(dom).focus();
-			}
-		});
-	};
-
-	function bindForm(dom){
-		dom.on("submit", "form", function(){
-			var text = getInputDom(dom).val();
-			if( text === "" ){
-				return;
-			}
-			var list;
-			task.run(function(done){
-				service.searchPatient(text, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					list = result;
-					done();
-				});
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var select = getSelectDom(dom).html("");
-				list.forEach(function(patient){
-					var data = mUtil.assign({}, patient, {
-						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
-					});
-					var opt = itemTmpl.render(data);
-					select.append(opt);
-				});
-			});
-		});
-	}
-
-	function bindOption(dom){
-		dom.on("dblclick", "option", function(){
-			var opt = $(this);
-			var patientId = +opt.val();
-			opt.trigger("start-patient", [patientId]);
-		});
-		dom.listen("rx-start-page", function(){
-			hideWorkspace(dom);
-		});
-	}
-
-
-
-/***/ },
-/* 189 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
-
-/***/ },
-/* 190 */
-/***/ function(module, exports) {
-
-	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>"
-
-/***/ },
-/* 191 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var hogan = __webpack_require__(115);
-	var mUtil = __webpack_require__(5);
-	var service = __webpack_require__(112);
-	var $ = __webpack_require__(1);
-	__webpack_require__(2);
-	var task = __webpack_require__(111)
-
-	var tmplHtml = __webpack_require__(192);
-	var optionTmpl = hogan.compile(__webpack_require__(193));
-
-	exports.setup = function(dom){
-		dom.html(tmplHtml);
-		bindButton(dom);
-		bindOption(dom);
-		dom.listen("rx-start-page", function(pageData){
-			getSelectDom(dom).hide().html("");
-		})
-	};
-
-	function getSelectDom(dom){
-		return dom.find("select");
-	}
-
-	function bindButton(dom){
-		dom.on("click", "button", function(){
-			var select = getSelectDom(dom);
-			if( select.is(":visible") ){
-				select.hide().html("");
-			} else {
-				task.run(function(cb){
-					service.recentVisits(cb);
-				}, function(err, list){
-					if( err ){
-						alert(err);
-						return;
-					}
-					updateSelect(select, list);
-					select.show();
-				});
-			}
-		});
-	}
-
-	function bindOption(dom){
-		dom.on("dblclick", "option", function(){
-			var patientId = $(this).val();
-			dom.trigger("start-patient", [+patientId]);
-		});
-	}
-
-	function updateSelect(select, list){
-		list.forEach(function(data){
-			data = mUtil.assign({}, data, {
-				patient_id_part: mUtil.padNumber(data.patient_id, 4)
-			});
-			select.append(optionTmpl.render(data))
-		});
-	}
-
-
-/***/ },
-/* 192 */
-/***/ function(module, exports) {
-
-	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
-
-/***/ },
-/* 193 */
-/***/ function(module, exports) {
-
-	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
-
-/***/ },
-/* 194 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-	var mUtil = __webpack_require__(5);
-
-	var tmplHtml = __webpack_require__(195);
-	var resultTmplSrc = __webpack_require__(257);
-	var resultTmpl = hogan.compile(resultTmplSrc);
-
-	exports.setup = function(dom){
-		dom.html(tmplHtml);
-		bindButton(dom);
-		bindOption(dom);
-	};
-
-	function getWorkspaceDom(dom){
-		return dom.find("[mc-name=selectWrapper]");
-	};
-
-	function getSelectDom(dom){
-		return dom.find("select");
-	};
-
-	function bindButton(dom){
-		dom.on("click", "[mc-name=button]", function(){
-			var ws = getWorkspaceDom(dom);
-			if( ws.is(":visible") ){
-				ws.hide();
-				getSelectDom(dom).html("");
-			} else {
-				var list;
-				task.run(function(done){
-					service.listTodaysVisits(function(err, result){
-						if( err ){
-							done(err);
-							return;
-						}
-						list = result;
-						done();
-					})
-				}, function(err){
-					if( err ){
-						alert(err);
-						return;
-					}
-					var select = getSelectDom(dom);
-					select.html(searchResult(list));
-					ws.show();
-				});
-			}
-		})
-	}
-
-	function searchResult(list){
-		var data = list.map(function(item){
-			return {
-				patient_id: item.patient_id,
-				patient_id_label: mUtil.padNumber(item.patient_id, 4),
-				last_name: item.last_name,
-				first_name: item.first_name
-			};
-		})
-		return resultTmpl.render({list: data});
-	}
-
-	function bindOption(dom){
-		dom.on("dblclick", "option", function(){
-			var opt = $(this);
-			var patientId = opt.val();
-			opt.trigger("start-patient", [patientId]);
-		});
-		dom.listen("rx-start-page", function(appData){
-			if( appData.currentPatientId === 0 ){
-				getWorkspaceDom(dom).hide();
-				getSelectDom(dom).hide();
-			}
-		})
-	}
-
-
-
-/***/ },
-/* 195 */
-/***/ function(module, exports) {
-
-	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
-
-/***/ },
-/* 196 */,
-/* 197 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var modal = __webpack_require__(198);
-	var service = __webpack_require__(112);
-	var mUtil = __webpack_require__(5);
-	var hogan = __webpack_require__(115);
-	var kanjidate = __webpack_require__(118);
-
-	var mainTmpl = hogan.compile(__webpack_require__(199));
-	var optionTmpl = hogan.compile(__webpack_require__(200));
-	var dispTmpl = hogan.compile(__webpack_require__(201));
-
-	function getSearchTextDom(dom){
-		return dom.find("input[mc-name=searchText]");
-	}
-
-	function getDispDom(dom){
-		return dom.find("[mc-name=disp]");
-	}
-
-	function bindSelect(dom){
-		dom.on("click", "select[mc-name=searchResult] option", function(){
-			var opt = $(this);
-			var patientId = opt.val();
-			opt.trigger("patient-selected", [patientId]);
-		});
-	}
-
-	function bindPatientSelected(dom){
-		dom.on("patient-selected", function(event, patientId){
-			event.stopPropagation();
-			service.getPatient(patientId, function(err, result){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var data = makePatientData(result);
-				updateDisp(dom, data);
-			})
-		});
-	}
-
-	function bindSearchForm(dom){
-		dom.find("form[mc-name=searchForm]").submit(function(event){
-			event.preventDefault();
-			var text = getSearchTextDom(dom).val();
-			if( text === "" ){
-				return;
-			}
-			service.searchPatient(text, function(err, result){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var select = dom.find("select[mc-name=searchResult]").html("");
-				result.forEach(function(item){
-					var data = mUtil.assign({}, item, {
-						patient_id_part: mUtil.padNumber(item.patient_id, 4)
-					});
-					var opt = optionTmpl.render(data);
-					select.append(opt);
-				});
-			})
-		});
-	}
-
-	function bindEnter(dom){
-		dom.find("[mc-name=enterLink]").click(function(event){
-			var patientId = dom.data("patient_id");
-			if( !(patientId > 0) ){
-				alert("患者番号が不適切です。");
-				return;
-			}
-			service.startVisit(patientId, mUtil.nowAsSqlDatetime(), function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				modal.close();
-			})
-		})
-	}
-
-	function makeBirthdayLabel(birthday){
-		if( birthday && birthday !== "0000-00-00" ){
-			return kanjidate.format("{G}{N}年{M}月{D}日", birthday) + 
-				"（" + mUtil.calcAge(birthday) + "才）";
-		} else {
-			return "";
-		}
-	}
-
-	function makePatientData(patient){
-		return mUtil.assign({}, patient, {
-			birthday_label: makeBirthdayLabel(patient.birth_day),
-			sex_label: mUtil.sexToKanji(patient.sex)
-		});
-	}
-
-	function updateDisp(dom, data){
-		getDispDom(dom).html(dispTmpl.render(data));
-		dom.data("patient_id", data.patient_id);
-	}
-
-	exports.open = function(){
-		var dom = $("<div style='width:260px'></div>");
-		dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
-		bindSearchForm(dom);
-		bindSelect(dom);
-		bindPatientSelected(dom);
-		bindEnter(dom);
-		modal.open("受付", dom);
-		getSearchTextDom(dom).focus();
-
-		// modal.open("受付", function(dom){
-		// 	dom.width("260px");
-		// 	dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
-		// 	bindSearchForm(dom);
-		// 	bindSelect(dom);
-		// 	bindPatientSelected(dom);
-		// 	bindEnter(dom);
-		// 	getSearchTextDom(dom).focus();
-		// });
-	}
-
-/***/ },
-/* 198 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var $ = __webpack_require__(1);
-
-	var screen = $('<div></div>').css({
-	    position:"fixed",
-	    backgroundColor:"#999",
-	    width:"100%",
-	    height:"100%",
-	    left:0,
-	    top:0,
-	    opacity:0.5,
-	    filter:"alpha(opacity=50)",
-	    zIndex:10,
-	    display:"none"
-	});
-
-	var dialog = $('<div id="modal-dialog-outer-pane"></div>').css({
-	    position:"absolute",
-	    left:"100px",
-	    top:"50px",
-	    padding:"10px",
-	    border:"2px solid gray",
-	    backgroundColor:"white",
-	    opacity:1.0,
-	    filter:"alpha(opacity=100)",
-	    zIndex:20,
-	    overflow: "auto"
-	});
-	var header = $("<table width='100%' cellpadding='0' cellspacing='0'><tr>" +
-	    "<td width='*'></td><td width='auto'></td></tr></table>").css({
-	        margin:0,
-	        padding:0
-	    });
-	dialog.append(header);
-	var handle = $('<div></div>');
-	var title = $("<div></div>").css({
-	    cursor:"move",
-	    backgroundColor:"#ccc",
-	    fontWeight:"bold",
-	    padding:"6px 4px 4px 4px"
-	});
-	handle.append(title);
-	$(header.find("td")[0]).append(handle);
-	var closeBox = $("<a href='javascript:void(0)'>×</a>").css({
-	    fontSize:"13px",
-	    fontWeight:"bold",
-	    margin:"4px 0 4px 4px",
-	    padding:0,
-	    textDecoration:"none",
-	    color:"#333"
-	});
-	$(header.find("td")[1]).css({
-	    width:"16px",
-	    verticalAlign:"middle"
-	}).append(closeBox);
-	var content = $("<div></div>").css({
-	    marginTop:"10px"
-	});
-	dialog.append(content);
-
-	$("body").append(screen);
-
-	var mouseTarget = handle.get(0).setCapture ? handle : $(document);
-
-	handle.on("mousedown", function(event){
-	    event.preventDefault();
-	    var offset = dialog.offset();
-	    var origEvent = event.originalEvent;
-	    var innerX = origEvent.pageX - offset.left;
-	    var innerY = origEvent.pageY - offset.top;
-	    dialog.data({innerX: innerX, innerY: innerY, width: dialog.outerWidth(), height: dialog.outerHeight()});
-	    mouseTarget.on("mousemove", function(event){
-	        event.preventDefault();
-	        var origEvent = event.originalEvent;
-	        var newLeft = origEvent.pageX - dialog.data("innerX");
-	        if( newLeft < 0 ){
-	            newLeft = 0;
-	        }
-	        var newTop = origEvent.pageY - dialog.data("innerY");
-	        if( newTop < 0 ){
-	            newTop = 0;
-	        }
-	        var newRight = newLeft + dialog.data("width");
-	        if( newRight > screen.innerWidth() ){
-	            newLeft = screen.innerWidth() - dialog.data("width");
-	        }
-	        var newBottom = newTop + dialog.data("height");
-	        if( newBottom > screen.innerHeight() ){
-	            newTop = screen.innerHeight() - dialog.data("height");
-	        }
-	        dialog.css({left: newLeft, top: newTop})
-	    })
-	    if( handle.get(0).setCapture ){
-	        handle.get(0).setCapture();
-	    }
-	})
-
-	mouseTarget.on("mouseup", function(event){
-	    mouseTarget.off("mousemove");
-	    if( handle.get(0).releaseCapture ){
-	        handle.get(0).releaseCapture();
-	    }
-	})
-
-	function reposition() {
-	    var screen_width = $(window).width();
-	    var screen_height = $(window).height();
-	    var dialog_width = dialog.outerWidth();
-	    dialog.css("left", (screen_width - dialog_width) / 2 + "px");
-	    dialog.css("max-height", (screen_height - 100) + "px");
-	}
-
-	exports.open = function(title_str, dom, onClose){
-	    title.text(title_str);
-	    content.html("").append(dom);
-	    screen.show();
-	    $("body").append(dialog);
-	    reposition();
-	    closeBox.on("click", function(event){
-	        if( onClose ){
-	            if( onClose() === false ){
-	                return;
-	            }
-	        }
-	        exports.close();
-	    });
-	};
-
-	exports.close = function(){
-	    closeBox.off("click");
-	    dialog.detach();
-	    screen.hide();
-	    content.html("");
-	};
-
-
-
-/***/ },
-/* 199 */
-/***/ function(module, exports) {
-
-	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
-
-/***/ },
-/* 200 */
-/***/ function(module, exports) {
-
-	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
-
-/***/ },
-/* 201 */
-/***/ function(module, exports) {
-
-	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
-
-/***/ },
-/* 202 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(203);
-	var tmpl = hogan.compile(tmplSrc);
-
-	exports.setup = function(dom, text){
-		var content = text.content.replace(/\n/g, "<br />\n");
-		if( content === "" ){
-			content = "（空白）"
-		}
-		var data = {
-			content: content
-		};
-		dom.html(tmpl.render(data));
-		bindClick(dom);
-	};
-
-	function bindClick(dom){
-		dom.on("click", function(event){
-			event.stopPropagation();
-			dom.trigger("content-click");
-		})
-	}
-
-
-/***/ },
-/* 203 */
-/***/ function(module, exports) {
-
-	module.exports = "{{& content}}"
-
-/***/ },
-/* 204 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var Text = __webpack_require__(129);
-
-	exports.setup = function(dom, visitId, texts){
-		batchAdd(dom, texts);
-		dom.listen("rx-texts-batch-entered", function(targetVisitId, texts){
-			if( visitId !== targetVisitId ){
-				return;
-			}
-			batchAdd(dom, texts);
-		})
-	}
-
-	function batchAdd(dom, texts){
-		texts.forEach(function(text){
-			var te = Text.create(text);
-			dom.append(te);
-		});
-	}
-
-/***/ },
-/* 205 */,
-/* 206 */
+/* 149 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -30813,9 +28521,9 @@
 	var task = __webpack_require__(111);
 	var mConsts = __webpack_require__(110);
 
-	var tmplSrc = __webpack_require__(207);
+	var tmplSrc = __webpack_require__(150);
 	var tmpl = hogan.compile(tmplSrc);
-	var itemTmplSrc = __webpack_require__(208);
+	var itemTmplSrc = __webpack_require__(151);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	var Naifuku = mConsts.DrugCategoryNaifuku;
@@ -31368,26 +29076,32 @@
 	}
 
 /***/ },
-/* 207 */
+/* 150 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div mc-name=\"title\" class=\"title\">{{title}}</div>\r\n<div class=\"error-box\" style=\"display:none\"></div>\r\n<div class=\"drug-area\"> <!-- should be at the top level -->\r\n    <table width=\"100%\">\r\n        <tr>\r\n            <td style=\"width:3em;\">名称</td>\r\n            <td mc-name=\"name\"></td>\r\n        </tr>\r\n        <tr>\r\n            <td mc-name=\"amountLabel\">用量</td>\r\n            <td>\r\n                <input mc-name=\"amount\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"unit\"></span>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td>用法</td>\r\n            <td>\r\n                <table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\r\n                    <tr>\r\n                        <td>\r\n                            <input mc-name=\"usage\" class=\"kanji\" style=\"width:100%\" />\r\n                        </td>\r\n                        <td>\r\n                            &nbsp;\r\n                            <a mc-name=\"usageExampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                               >例</a>\r\n                        </td>\r\n                    </tr>\r\n                </table>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"usageExampleWrapper\" style=\"display:none\">\r\n            <td colspan=\"2\">\r\n                <select name=\"usage-example\" size=\"4\">\r\n                    <option>分１　朝食後</option>\r\n                    <option>分２　朝夕食後</option>\r\n                    <option>分３　毎食後</option>\r\n                    <option>分１　寝る前</option>\r\n                </select>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"daysRow\">\r\n            <td mc-name=\"daysLabel\">日数</td>\r\n            <td>\r\n                <input mc-name=\"days\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"daysUnit\">日分</span>\r\n                {{#isCreating}}\r\n        \t\t<span mc-name=\"fixedDaysWrapper\">\r\n        \t\t\t<input mc-name=\"fixedDaysCheck\" type=\"checkbox\"  checked=\"checked\"/> 固定\r\n        \t\t</span>\r\n                {{/isCreating}}\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <div>\r\n        <input type=radio mc-name=\"categoryNaifuku\" name=\"category\" value=\"0\" checked>内服\r\n        <input type=radio mc-name=\"categoryTonpuku\" name=\"category\" value=\"1\">屯服\r\n        <input type=radio mc-name=\"categoryGaiyou\"  name=\"category\" value=\"2\">外用\r\n    </div>\r\n    {{#isEditing}}\r\n    <div>\r\n        <input type=\"checkbox\" mc-name=\"preserveUsage\" />用量・用法・日数をそのままに\r\n    </div>\r\n    {{/isEditing}}\r\n    <div mc-name=\"comment\" style=\"padding:6px;display:none;border:1px solid #ccc\"></div>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enterLink\">入力</button>\r\n    <button mc-name=\"closeLink\">閉じる</button>\r\n    <a mc-name=\"clearFormLink\" href=\"javascript:void(0)\" class=\"cmd-link\">クリア</a>\r\n    {{#isEditing}}\r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n    {{/isEditing}}\r\n</div>\r\n<div class=\"drug-search-area\">\r\n    <form style=\"margin:4px 0\" mc-name=\"searchForm\">\r\n        <input mc-name=\"searchText\" type=\"text\" class=\"kanji\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div style=\"margin:4px 0\">\r\n        <input type=radio name=\"search-mode\" value=\"master\">マスター\r\n        <input type=radio name=\"search-mode\" value=\"stock\" checked>約束処方\r\n        <input type=radio name=\"search-mode\" value=\"prev\">過去の処方\r\n    </div>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=10 style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n</div>\r\n\r\n"
 
 /***/ },
-/* 208 */
+/* 151 */
 /***/ function(module, exports) {
 
 	module.exports = "<option>{{label}}</option>"
 
 /***/ },
-/* 209 */
+/* 152 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div class=\"drug-submenu\" />\r\n<div mc-name=\"workarea\" />\r\n"
+
+/***/ },
+/* 153 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(210);
+	var tmplSrc = __webpack_require__(154);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
 	var service = __webpack_require__(112);
@@ -31507,79 +29221,20 @@
 	}
 
 /***/ },
-/* 210 */
+/* 154 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">選択して処方をコピー</div>\r\n<form onsubmit=\"return false\">\r\n<table>\r\n\t<tbody mc-name=\"tbody\">\r\n\t{{#drugs}}\r\n\t\t<tr>\r\n\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t<td>{{label}}</td>\r\n\t\t</tr>\r\n\t{{/drugs}}\r\n\t</tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 211 */
+/* 155 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(213);
-	var tmpl = hogan.compile(tmplSrc);
-	var mUtil = __webpack_require__(5);
-	var service = __webpack_require__(112);
-	var task = __webpack_require__(111);
-
-	exports.create = function(drugs, visitId, at){
-		var data = {
-			drugs: drugs.map(function(drug){
-				return {
-					drug_id: drug.drug_id,
-					label: mUtil.drugRep(drug)
-				}
-			})
-		};
-		var dom = $(tmpl.render(data));
-		bindEnter(dom, visitId);
-		bindCancel(dom);
-		return dom;
-	};
-
-	function bindEnter(dom, visitId){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			var deletedDrugIds = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
-				return +$(this).val();
-			}).get();
-			task.run(function(done){
-				service.batchDeleteDrugs(deletedDrugIds, done);
-			}, function(err){
-				if( err ){
-					alert(err);
-					return;
-				}
-				deletedDrugIds.forEach(function(drugId){
-					dom.trigger("drug-deleted", [drugId, visitId]);
-				});
-				dom.trigger("close-workarea");
-			})
-		});
-	}
-
-	function bindCancel(dom){
-		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel-workarea");
-		})
-	}
-
-/***/ },
-/* 212 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(214);
+	var tmplSrc = __webpack_require__(156);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
 	var mConst = __webpack_require__(110);
@@ -31661,26 +29316,1009 @@
 	}
 
 /***/ },
-/* 213 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
-
-/***/ },
-/* 214 */
+/* 156 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">日数を変更</div>\r\n<form onsubmit=\"return false\">\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<hr />\r\n<div>\r\n\t<input name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">入力</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 215 */
+/* 157 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(216);
+	var tmplSrc = __webpack_require__(158);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+
+	exports.create = function(drugs, visitId, at){
+		var data = {
+			drugs: drugs.map(function(drug){
+				return {
+					drug_id: drug.drug_id,
+					label: mUtil.drugRep(drug)
+				}
+			})
+		};
+		var dom = $(tmpl.render(data));
+		bindEnter(dom, visitId);
+		bindCancel(dom);
+		return dom;
+	};
+
+	function bindEnter(dom, visitId){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=enter]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var deletedDrugIds = dom.find("input[type=checkbox][name=drug]:checked").map(function(drug){
+				return +$(this).val();
+			}).get();
+			task.run(function(done){
+				service.batchDeleteDrugs(deletedDrugIds, done);
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				deletedDrugIds.forEach(function(drugId){
+					dom.trigger("drug-deleted", [drugId, visitId]);
+				});
+				dom.trigger("close-workarea");
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> form > .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel-workarea");
+		})
+	}
+
+/***/ },
+/* 158 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+
+/***/ },
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplHtml = __webpack_require__(160);
+	var Drug = __webpack_require__(161);
+
+	exports.setup = function(dom, drugs, visitId, at, patientId){
+		dom.html(tmplHtml);
+		var listDom = getListDom(dom);
+		updateRp(dom, drugs.length > 0);
+		var index = 1;
+		drugs.forEach(function(drug){
+			var e = Drug.create(index++, drug, at, patientId);
+			listDom.append(e);
+		});
+		respondToDrugEntered(dom, visitId, at, patientId);
+		respondToNumberOfDrugsChanged(dom, visitId);
+	};
+
+	function getRpDom(dom){
+		return dom.find("[mc-name=rp]");
+	}
+
+	function getListDom(dom){
+		return dom.find("[mc-name=list]");
+	}
+
+	function lookupDrugs(dom, visitId){
+		return dom.broadcast("rx-drug-lookup-for-visit", [visitId]);
+	}
+
+	function countDrugs(dom, visitId){
+		return lookupDrugs(dom, visitId).length;
+	}
+
+	function updateRp(dom, show){
+		var text = show ? "Rp)" : "";
+		getRpDom(dom).text(text);
+	}
+
+	function respondToDrugEntered(dom, visitId, at, patientId){
+		dom.listen("rx-drug-entered", function(newDrug){
+			if( visitId === newDrug.visit_id ){
+				var index = countDrugs(dom, visitId) + 1;
+				var listDom = getListDom(dom);
+				listDom.append(Drug.create(index, newDrug, at, patientId));
+				updateRp(dom, true);
+			}
+		});
+	}
+
+	function respondToNumberOfDrugsChanged(dom, visitId){
+		dom.listen("rx-number-of-drugs-changed", function(targetVisitId){
+			if( visitId === targetVisitId ){
+				var index = 1;
+				var drugs = lookupDrugs(dom, visitId);
+				updateRp(dom, drugs.length > 0);
+				drugs.forEach(function(drug){
+					dom.broadcast("rx-drug-modify-index", [drug.drug_id, index++]);
+				})
+			}
+		});
+	}
+
+	function respondToDrugsNeedRenumbering(dom, visitId){
+		dom.listen("rx-drugs-need-renumbering", function(targetVisitId){
+			if( visitId !== targetVisitId ){
+				return;
+			}
+			var index = 1;
+			var drugs = lookupDrugs(dom, visitId);
+			drugs.forEach(function(drug){
+				dom.broadcast("rx-drug-modify-index", [drug.drug_id, index++]);
+			})
+		});
+	}
+
+/***/ },
+/* 160 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"rp\"></div>\r\n<div mc-name=\"list\"></div>\r\n"
+
+/***/ },
+/* 161 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(5);
+	var DrugDisp = __webpack_require__(162);
+	var DrugForm = __webpack_require__(149);
+
+	var tmplSrc = __webpack_require__(164);
+
+	var dispAreaSelector = "> [mc-name=disp-area]";
+	var formAreaSelector = "> [mc-name=form-area]";
+
+	function getDispAreaDom(dom){
+		return dom.find(dispAreaSelector);
+	}
+
+	function getFormAreaDom(dom){
+		return dom.find(formAreaSelector);
+	}
+
+	exports.create = function(index, drug, at, patientId){
+		var dom = $(tmplSrc);
+		DrugDisp.setup(getDispAreaDom(dom), index, drug);
+		var ctx = {
+			drug: drug
+		};
+		dom.listen("rx-drug-modified", function(newDrug){
+			if( ctx.drug.drug_id === newDrug.drug_id ){
+				ctx.drug = newDrug;
+			}
+		});
+		dom.listen("rx-drug-lookup-for-visit", function(targetVisitId){
+			if( targetVisitId === drug.visit_id ){
+				return {
+					drug_id: drug.drug_id
+				};
+			}
+		});
+		dom.listen("rx-drug-deleted", function(drugId){
+			if( drugId === drug.drug_id ){
+				dom.remove();
+			}
+		});
+		bindClick(dom, ctx, at, patientId);
+		return dom;
+	}
+
+	function bindClick(dom, ctx, at, patientId){
+		dom.on("click", dispAreaSelector, function(event){
+			event.stopPropagation();
+			var drug = ctx.drug;
+			var message = "（暫定）診察中でありませんが、この薬剤を編集しますか？";
+			if( !dom.inquire("fn-confirm-edit", [drug.visit_id, message]) ){
+				return;
+			}
+			var form = DrugForm.createEditForm(drug, at, patientId);
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				getDispAreaDom(dom).show();
+				getFormAreaDom(dom).empty();
+			});
+			form.on("modified", function(event, newDrug){
+				event.stopPropagation();
+				dom.trigger("drug-modified", [newDrug]);
+				getDispAreaDom(dom).show();
+				getFormAreaDom(dom).empty();
+			});
+			form.on("deleted", function(event){
+				event.stopPropagation();
+				dom.trigger("drug-deleted", [drug.drug_id, drug.visit_id]);
+			});
+			var formArea = getFormAreaDom(dom);
+			formArea.append(form);
+			getDispAreaDom(dom).hide();
+		});
+	}
+
+
+
+/***/ },
+/* 162 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(163);
+	var tmpl = hogan.compile(tmplSrc);
+	var mUtil = __webpack_require__(5);
+
+	exports.setup = function(dom, index, drug){
+		var data = {
+			index: index,
+			label: mUtil.drugRep(drug)
+		};
+		dom.html(tmpl.render(data));
+		dom.listen("rx-drug-modified", function(newDrug){
+			if( drug.drug_id === newDrug.drug_id ){
+				data.label = mUtil.drugRep(newDrug);
+				dom.html(tmpl.render(data));
+			}
+		});
+		dom.listen("rx-drug-modify-index", function(drugId, index){
+			if( drug.drug_id === drugId ){
+				data.index = index;
+				dom.html(tmpl.render(data));
+			}
+		});
+	}
+
+/***/ },
+/* 163 */
+/***/ function(module, exports) {
+
+	module.exports = "<span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span>"
+
+/***/ },
+/* 164 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"wrapper\">\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"form-area\"></div>\r\n</div>\r\n"
+
+/***/ },
+/* 165 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(5);
+	var AddRegularForm = __webpack_require__(166);
+	var ShinryouAddForm = __webpack_require__(168);
+	var ShinryouCopySelectedForm = __webpack_require__(171);
+	var ShinryouDeleteSelectedForm = __webpack_require__(173);
+	var ShinryouSubmenu = __webpack_require__(175);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
+
+	var tmplHtml = __webpack_require__(177);
+
+	exports.setup = function(dom, visitId, at){
+		dom.html(tmplHtml);
+		bindAddRegular(dom, visitId, at);
+		bindSubmenu(dom, visitId, at);
+		bindSubmenuAddForm(dom, visitId, at);
+		bindSubmenuCopyAll(dom, visitId, at);
+		bindSubmenuCopySelected(dom, visitId, at);
+		bindSubmenuDeleteSelectedForm(dom, visitId, at);
+		bindSubmenuDeleteDuplicated(dom, visitId);
+		bindSubmenuCancel(dom);
+		setState(dom, "init");
+	}
+
+	var addShinryouSelector = "> [mc-name=addShinryouLink]";
+	var submenuLinkSelector = "> [mc-name=submenuLink]";
+	var submenuAreaSelector = "> [mc-name=submenu-area]";
+	var workAreaSelector = "> [mc-name=work-area]";
+
+	function bindAddRegular(dom, visitId, at){
+		dom.on("click", addShinryouSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var state = getState(dom);
+			if( state === "submenu" ){
+				return;
+			} else if( state === "add-regular" ){
+				endWork(dom);
+			} else {
+				var ok = dom.inquire("fn-confirm-edit", [visitId, 
+					"現在（暫定）診療中でありませんが、診療行為を追加しますか？"]);
+				if( !ok ){
+					return;
+				}
+				var form = AddRegularForm.create(visitId, at);
+				form.on("entered", function(event, newShinryouList, newConducts){
+					event.stopPropagation();
+					endWork(dom);
+					dom.trigger("shinryou-batch-entered", [visitId, newShinryouList]);
+					dom.trigger("conducts-batch-entered", [visitId, newConducts]);
+				});
+				form.on("cancel", function(event){
+					event.stopPropagation();
+					endWork(dom);
+				});
+				startWork(dom, "add-regular", form);
+			}
+		})
+	}
+
+	function bindSubmenu(dom, visitId, at){
+		dom.on("click", submenuLinkSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var state = getState(dom);
+			if( state === "submenu" ){
+				closeSubmenu(dom);
+				setState(dom, "init");
+			} else if( state === "init" ) {
+				dom.find(submenuAreaSelector).append(ShinryouSubmenu.create());
+				setState(dom, "submenu");
+			}
+		})
+	}
+
+	function bindSubmenuAddForm(dom, visitId, at){
+		dom.on("submenu-add-form", function(event){
+			event.stopPropagation();
+			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を追加しますか？"]) ){
+				return;
+			}
+			var form = ShinryouAddForm.create(visitId, at);
+			form.on("shinryou-entered", function(event, newShinryou){
+				event.stopPropagation();
+				dom.trigger("shinryou-batch-entered", [visitId, [newShinryou]]);
+			});
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				endWork(dom);
+			})
+			closeSubmenu(dom);
+			startWork(dom, "add-search", form);
+		})
+	}
+
+	function batchFetchShinryou(shinryouIds, at, cb){
+		var newShinryouList = [];
+		conti.forEach(shinryouIds, function(shinryouId, done){
+			service.getFullShinryou(shinryouId, at, function(err, result){
+				if( err ){
+					done(err);
+					return;
+				}
+				newShinryouList.push(result);
+				done();
+			})
+		}, function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newShinryouList);
+		});
+	}
+
+	function copy(targetVisitId, srcShinryouList, cb){
+		var targetVisit, dstShinryouCodes = [], dstShinryouList, newShinryouIds, newShinryouList = [];
+		conti.exec([
+			function(done){
+				service.getVisit(targetVisitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					targetVisit = result;
+					done();
+				})
+			},
+			function(done){
+				var targetAt = targetVisit.v_datetime;
+				conti.forEach(srcShinryouList, function(shinryou, done){
+					service.resolveShinryouMasterAt(shinryou.shinryoucode, targetAt, function(err, result){
+						if( err ){
+							console.log(err);
+							done("コピー先で有効でありません：" + shinryou.name);
+							return;
+						}
+						dstShinryouCodes.push(result.shinryoucode);
+						done();
+					})
+				}, done);
+			},
+			function(done){
+				var dstShinryouList = dstShinryouCodes.map(function(shinryoucode){
+					return {
+						visit_id: targetVisitId,
+						shinryoucode: shinryoucode
+					};
+				});
+				service.batchEnterShinryou(dstShinryouList, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newShinryouIds = result;
+					done();
+				})
+			},
+			function(done){
+				batchFetchShinryou(newShinryouIds, targetVisit.v_datetime, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newShinryouList = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newShinryouList);
+		});
+	}
+
+	function bindSubmenuCopyAll(dom, visitId, at){
+		dom.on("submenu-copy-all", function(event){
+			event.stopPropagation();
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( !(targetVisitId > 0) ){
+				alert("現在（暫定）診療中でないので、コピーできません。");
+				return;
+			}
+			if( targetVisitId === visitId ){
+				alert("自分自身にはコピーできません。");
+				return;
+			}
+			var srcShinryouList, newShinryouList = [];
+			task.run([
+				function(done){
+					service.listFullShinryouForVisit(visitId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						srcShinryouList = result;
+						done();
+					})
+				},
+				function(done){
+					copy(targetVisitId, srcShinryouList, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouList = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				closeSubmenu(dom);
+				setState(dom, "init");
+				dom.trigger("shinryou-batch-entered", [targetVisitId, newShinryouList]);
+			})
+		})
+	}
+
+	function bindSubmenuCopySelected(dom, visitId, at){
+		dom.on("submenu-copy-selected", function(event){
+			event.stopPropagation();
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( !(targetVisitId > 0) ){
+				alert("現在（暫定）診療中でないので、コピーできません。");
+				return;
+			}
+			if( targetVisitId === visitId ){
+				alert("自分自身にはコピーできません。");
+				return;
+			}
+			var shinryouList;
+			task.run([
+				function(done){
+					service.listFullShinryouForVisit(visitId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						shinryouList = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var form = ShinryouCopySelectedForm.create(shinryouList);
+				form.on("enter", function(event, shinryouIds){
+					var srcShinryouList, newShinryouList;
+					task.run([
+						function(done){
+							batchFetchShinryou(shinryouIds, at, function(err, result){
+								if( err ){
+									done(err);
+									return;
+								}
+								srcShinryouList = result;
+								done();
+							})
+						},
+						function(done){
+							copy(targetVisitId, srcShinryouList, function(err, result){
+								if( err ){
+									done(err);
+									return;
+								}
+								newShinryouList = result;
+								done();
+							})
+						}
+					], function(err){
+						if( err ){
+							alert(err);
+							return;
+						}
+						endWork(dom);
+						dom.trigger("shinryou-batch-entered", [targetVisitId, newShinryouList]);
+					})
+				});
+				form.on("cancel", function(event){
+					event.stopPropagation();
+					endWork(dom);
+				})
+				closeSubmenu(dom);
+				startWork(dom, "copy-selected", form);
+			})		
+		});
+	}
+
+	function bindSubmenuDeleteSelectedForm(dom, visitId, at){
+		dom.on("submenu-delete-selected", function(event){
+			event.stopPropagation();
+			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、診療行為を削除しますか？"]) ){
+				return;
+			}
+			var shinryouList;
+			task.run(function(done){
+				service.listFullShinryouForVisit(visitId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					shinryouList = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var form = ShinryouDeleteSelectedForm.create(shinryouList);
+				form.on("shinryou-deleted", function(event, deletedShinryouIds){
+					event.stopPropagation();
+					dom.trigger("shinryou-batch-deleted", [visitId, deletedShinryouIds]);
+					endWork(dom);
+				});
+				form.on("cancel", function(event){
+					event.stopPropagation();
+					endWork(dom);
+				})
+				closeSubmenu(dom);
+				startWork(dom, "delete-selected", form);
+			})
+		})
+	}
+
+	function bindSubmenuDeleteDuplicated(dom, visitId){
+		dom.on("submenu-delete-duplicated", function(event){
+			event.stopPropagation();
+			closeSubmenu(dom);
+			setState(dom, "init");
+			dom.trigger("shinryou-delete-duplicated", [visitId]);
+		});
+	}
+
+	function bindSubmenuCancel(dom){
+		dom.on("submenu-cancel", function(event){
+			event.stopPropagation();
+			closeSubmenu(dom);
+			setState(dom, "init");
+		})
+	}
+
+	function setState(dom, state){
+		return dom.data("state", state);
+	}
+
+	function getState(dom){
+		return dom.data("state");
+	}
+
+	function startWork(dom, state, e){
+		setState(dom, state);
+		dom.find(workAreaSelector).append(e);
+	}
+
+	function endWork(dom){
+		dom.find(workAreaSelector).html("");
+		setState(dom, "init");
+	}
+
+	function closeSubmenu(dom){
+		dom.find(submenuAreaSelector).html("");
+	}
+
+	// function bindCloseWorkarea(dom){
+	// 	dom.on("close-workarea", function(event){
+	// 		event.stopPropagation();
+	// 		endWork(dom);
+	// 	})
+	// }
+
+	// function bindShinryouBatchEntered(dom){
+	// 	dom.on("shiryou-batch-entered", function(event){
+	// 		endWork(dom);
+	// 	});
+	// }
+
+
+
+
+/***/ },
+/* 166 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(167);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var conti = __webpack_require__(4);
+
+	exports.create = function(visitId, at){
+		var dom = $(tmplSrc);
+		bindEnter(dom, visitId, at);
+		bindCancel(dom);
+		return dom;
+	}
+
+	function bindEnter(dom, visitId, at){
+		var selector = "> form .workarea-commandbox [mc-name=enter]";
+		dom.on("click", selector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.find(selector).prop("disabled", true);
+			var names = dom.find("> form input[name=item]:checked").map(function(){
+				return $(this).val();
+			}).get();
+			var newShinryouIds, newConductIds;
+			var newShinryouList = [], newConductList = [];
+			task.run([
+				function(done){
+					service.enterShinryouByNames(visitId, names, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouIds = result.shinryou_ids;
+						newConductIds = result.conduct_ids;
+						done();
+					})
+				},
+				function(done){
+					conti.forEach(newShinryouIds, function(newShinryouId, done){
+						service.getFullShinryou(newShinryouId, at, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newShinryouList.push(result);
+							done();
+						})
+					}, done);
+				},
+				function(done){
+					conti.forEach(newConductIds, function(newConductId, done){
+						service.getFullConduct(newConductId, at, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newConductList.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("entered", [newShinryouList, newConductList]);
+			})
+		})
+	}
+
+	function bindCancel(dom){
+		dom.on("click", "> form .workarea-commandbox [mc-name=cancel]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel");
+		});
+	}
+
+/***/ },
+/* 167 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
+
+/***/ },
+/* 168 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+
+	var tmplSrc = __webpack_require__(169);
+	var resultTmplSrc = __webpack_require__(170);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+
+	exports.create = function(visitId, at){
+		var dom = $(tmplSrc);
+		var ctx = {shinryoucode: undefined};
+		bindEnter(dom, visitId, at, ctx);
+		bindCancel(dom);
+		bindSearch(dom, at);
+		bindResult(dom, at, ctx);
+		return dom;
+	}
+
+	var dispNameSelector = "> div[mc-name=disp-area] [mc-name=name]";
+	var enterSelector = "> .workarea-commandbox [mc-name=enter]";
+	var cancelSelector = "> .workarea-commandbox [mc-name=close]";
+	var searchTextInputSelector = "> form[mc-name=search-form] input[mc-name=text]";
+	var searchResultSelector = "> form[mc-name=search-form] select";
+
+	function updateDisp(dom, label){
+		dom.find(dispNameSelector).text(label);
+	}
+
+	function bindEnter(dom, visitId, at, ctx){
+		dom.on("click", enterSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var shinryoucode = ctx.shinryoucode;
+			if( !shinryoucode ){
+				alert("診療行為が指定されていません。");
+				return;
+			}
+			shinryoucode = +shinryoucode;
+			var newShinryouId, newShinryou;
+			task.run([
+				function(done){
+					service.batchEnterShinryou([{
+						visit_id: visitId,
+						shinryoucode: shinryoucode
+					}], function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouId = result;
+						done();
+					})
+				},
+				function(done){
+					service.getFullShinryou(newShinryouId, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryou = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("shinryou-entered", [newShinryou]);
+			});
+		})
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel");
+		});
+	}
+
+	function bindSearch(dom, at){
+		dom.on("submit", "> form[mc-name=search-form]", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var text = dom.find(searchTextInputSelector).val().trim();
+			if( text === "" ){
+				return;
+			}
+			var list;
+			task.run(function(done){
+				service.searchShinryouMaster(text, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					list = result;
+					done();
+				});
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = dom.find(searchResultSelector);
+				select.html(resultTmpl.render({list: list}));
+			});
+		});
+	}
+
+	function bindResult(dom, at, ctx){
+		dom.on("change", searchResultSelector, function(event){
+			var shinryoucode = +dom.find(searchResultSelector + " option:selected").val();
+			var master;
+			task.run([
+				function(done){
+					service.resolveShinryouMasterAt(shinryoucode, at, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						master = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				ctx.shinryoucode = master.shinryoucode;
+				updateDisp(dom, master.name);
+			})
+		});
+	}
+
+/***/ },
+/* 169 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div mc-name=\"disp-area\">\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<form mc-name=\"search-form\">\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</form>\r\n</div>\r\n"
+
+/***/ },
+/* 170 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
+
+/***/ },
+/* 171 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(172);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(shinryouList){
+		var dom = $(tmpl.render({list: shinryouList}));
+		bindSelectAll(dom);
+		bindDeselectAll(dom);
+		bindEnter(dom);
+		bindCancel(dom);
+		return dom;
+	};
+
+	var inputSelector = "> form[mc-name=search-result] input[name=shinryou_id]";
+	var selectAllSelector = "> div[mc-name=selector-box] [mc-name=selectAll]";
+	var deselectAllSelector = "> div[mc-name=selector-box] [mc-name=deselectAll]";
+	var enterSelector = "> form[mc-name=command-form] [mc-name=enter]";
+	var cancelSelector = "> form[mc-name=command-form] [mc-name=cancel]";
+
+	function bindSelectAll(dom){
+		dom.on("click", selectAllSelector, function(event){
+			event.preventDefault();
+			dom.find(inputSelector).prop("checked", true);
+		})
+	}
+
+	function bindDeselectAll(dom){
+		dom.on("click", deselectAllSelector, function(event){
+			event.preventDefault();
+			dom.find(inputSelector).prop("checked", false);
+		})
+	}
+
+	function bindEnter(dom){
+		dom.on("click", enterSelector, function(event){
+			var shinryouIds = dom.find(inputSelector).filter(function(){
+				return $(this).is(":checked");
+			}).map(function(){
+				return +$(this).val();
+			}).get();
+			dom.trigger("enter", [shinryouIds]);
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelSelector, function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			dom.trigger("cancel");
+		});
+	}
+
+/***/ },
+/* 172 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為コピー</div>\n<form onsubmit=\"return false\" mc-name=\"search-result\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t\t{{#list}}\n\t\t\t\t<tr>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value=\"{{shinryou_id}}\" />\n\t\t\t\t\t</td>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t{{name}}\n\t\t\t\t\t</td>\n\t\t\t\t</tr>\n\t\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n</form>\n<hr/>\n<div mc-name=\"selector-box\">\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<form onsubmit=\"return false\" mc-name=\"command-form\">\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
+
+/***/ },
+/* 173 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(174);
 	var tmpl = hogan.compile(tmplSrc);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
@@ -31738,91 +30376,223 @@
 	}
 
 /***/ },
-/* 216 */
+/* 174 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\n<div class=\"title\">複数診療削除</div>\n<form onsubmit=\"return false\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t{{#list}}\n\t\t\t<tr>\n\t\t\t\t<td>\n\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value={{shinryou_id}} />\n\t\t\t\t</td>\n\t\t\t\t<td>\n\t\t\t\t\t{{name}}\n\t\t\t\t</td>\n\t\t\t</tr>\n\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n<hr/>\n<div>\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">削除実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ },
-/* 217 */
-/***/ function(module, exports) {
-
-	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
-
-/***/ },
-/* 218 */
+/* 175 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(219);
-	var tmpl = hogan.compile(tmplSrc);
+	var tmplSrc = __webpack_require__(176);
 
-	exports.create = function(shinryouList){
-		var dom = $(tmpl.render({list: shinryouList}));
-		bindSelectAll(dom);
-		bindDeselectAll(dom);
-		bindEnter(dom);
+	exports.create = function(){
+		var dom = $(tmplSrc);
+		bindAddForm(dom);
+		bindCopyAll(dom);
+		bindCopySelected(dom);
+		bindDeleteSelected(dom);
+		bindDeleteDuplicated(dom);
 		bindCancel(dom);
 		return dom;
 	};
 
-	var inputSelector = "> form[mc-name=search-result] input[name=shinryou_id]";
-	var selectAllSelector = "> div[mc-name=selector-box] [mc-name=selectAll]";
-	var deselectAllSelector = "> div[mc-name=selector-box] [mc-name=deselectAll]";
-	var enterSelector = "> form[mc-name=command-form] [mc-name=enter]";
-	var cancelSelector = "> form[mc-name=command-form] [mc-name=cancel]";
-
-	function bindSelectAll(dom){
-		dom.on("click", selectAllSelector, function(event){
-			event.preventDefault();
-			dom.find(inputSelector).prop("checked", true);
-		})
+	function bindAddForm(dom){
+		dom.on("click", "> [mc-name=search]", function(event){
+			dom.trigger("submenu-add-form");
+		});
 	}
 
-	function bindDeselectAll(dom){
-		dom.on("click", deselectAllSelector, function(event){
-			event.preventDefault();
-			dom.find(inputSelector).prop("checked", false);
-		})
+	function bindCopyAll(dom){
+		dom.on("click", "> [mc-name=copyAll]", function(event){
+			dom.trigger("submenu-copy-all");
+		});
 	}
 
-	function bindEnter(dom){
-		dom.on("click", enterSelector, function(event){
-			var shinryouIds = dom.find(inputSelector).filter(function(){
-				return $(this).is(":checked");
-			}).map(function(){
-				return +$(this).val();
-			}).get();
-			dom.trigger("enter", [shinryouIds]);
+	function bindCopySelected(dom){
+		dom.on("click", "> [mc-name=copySelected]", function(event){
+			dom.trigger("submenu-copy-selected");
+		});
+	}
+
+	function bindDeleteSelected(dom){
+		dom.on("click", "> [mc-name=deleteSelected]", function(event){
+			dom.trigger("submenu-delete-selected");
+		});
+	}
+
+	function bindDeleteDuplicated(dom){
+		dom.on("click", "> [mc-name=deleteDuplicated]", function(event){
+			dom.trigger("submenu-delete-duplicated");
 		});
 	}
 
 	function bindCancel(dom){
-		dom.on("click", cancelSelector, function(event){
-			event.preventDefault();
-			event.stopPropagation();
-			dom.trigger("cancel");
+		dom.on("click", "> [mc-name=cancel]", function(event){
+			dom.trigger("submenu-cancel");
 		});
 	}
 
 /***/ },
-/* 219 */
+/* 176 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為コピー</div>\n<form onsubmit=\"return false\" mc-name=\"search-result\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t\t{{#list}}\n\t\t\t\t<tr>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value=\"{{shinryou_id}}\" />\n\t\t\t\t\t</td>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t{{name}}\n\t\t\t\t\t</td>\n\t\t\t\t</tr>\n\t\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n</form>\n<hr/>\n<div mc-name=\"selector-box\">\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<form onsubmit=\"return false\" mc-name=\"command-form\">\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
+	module.exports = "<div>\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"deleteDuplicated\" href=\"javascript:void(0)\" class=\"cmd-link\">重複削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
 
 /***/ },
-/* 220 */
+/* 177 */
+/***/ function(module, exports) {
+
+	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"work-area\"></div>\r\n"
+
+/***/ },
+/* 178 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(221);
+	var Shinryou = __webpack_require__(179);
+
+	exports.setup = function(dom, shinryouList, visitId, at, patientId){
+		batchAdd(dom, shinryouList);
+		respondToShinryouEntered(dom, visitId);
+	};
+
+	function batchAdd(dom, shinryouList){
+		shinryouList.forEach(function(shinryou){
+			var se = Shinryou.create(shinryou);
+			dom.append(se);
+		});
+	}
+
+	function lookupShinryou(dom, visitId){
+		return dom.broadcast("rx-shinryou-lookup-for-visit", [visitId]);
+	}
+
+	function respondToShinryouEntered(dom, visitId){
+		dom.listen("rx-shinryou-batch-entered", function(targetVisitId, shinryouList){
+			if( visitId === targetVisitId ){
+				var currentList = lookupShinryou(dom, visitId).slice();
+				shinryouList = shinryouList.slice();
+				while( currentList.length > 0 && shinryouList.length > 0 ){
+					var curr = currentList[0];
+					var shin = shinryouList[0];
+					if( shin.shinryoucode < curr.shinryoucode ){
+						curr.dom.before(Shinryou.create(shin));
+						shinryouList.shift();
+					} else {
+						currentList.shift();
+					}
+				}
+				if( currentList.length === 0 ){
+					batchAdd(dom, shinryouList);
+				}
+			}
+		})
+	}
+
+/***/ },
+/* 179 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(5);
+	var ShinryouForm = __webpack_require__(180);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+
+	var tmplSrc = __webpack_require__(182);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(shinryou){
+		var dom = $(tmpl.render({
+			label: shinryou.name
+		}));
+		dom.listen("rx-shinryou-lookup-for-visit", function(targetVisitId){
+			if( targetVisitId === shinryou.visit_id ){
+				return {
+					shinryou_id: shinryou.shinryou_id,
+					shinryoucode: shinryou.shinryoucode,
+					dom: dom
+				};
+			}
+		});
+		dom.listen("rx-shinryou-deleted", function(targetShinryouId){
+			if( shinryou.shinryou_id === targetShinryouId ){
+				dom.remove();
+			}
+		});
+		bindClick(dom, shinryou);
+		return dom;
+	};
+
+	var dispSelector = "> [mc-name=disp]";
+	var formSelector = "> [mc-name=form]";
+
+	function getDispDom(dom){
+		return dom.find(dispSelector);
+	}
+
+	function getFormDom(dom){
+		return dom.find(formSelector);
+	}
+
+	function taskDeleteShinryou(ctx, opt){
+		opt = opt || {};
+		var keyShinryouId = opt.shinryouId || "shinryouId";
+		return function(done){
+			var shinryouId = ctx[keyShinryouId];
+			service.batchDeleteShinryou([shinryouId], done);
+		}
+	}
+
+	function bindClick(dom, shinryou){
+		dom.on("click", dispSelector, function(event){
+			event.stopPropagation();
+			event.preventDefault();
+			if( !dom.inquire("fn-confirm-edit", [shinryou.visit_id, "現在（限定）診察中でありませんが、この診療行為を編集しますか？"]) ){
+				return;
+			}
+			var form = ShinryouForm.create(shinryou);
+			form.on("delete", function(event){
+				event.stopPropagation();
+				var ctx = {shinryouId: shinryou.shinryou_id};
+				task.run(taskDeleteShinryou(ctx), function(err){
+					dom.trigger("shinryou-batch-deleted", [shinryou.visit_id, [shinryou.shinryou_id]]);
+				});
+			});
+			form.on("cancel", function(event){
+				event.stopPropagation();
+				getFormDom(dom).html("");
+				getDispDom(dom).show();
+			});
+			getDispDom(dom).hide();
+			getFormDom(dom).append(form);
+		})
+	}
+
+
+
+
+/***/ },
+/* 180 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(181);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryou){
@@ -31857,19 +30627,392 @@
 	}
 
 /***/ },
-/* 221 */
+/* 181 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為編集</div>\r\n<div>\r\n\t名称：<span mc-name=\"name\">{{name}}</span>\r\n</div>\r\n<form onsubmit=\"return false\" mc-name=\"command-box\">\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> |\r\n\t\t<a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 222 */
+/* 182 */
+/***/ function(module, exports) {
+
+	module.exports = "<div>\r\n\t<div mc-name=\"disp\">{{label}}</div>\r\n\t<div mc-name=\"form\"></div>\r\n</div>"
+
+/***/ },
+/* 183 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplSrc = __webpack_require__(223);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var myclinicUtil = __webpack_require__(5);
+	var ConductSubmenu = __webpack_require__(184);
+	var ConductAddXpForm = __webpack_require__(186);
+	var ConductAddInjectForm = __webpack_require__(188);
+	var conti = __webpack_require__(4);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var mConsts = __webpack_require__(110);
+
+	var tmplHtml = __webpack_require__(191);
+
+	exports.setup = function(dom, visitId, at){
+		dom.html(tmplHtml);
+		bindTopMenuClick(dom, visitId, at);
+		setState(dom, "init");
+	}
+
+	function setState(dom, state){
+		dom.data("state", state);
+	}
+
+	function getState(dom){
+		return dom.data("state");
+	}
+
+	var topMenuSelector = "> [mc-name=top-menu-area] [mc-name=submenuLink]";
+	var submenuSelector = "> [mc-name=submenu-area]";
+	var workspaceSelector = "> [mc-name=workspace-area]";
+
+	function getSubmenuDom(dom){
+		return dom.find(submenuSelector);
+	}
+
+	function getWorkspaceDom(dom){
+		return dom.find(workspaceSelector);
+	}
+
+	function closeSubmenu(dom){
+		getSubmenuDom(dom).html("");
+	}
+
+	function startWork(dom, state, form){
+		closeSubmenu(dom);
+		getWorkspaceDom(dom).append(form);
+		setState(dom, state);
+	}
+
+	function endWork(dom){
+		getWorkspaceDom(dom).html("");
+		setState(dom, "init");
+	}
+
+	function bindTopMenuClick(dom, visitId, at){
+		dom.on("click", topMenuSelector, function(event){
+			event.preventDefault();
+			var state = getState(dom);
+			if( state === "init" ){
+				var submenu = ConductSubmenu.create();
+				bindSubmenu(dom, submenu, visitId, at);
+				getSubmenuDom(dom).append(submenu);
+				setState(dom, "submenu");
+			} else if( state === "submenu" ){
+				closeSubmenu(dom);
+				setState(dom, "init");
+			}
+		});
+	}
+
+	function enterXp(visitId, at, label, film, cb){
+		var conductId, kizaicode, shinryoucodes = [], newConduct;
+		conti.exec([
+			function(done){
+				var conduct = {
+					visit_id: visitId,
+					kind: mConsts.ConductKindGazou
+				}
+				service.enterConduct(conduct, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					conductId = result;
+					done();
+				})
+			},
+			function(done){
+				var gazouLabel = {
+					visit_conduct_id: conductId,
+					label: label
+				};
+				service.enterGazouLabel(gazouLabel, done);
+			},
+			function(done){
+				service.resolveKizaiNameAt(film, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					kizaicode = result;
+					done();
+				})
+			},
+			function(done){
+				var kizai = {
+					visit_conduct_id: conductId,
+					kizaicode: kizaicode,
+					amount: 1
+				};
+				service.enterConductKizai(kizai, done);
+			},
+			function(done){
+				var names = ['単純撮影', '単純撮影診断'];
+				service.batchResolveShinryouNamesAt(names, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					names.forEach(function(name){
+						var code = result[name];
+						if( code > 0 ){
+							shinryoucodes.push(code);
+						}
+					});
+					done();
+				})
+			},
+			function(done){
+				var list = shinryoucodes.map(function(shinryoucode){
+					return {
+						visit_conduct_id: conductId,
+						shinryoucode: shinryoucode
+					};
+				});
+				service.batchEnterConductShinryou(list, done);
+			},
+			function(done){
+				service.getFullConduct(conductId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newConduct);
+		});
+	}
+
+	function doAddXp(dom, visitId, at){
+		var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
+		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
+			return;
+		}
+		var form = ConductAddXpForm.create();
+		form.on("enter", function(event, label, film){
+			event.stopPropagation();
+			var newConduct;
+			task.run(function(done){
+				enterXp(visitId, at, label, film, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conducts-batch-entered", [visitId, [newConduct]]);
+				endWork(dom);
+			})
+		});
+		form.on("cancel", function(event){
+			event.stopPropagation();
+			endWork(dom);
+		});
+		startWork(dom, "add-xp", form);
+	}
+
+	function addInject(visitId, at, iyakuhincode, amount, kind, cb){
+		var conductId, newConduct;
+		var shinryouNames = [];
+		if( kind === mConsts.ConductKindHikaChuusha ){
+			shinryouNames.push("皮下筋注");
+		} else if( kind === mConsts.ConductKindJoumyakuChuusha ){
+			shinryouNames.push("静注");
+		}
+		var shinryoucodes = [];
+		conti.exec([
+			function(done){
+				var conduct = {
+					visit_id: visitId,
+					kind: kind
+				};
+				service.enterConduct(conduct, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					conductId = result;
+					done();
+				})
+			},
+			function(done){
+				var names = shinryouNames;
+				service.batchResolveShinryouNamesAt(names, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					names.forEach(function(name){
+						var code = result[name];
+						if( code > 0 ){
+							shinryoucodes.push(code);
+						}
+					});
+					done();
+				})
+			},
+			function(done){
+				var list = shinryoucodes.map(function(shinryoucode){
+					return {
+						visit_conduct_id: conductId,
+						shinryoucode: shinryoucode
+					};
+				});
+				service.batchEnterConductShinryou(list, done);
+			},
+			function(done){
+				var drug = {
+					visit_conduct_id: conductId,
+					iyakuhincode: iyakuhincode,
+					amount: amount
+				};
+				service.enterConductDrug(drug, done);
+			},
+			function(done){
+				service.getFullConduct(conductId, at, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			cb(undefined, newConduct);
+		})
+	}
+
+	function doAddInject(dom, visitId, at){
+		var msg = "現在（暫定）診察中でありませんが、Ｘ線処置を追加しますか？";
+		if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
+			return;
+		}
+		var form = ConductAddInjectForm.create(at);
+		form.on("enter", function(event, iyakuhincode, amount, kind){
+			event.stopPropagation();
+			var newConduct;
+			task.run(function(done){
+				addInject(visitId, at, iyakuhincode, amount, kind, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					newConduct = result;
+					done();
+				})
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("conducts-batch-entered", [visitId, [newConduct]]);
+				endWork(dom);
+			});
+		});
+		form.on("cancel", function(event){
+			event.stopPropagation();
+			endWork(dom);
+		});
+		startWork(dom, "add-inject", form);
+	}
+
+	function bindSubmenu(dom, submenu, visitId, at){
+		submenu.on("add-xp", function(event){
+			doAddXp(dom, visitId, at);
+		});
+		submenu.on("add-inject", function(event){
+			doAddInject(dom, visitId, at);
+		});
+		submenu.on("copy-all", function(event){
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( !(targetVisitId > 0) ){
+				alert("現在（暫定）診察中でないので、コピーできません。");
+				return;
+			}
+			if( targetVisitId === visitId ){
+				alert("自分自身にコピーすることはできません。");
+				return;
+			}
+			var conductIds, newConducts = [];
+			task.run([
+				function(done){
+					service.copyConducts(visitId, targetVisitId, function(err, result){
+						if( err ){
+							alert(err);
+							return;
+						}
+						conductIds = result;
+						done();
+					})
+				},
+				function(done){
+					conti.forEach(conductIds, function(conductId, done){
+						service.getFullConduct(conductId, at, function(err, result){
+							if( err ){
+								done(err);
+								return;
+							}
+							newConducts.push(result);
+							done();
+						})
+					}, done);
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				closeSubmenu(dom);
+				setState(dom, "init");
+				dom.trigger("conducts-batch-entered", [targetVisitId, newConducts]);
+			});
+		});
+		submenu.on("cancel", function(event){
+			event.stopPropagation();
+			closeSubmenu(dom);
+			setState(dom, "init");
+		});
+	}
+
+
+
+/***/ },
+/* 184 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplSrc = __webpack_require__(185);
 
 	exports.create = function(){
 		var dom = $(tmplSrc);
@@ -31909,19 +31052,19 @@
 	}
 
 /***/ },
-/* 223 */
+/* 185 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<a mc-name=\"addXp\" href=\"javascript:void(0)\" class=\"cmd-link\">Ｘ線検査追加</a> |\r\n\t<a mc-name=\"addInject\" href=\"javascript:void(0)\" class=\"cmd-link\">注射追加</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>"
 
 /***/ },
-/* 224 */
+/* 186 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplSrc = __webpack_require__(225);
+	var tmplSrc = __webpack_require__(187);
 
 	exports.create = function(){
 		var dom = $(tmplSrc);
@@ -31962,21 +31105,21 @@
 	}
 
 /***/ },
-/* 225 */
+/* 187 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">X線入力</div>\r\n    <form onsubmit=\"return false\">\r\n        <div style=\"margin: 3px 0\" mc-name=\"label-selector-area\">\r\n            <select mc-name=\"label\">\r\n                <option>胸部単純Ｘ線</option>\r\n                <option>腹部単純Ｘ線</option>\r\n            </select>\r\n        </div>\r\n        <div style=\"margin: 3px 0\" mc-name=\"film-selector-area\">\r\n            <select mc-name=\"film\">\r\n                <option>半切</option>\r\n                <option selected>大角</option>\r\n                <option>四ツ切</option>\r\n            </select>\r\n        </div>\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ },
-/* 226 */
+/* 188 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(227);
-	var resultTmplSrc = __webpack_require__(228);
+	var tmplSrc = __webpack_require__(189);
+	var resultTmplSrc = __webpack_require__(190);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
@@ -32130,32 +31273,196 @@
 	}
 
 /***/ },
-/* 227 */
+/* 189 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置注射入力</div>\r\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\r\n        <div>\r\n            <table style=\"width:100%\">\r\n                <tr>\r\n                    <td style=\"width:3em\">名称：</td>\r\n                    <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n                </tr>\r\n                <tr>\r\n                    <td style=\"width:2.5em\">用量：</td>\r\n                    <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                        <span mc-name=\"unit\"></span></td>\r\n                </tr>\r\n            </table>\r\n        </div>\r\n        <div mc-name=\"kindWrapper\">\r\n            <input type=\"radio\" name=\"kind\" value=\"0\" checked>皮下・筋肉\r\n            <input type=\"radio\" name=\"kind\" value=\"1\">静脈\r\n            <input type=\"radio\" name=\"kind\" value=\"2\">その他\r\n        </div>\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n    <hr />\r\n    <form onsubmit=\"return false\" mc-name=\"search-form\">\r\n        <div style=\"margin:3px 0\">\r\n            <input mc-name=\"searchText\"/>\r\n            <button mc-name=\"searchLink\">検索</button>\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"10\" style=\"width:100%\"></select>\r\n        </div>\r\n    </form>\r\n</div>\r\n\r\n"
 
 /***/ },
-/* 228 */
+/* 190 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{iyakuhincode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 229 */
+/* 191 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"top-menu-area\">\r\n\t<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n</div>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"workspace-area\"></div>\r\n"
+
+/***/ },
+/* 192 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var Conduct = __webpack_require__(193);
+
+	exports.setup = function(dom, conducts, visitId, at){
+		batchAdd(dom, conducts, visitId, at);
+		dom.listen("rx-conducts-batch-entered", function(targetVisitId, conducts){
+			if( visitId !== targetVisitId ){
+				return;
+			}
+			batchAdd(dom, conducts, visitId, at);
+		});
+	};
+
+	function batchAdd(dom, conducts, visitId, at){
+		conducts.forEach(function(conduct){
+			var ce = Conduct.create(conduct, visitId, at);
+			dom.append(ce);
+		})
+	}
+
+
+
+
+/***/ },
+/* 193 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(230);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(5);
+	var ConductDisp = __webpack_require__(194);
+	var ConductForm = __webpack_require__(196);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var tmplSrc = __webpack_require__(209);
+
+	var dispAreaSelector = "> [mc-name=disp-area]";
+	var workAreaSelector = "> [mc-name=work-area]";
+
+	function extendConductsWithLabel(conduct){
+		conduct = mUtil.assign({}, conduct);
+		conduct.kind_label = mUtil.conductKindToKanji(conduct.kind);
+		conduct.drugs = conduct.drugs.map(function(drug){
+			return mUtil.assign({}, drug, {
+				label: mUtil.conductDrugRep(drug)
+			});
+		});
+		conduct.kizai_list = conduct.kizai_list.map(function(kizai){
+			return mUtil.assign({}, kizai, {
+				label: mUtil.conductKizaiRep(kizai)
+			});
+		});
+		return conduct;
+	}
+
+	exports.create = function(conduct, visitId, at){
+		var visitId = conduct.visit_id;
+		var conductId = conduct.id;
+		conduct = extendConductsWithLabel(conduct);
+		var ctx = {
+			conduct: conduct
+		};
+		var dom = $(tmplSrc);
+		getDispAreaDom(dom).append(ConductDisp.create(conduct));
+		bindClick(dom, visitId, at, ctx);
+		dom.on("conduct-modified", function(event, targetConductId, newConduct){
+			if( conductId === targetConductId ){
+				event.stopPropagation();
+				var newConductEx = extendConductsWithLabel(newConduct);
+				ctx.conduct = newConductEx;
+				dom.broadcast("rx-conduct-modified", [targetConductId, newConductEx]);
+				return;
+			}
+		});
+		return dom;
+	};
+
+	function getDispAreaDom(dom){
+		return dom.find(dispAreaSelector);
+	}
+
+	function getWorkAreaDom(dom){
+		return dom.find(workAreaSelector);
+	}
+
+	function bindClick(dom, visitId, at, ctx){
+		dom.on("click", dispAreaSelector, function(event){
+			event.preventDefault();
+			var conduct = ctx.conduct;
+			var conductId = conduct.id;
+			var msg = "現在（暫定）診察中でありませんが、この処置を変更しますか？";
+			if( !dom.inquire("fn-confirm-edit", [visitId, msg]) ){
+				return;
+			}
+			var form = ConductForm.create(conduct, at);
+			form.on("close", function(event){
+				event.stopPropagation();
+				getWorkAreaDom(dom).html("");
+				getDispAreaDom(dom).show();
+			});
+			form.on("delete", function(event){
+				event.stopPropagation();
+				task.run(function(done){
+					service.deleteConduct(conductId, done);
+				}, function(err){
+					if( err ){
+						alert(err);
+						return;
+					}
+					dom.remove();
+				})
+			})
+			getDispAreaDom(dom).hide();
+			getWorkAreaDom(dom).append(form);
+		});
+	}
+
+
+
+/***/ },
+/* 194 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(195);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(conductEx){
+		var conductId = conductEx.id;
+		var dom = $("<div></div>");
+		dom.html(tmpl.render(conductEx));
+		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
+			if( conductId !== targetConductId ){
+				return;
+			}
+			dom.html(tmpl.render(newConductEx));
+		});
+		return dom;
+	};
+
+/***/ },
+/* 195 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\">\r\n\t{{#shinryou_list}}\r\n\t\t<div>{{name}}</div>\r\n\t{{/shinryou_list}}\r\n</div>\r\n<div mc-name=\"drugs\">\r\n\t{{#drugs}}\r\n\t\t<div>{{label}}</div>\r\n\t{{/drugs}}\r\n</div>\r\n<div mc-name=\"kizaiList\">\r\n\t{{#kizai_list}}\r\n\t\t<div>{{label}}</div>\r\n\t{{/kizai_list}}\r\n</div>\r\n"
+
+/***/ },
+/* 196 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(197);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
-	var AddShinryouForm = __webpack_require__(235);
-	var AddDrugForm = __webpack_require__(239);
-	var AddKizaiForm = __webpack_require__(242);
-	var GazouLabelForm = __webpack_require__(247);
+	var AddShinryouForm = __webpack_require__(198);
+	var AddDrugForm = __webpack_require__(201);
+	var AddKizaiForm = __webpack_require__(204);
+	var GazouLabelForm = __webpack_require__(207);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 
@@ -32432,32 +31739,23 @@
 	}
 
 /***/ },
-/* 230 */
+/* 197 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置の編集</div>\r\n    <div mc-name=\"main-area\">\r\n        <div class=\"menu-box\">\r\n            <a mc-name=\"addShinryou\" class=\"cmd-link menu-item\" \r\n               href=\"javascript:void(0)\">診療行為追加</a> |\r\n            <a mc-name=\"addDrug\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">薬剤追加</a> |\r\n            <a mc-name=\"addKizai\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">器材追加</a>\r\n        </div>\r\n        <div mc-name=\"subwidget\" class=\"subwidget-area\"></div>\r\n        <div mc-name=\"disp-area\">\r\n            <div mc-name=\"kind-area\">\r\n                <table style=\"margin-left:0\" padding=\"0\" cellspacing=\"0\">\r\n                    <tr>\r\n                        <td>種類：</td>\r\n                        <td width=\"*\">\r\n                            <select mc-name=\"kind\" style=\"margin: 3px 0\">\r\n                                <option value=\"0\">皮下・筋肉注射</option>\r\n                                <option value=\"1\">静脈注射</option>\r\n                                <option value=\"2\">その他の注射</option>\r\n                                <option value=\"3\">画像</option>\r\n                            </select>\r\n                        </td>\r\n                    </tr>\r\n                    </select>\r\n                </table>\r\n            </div>\r\n            <div mc-name=\"gazouLabelWrapper\" style=\"margin: 3px 0\">\r\n                <div mc-name=\"gazou-label-disp\">\r\n                    画像ラベル： <span mc-name=\"gazouLabel\">{{gazou_label}}</span>\r\n                    <a mc-name=\"editGazouLabelLink\" class=\"cmd-link\" href=\"javascript:void(0)\">編集</a>\r\n                </div>\r\n                <div mc-name=\"gazou-label-form\"></div>\r\n            </div>\r\n            <div mc-name=\"shinryouList\">\r\n                {{#shinryou_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{name}}</span> \r\n                        <a mc-name=\"deleteShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\" \r\n                            id-value=\"{{id}}\">削除</a>\r\n                    </div>\r\n                {{/shinryou_list}}                \r\n            </div>\r\n            <div mc-name=\"drugList\">\r\n                {{#drugs}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span>  \r\n                        <a mc-name=\"deleteDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                            id-value=\"{{id}}\">削除</a>  \r\n                    </div>\r\n                {{/drugs}}                \r\n            </div>\r\n            <div mc-name=\"kizaiList\">\r\n                {{#kizai_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span> \r\n                        <a mc-name=\"deleteKizaiLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                            id-value=\"{{id}}\">削除</a> \r\n                    </div>\r\n                {{/kizai_list}}                \r\n            </div>\r\n            <hr/>\r\n            <div class=\"workarea-commandbox\">\r\n                <button mc-name=\"closeLink\">閉じる</button>\r\n                <a mc-name=\"deleteLink\" class=\"cmd-link\" href=\"javascript:void(0)\">削除</a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
-/* 231 */
-/***/ function(module, exports) {
-
-	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\">\r\n\t{{#shinryou_list}}\r\n\t\t<div>{{name}}</div>\r\n\t{{/shinryou_list}}\r\n</div>\r\n<div mc-name=\"drugs\">\r\n\t{{#drugs}}\r\n\t\t<div>{{label}}</div>\r\n\t{{/drugs}}\r\n</div>\r\n<div mc-name=\"kizaiList\">\r\n\t{{#kizai_list}}\r\n\t\t<div>{{label}}</div>\r\n\t{{/kizai_list}}\r\n</div>\r\n"
-
-/***/ },
-/* 232 */,
-/* 233 */,
-/* 234 */,
-/* 235 */
+/* 198 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(236);
+	var tmplSrc = __webpack_require__(199);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
-	var resultTmplSrc = __webpack_require__(237);
+	var resultTmplSrc = __webpack_require__(200);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(at, conductId){
@@ -32593,53 +31891,29 @@
 
 
 /***/ },
-/* 236 */
+/* 199 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">診療行為追加</div>\r\n\t<div mc-name=\"disp-area\">\r\n\t    名前：<span mc-name=\"name\"></span>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t<hr />\r\n\t<form onsubmit=\"return false\" mc-name=\"search-form\">\r\n\t\t<div>\r\n\t\t    <input mc-name=\"searchText\"/>\r\n\t\t    <button mc-name=\"searchLink\">検索</button>\r\n\t\t</div>\r\n\t\t<div>\r\n\t\t    <select mc-name=\"searchResult\" style=\"width:100%\" size=\"6\"></select>\r\n\t\t</div>\r\n\t</form>\r\n</div>\r\n"
 
 /***/ },
-/* 237 */
+/* 200 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 238 */
+/* 201 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(231);
-	var tmpl = hogan.compile(tmplSrc);
-
-	exports.create = function(conductEx){
-		var conductId = conductEx.id;
-		var dom = $("<div></div>");
-		dom.html(tmpl.render(conductEx));
-		dom.listen("rx-conduct-modified", function(targetConductId, newConductEx){
-			if( conductId !== targetConductId ){
-				return;
-			}
-			dom.html(tmpl.render(newConductEx));
-		});
-		return dom;
-	};
-
-/***/ },
-/* 239 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(240);
+	var tmplSrc = __webpack_require__(202);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
-	var resultTmplSrc = __webpack_require__(241);
+	var resultTmplSrc = __webpack_require__(203);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(at, conductId){
@@ -32793,29 +32067,29 @@
 
 
 /***/ },
-/* 240 */
+/* 202 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">薬剤追加</div>\r\n    <form mc-name=\"main-form\" onsubmit=\"return false\">\r\n        <table style=\"width:100%\">\r\n            <tr>\r\n                <td style=\"width:3em\">名称：</td>\r\n                <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"width:2.5em\">用量：</td>\r\n                <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                    <span mc-name=\"unit\"></span></td>\r\n            </tr>\r\n        </table>\r\n    </form>\r\n    <div class=\"commandbox\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <button mc-name=\"cancelLink\">キャンセル</button>\r\n    </div>\r\n    <hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n        <div>\r\n            <input mc-name=\"searchText\"/>\r\n            <button mc-name=\"searchLink\">検索</button>\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"10\" style=\"width:100%\"></select>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ },
-/* 241 */
+/* 203 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{iyakuhincode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 242 */
+/* 204 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(243);
+	var tmplSrc = __webpack_require__(205);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
-	var resultTmplSrc = __webpack_require__(244);
+	var resultTmplSrc = __webpack_require__(206);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(at, conductId){
@@ -32969,64 +32243,26 @@
 
 
 /***/ },
-/* 243 */
+/* 205 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">器材追加</div>\r\n    <form mc-name=\"main-form\" onsubmit=\"return false\">\r\n        <table style=\"width:100%\">\r\n            <tr>\r\n                <td style=\"width:3em\">名称：</td>\r\n                <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"width:2.5em\">用量：</td>\r\n                <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                    <span mc-name=\"unit\"></span></td>\r\n            </tr>\r\n        </table>\r\n        <!--\r\n\t\t<div>\r\n\t\t\t<div>名称：<span mc-name=\"name\"></span></div>\r\n\t\t\t<div>量：<input mc-name=\"amount\" size=\"6\"> <span mc-name=\"unit\"></span></div>\r\n\t\t</div>\r\n\t\t-->\r\n\t</form>\r\n\t<div class=\"commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t<hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n\t\t<div>\r\n\t\t\t<input mc-name=\"searchText\"/>\r\n\t\t\t<button mc-name=\"searchLink\">検索</button>\r\n\t\t</div>\r\n\t\t<div>\r\n\t\t\t<select mc-name=\"searchResult\" style=\"width:100%\" size=\"6\"></select>\r\n\t\t</div>\r\n\t</form>\r\n</div>"
 
 /***/ },
-/* 244 */
+/* 206 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{kizaicode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 245 */
+/* 207 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(246);
-	var tmpl = hogan.compile(tmplSrc);
-	var mUtil = __webpack_require__(5);
-
-	exports.setup = function(dom, index, drug){
-		var data = {
-			index: index,
-			label: mUtil.drugRep(drug)
-		};
-		dom.html(tmpl.render(data));
-		dom.listen("rx-drug-modified", function(newDrug){
-			if( drug.drug_id === newDrug.drug_id ){
-				data.label = mUtil.drugRep(newDrug);
-				dom.html(tmpl.render(data));
-			}
-		});
-		dom.listen("rx-drug-modify-index", function(drugId, index){
-			if( drug.drug_id === drugId ){
-				data.index = index;
-				dom.html(tmpl.render(data));
-			}
-		});
-	}
-
-/***/ },
-/* 246 */
-/***/ function(module, exports) {
-
-	module.exports = "<span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span>"
-
-/***/ },
-/* 247 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(248);
+	var tmplSrc = __webpack_require__(208);
 	var tmpl = hogan.compile(tmplSrc);
 	var service = __webpack_require__(112);
 	var task = __webpack_require__(111);
@@ -33101,20 +32337,97 @@
 
 
 /***/ },
-/* 248 */
+/* 208 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\"> \r\n      <span mc-name=\"label\"></span>  \r\n      <input mc-name=\"text\" value=\"{{gazou_label}}\"/>  \r\n      <a mc-name=\"suggestLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a> \r\n      <div mc-name=\"selectWrapper\" style=\"display:none\"> \r\n        <select mc-name=\"select\" size=\"2\"> \r\n          <option>胸部単純Ｘ線</option> \r\n          <option>腹部単純Ｘ線</option> \r\n        </select> \r\n      </div> \r\n      <br /> \r\n      <a mc-name=\"enter\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a> |  \r\n      <a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>  \r\n</div>\r\n"
 
 /***/ },
-/* 249 */
+/* 209 */
+/***/ function(module, exports) {
+
+	module.exports = "<div>\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"work-area\"></div>\r\n</div>\r\n"
+
+/***/ },
+/* 210 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(250);
+	var mUtil = __webpack_require__(5);
+	var ChargeDisp = __webpack_require__(211);
+	var ChargeForm = __webpack_require__(213);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+
+	exports.setup = function(dom, visitId, charge){
+		if( dom.data("setup") ){
+			throw new Error("duplicate setup in charge.js");
+		}
+		dom.data("setup", 1);
+		// disp events
+		dom.on("v7lug8he-start-edit", function(event){
+			if( !charge ){
+				return;
+			}
+			startEdit(dom, visitId, charge);
+		});
+		// form events
+		dom.on("30g8sm2i-cancel", function(event){
+			showDisp();
+		});
+		dom.on("30g8sm2i-modified", function(event, newCharge){
+			charge = newCharge;
+			showDisp();
+		});
+		// initial display
+		showDisp();
+
+		function showDisp(){
+			dom.empty();
+			dom.append(mkDisp(charge));
+		}
+	};
+
+	function mkDisp(charge){
+		return ChargeDisp.create(charge);
+	}
+
+	function startEdit(dom, visitId, charge){
+		var meisai;
+		task.run([
+			function(done){
+				service.calcMeisai(visitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					meisai = result;
+					done();
+				});
+			},
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.empty();
+			dom.append(ChargeForm.create(meisai, charge));
+		});
+	}
+
+
+/***/ },
+/* 211 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(212);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
 
@@ -33139,20 +32452,20 @@
 	}
 
 /***/ },
-/* 250 */
+/* 212 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
-/* 251 */
+/* 213 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(252);
+	var tmplSrc = __webpack_require__(214);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
 	var task = __webpack_require__(111);
@@ -33217,148 +32530,233 @@
 	}
 
 /***/ },
-/* 252 */
+/* 214 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\t\r\n\t<div class=\"title\">請求額の変更</div>\r\n\t<div>診療報酬総点： {{total_ten}} 点</div>\r\n\t<div>負担割： {{futan_wari}} 割</div>\r\n\t<div>現在の請求額： {{current_charge}} 円</div>\r\n\t<form onsubmit=\"return false\">\r\n\t<div>変更後の請求額： <input mc-name=\"newCharge\" value=\"{{calc_charge}}\" size=\"4\"> 円</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t\t<button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t</form>\r\n</div>\r\n"
 
 /***/ },
-/* 253 */,
-/* 254 */,
-/* 255 */
+/* 215 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(256);
-	var tmpl = hogan.compile(tmplSrc);
-	var mUtil = __webpack_require__(5);
+	var moment = __webpack_require__(6);
+	var ListPane = __webpack_require__(216);
+	var AddPane = __webpack_require__(220);
+	var EndPane = __webpack_require__(224);
+	var EditPane = __webpack_require__(226);
+	var ItemPane = __webpack_require__(228);
+	var mConsts = __webpack_require__(110);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
+	var conti = __webpack_require__(4);
 
-	var chargeDispSelector = "[mc-name=charge-disp]";
-	var modifyLinkSelector = "[mc-name=modifyLink]";
-	var modifyWrapperSelector = "> [mc-name=modifyWrapper]";
-	var modifyInputSelector = "> [mc-name=modifyWrapper] input[mc-name=newCharge]";
-	var modifyFormSelector = "> [mc-name=modifyWrapper] form";
-	var modifyEnterLinkSelector = "> [mc-name=modifyWrapper] a[mc-name=modifyEnter]";
-	var modifyCancelLinkSelector = "> [mc-name=modifyWrapper] [mc-name=modifyCancel]";
-	var enterLinkSelector = "> .workarea-commandbox [mc-name=enterLink]";
-	var cancelLinkSelector = "> .workarea-commandbox [mc-name=cancelLink]";
+	var tmplHtml = __webpack_require__(231);
 
-	exports.create = function(meisai, visitId){
-		var sections = mUtil.meisaiSections.map(function(sect){
-			return {
-				name: sect,
-				items: meisai.meisai[sect].map(function(item){
-					return {
-						tanka: mUtil.formatNumber(item.tanka),
-						count: item.count,
-						total: mUtil.formatNumber(item.tanka * item.count)
-					}
-				})
-			};
-		}).filter(function(sect){ return sect.items.length > 0; });
-		var data = {
-			sections: sections,
-			total_ten: mUtil.formatNumber(meisai.totalTen),
-			charge: mUtil.formatNumber(meisai.charge),
-			futan_wari: meisai.futanWari
-		};
-		var dom = $(tmpl.render(data));
-		dom.on("click", modifyLinkSelector, function(event){
-			event.preventDefault();
-			dom.find(modifyWrapperSelector).toggle();
+	var workareaSelector = "> div > [mc-name=workarea]";
+	var listLinkSelector = "> div > [mc-name=command-box] [mc-name=listLink]";
+	var addLinkSelector = "> div > [mc-name=command-box] [mc-name=addLink]";
+	var endLinkSelector = "> div > [mc-name=command-box] [mc-name=endLink]";
+	var editLinkSelector = "> div > [mc-name=command-box] [mc-name=editLink]";
+
+	exports.setup = function(dom){
+		if( dom.data("setup") ){
+			throw new Error("duplicate setup for disease");
+		}
+		dom.data("setup", 1);
+
+		var patientId = 0;
+		dom.listen("rx-start-page", function(appData){
+			patientId = appData.currentPatientId;
+			if( patientId > 0 ){
+				dom.html(tmplHtml);
+				listPane(dom, patientId, appData.diseases);
+			} else {
+				dom.html("");
+			}
 		});
-		dom.on("submit", modifyFormSelector, function(event){
+		dom.on("click", listLinkSelector, function(event){
 			event.preventDefault();
-			doModify(dom);
-		});
-		dom.on("click", modifyEnterLinkSelector, function(event){
-			event.preventDefault();
-			doModify(dom);
-		});
-		dom.on("click", modifyCancelLinkSelector, function(event){
-			event.preventDefault();
-			dom.find(modifyInputSelector).val("");
-			dom.find(modifyWrapperSelector).hide();
-		});
-		dom.on("click", enterLinkSelector, function(event){
-			event.preventDefault();
-			dom.find(enterLinkSelector).prop("disabled", true);
-			var value = getChargeValue(dom);
-			doEnter(dom, visitId, value);
-		});
-		dom.on("click", cancelLinkSelector, function(event){
-			event.preventDefault();
-			dom.trigger("0ms9b2wl-cancel");
+			listPane(dom, patientId);
 		})
-		return dom;
+		dom.on("click", addLinkSelector, function(event){
+			event.preventDefault();
+			addPane(dom, patientId);
+		})
+		dom.on("click", endLinkSelector, function(event){
+			event.preventDefault();
+			endPane(dom, patientId);
+		})
+		dom.on("click", editLinkSelector, function(event){
+			event.preventDefault();
+			editPane(dom, patientId);
+		});
+		// from list disease pane
+		dom.on("3dynuzj3-selected", function(event, disease){
+			itemPane(dom, disease);
+		});
+		// from add disease pane
+		dom.on("r6ihx2oq-entered", function(event, newDisease, message){
+			addPane(dom, patientId, message);
+		});
+		// from end disease pane
+		dom.on("gvr59xqp-modified", function(event, modifiedDiseases){
+			endPane(dom, patientId);
+		});
+		// from edi disease pane
+		dom.on("kodrsu7v-selected", function(event, disease){
+			itemPane(dom, disease);
+		});
+		// from item disease pane
+		dom.on("cirqgerl-modified", function(event, modifiedDisease){
+			listPane(dom, patientId);
+		});
+		dom.on("cirqgerl-deleted", function(event, deletedDiseaseId){
+			listPane(dom, patientId);
+		});
 	};
 
-	function doModify(dom){
-		var input = dom.find(modifyInputSelector).val().trim();
-		if( !/^\d+$/.test(input) ){
-			alert("金額の入力が不適切です。");
-			return;
+	function listPane(dom, patientId, optDiseases){
+		if( optDiseases ){
+			invoke(optDiseases);
+		} else {
+			var diseases;
+			task.run([
+				function(done){
+					service.listCurrentFullDiseases(patientId, function(err, result){
+						if( err ){
+							alert(err);
+							return;
+						}
+						diseases = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				invoke(diseases);
+			})
 		}
-		input = +input;
-		dom.find(chargeDispSelector).text(mUtil.formatNumber(input));
-		dom.find(modifyInputSelector).val("");
-		dom.find(modifyWrapperSelector).hide();
+
+		function invoke(diseases){
+			var wa = dom.find(workareaSelector).empty();
+			wa.append(ListPane.create(diseases));
+		}
 	}
 
-	function getChargeValue(dom){
-		var text = dom.find(chargeDispSelector).text().trim();
-		text = text.replace(/,/g, "");
-		return +text;
+	function addPane(dom, patientId, optMessage){
+		var wa = dom.find(workareaSelector);
+		wa.empty();
+		wa.append(AddPane.create(patientId, optMessage));
 	}
 
-	function doEnter(dom, visitId, charge){
+	function endPane(dom, patientId){
+		var diseases;
 		task.run([
 			function(done){
-				service.endExam(visitId, charge, done);
+				service.listCurrentFullDiseases(patientId, function(err, result){
+					if( err ){
+						alert(err);
+						return;
+					}
+					diseases = result;
+					done();
+				})
 			}
 		], function(err){
 			if( err ){
 				alert(err);
 				return;
 			}
-			dom.trigger("0ms9b2wl-entered");
-		});
+			var wa = dom.find(workareaSelector);
+			wa.empty();
+			wa.append(EndPane.create(diseases));
+		})
 	}
 
+	function editPane(dom, patientId){
+		var wa = dom.find(workareaSelector);
+		var allDiseases;
+		task.run([
+			function(done){
+				service.listAllFullDiseases(patientId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					allDiseases = result;
+					done();
+				})
+			}
+		], function(err){
+			wa.empty();
+			wa.append(EditPane.create(allDiseases));
+		})
+	}
+
+	function itemPane(dom, disease){
+		var wa = dom.find(workareaSelector);
+		wa.empty();
+		wa.append(ItemPane.create(disease));
+	}
+
+
 /***/ },
-/* 256 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"workarea\" style=\"min-width:230px\">\r\n\t<!-- <div class=\"title\">会計</div> -->\r\n\t<table style=\"width:100%; max-width:400px; font-size:13px;\">\r\n\t    <tbody mc-name=\"meisai\">\r\n\t    \t{{#sections}}\r\n\t    \t\t<tr><td colspan=\"3\" style=\"font-weight:bold\">{{name}}</td></tr>\r\n\t    \t\t{{#items}}\r\n\t\t\t\t\t<tr>\r\n\t\t\t\t\t\t<td style=\"width:2em\">&nbsp;</td>\r\n\t\t\t\t\t\t<td width=\"*\">{{label}}</td>\r\n\t\t\t\t\t\t<td style=\"width:7em; text-align:right\">\r\n\t\t\t\t\t\t\t{{tanka}}x{{count}} = {{total}} 点\r\n\t\t\t\t\t\t</td>\r\n\t\t\t\t\t</tr>\r\n\t    \t\t{{/items}}\r\n\t    \t{{/sections}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td colspan=\"3\" style=\"text-align:right;border-top:double #999\">\r\n\t\t\t\t\t総点 {{total_ten}} 点\r\n\t\t\t\t</td>\r\n\t\t\t</tr>\r\n\t    </tbody>\r\n\t</table>\r\n\t<hr/>\r\n\t<div style=\"font-size:13px\">\r\n\t    請求額： <span mc-name=\"charge-disp\">{{charge}}</span> 円 （負担 {{futan_wari}} 割）\r\n\t    <a mc-name=\"modifyLink\" href=\"javascript:void(0)\" class=\"cmd-link\">変更</a>\r\n\t</div>\r\n\t<div mc-name=\"modifyWrapper\" style=\"display:none; font-size:13px; margin:4px 0\">\r\n\t\t<form onsubmit=\"return false\">\r\n\t\t    変更額： <input mc-name=\"newCharge\" style=\"width: 4em\" class=\"alpha\"/> 円\r\n\t\t    <a mc-name=\"modifyEnter\" href=\"javascript:void(0)\" class=\"cmd-link\">適用</a> |\r\n\t\t    <a mc-name=\"modifyCancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"workarea-commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n</div>\r\n\r\n"
-
-/***/ },
-/* 257 */
-/***/ function(module, exports) {
-
-	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}\r\n"
-
-/***/ },
-/* 258 */
+/* 216 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(259);
+
+	var tmplSrc = __webpack_require__(217);
 	var tmpl = hogan.compile(tmplSrc);
-	var resultTmplSrc = __webpack_require__(260);
+
+	var DiseaseListItem = __webpack_require__(249);
+
+	exports.create = function(list){
+		var dom = $(tmpl.render({}));
+		var wrapper = dom.find("[mc-name=list]");
+		list.forEach(function(disease){
+			var tr = DiseaseListItem.create(disease);
+			wrapper.append(tr);
+		});
+		return dom;
+	};
+
+
+
+/***/ },
+/* 217 */
+/***/ function(module, exports) {
+
+	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
+
+/***/ },
+/* 218 */,
+/* 219 */,
+/* 220 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(221);
+	var tmpl = hogan.compile(tmplSrc);
+	var resultTmplSrc = __webpack_require__(222);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 	var conti = __webpack_require__(4);
 	var moment = __webpack_require__(6);
-	var DateBinder = __webpack_require__(261);
+	var DateBinder = __webpack_require__(223);
 	var mUtil = __webpack_require__(5);
 
 	var gengouSelector = "> .start-date select[mc-name=gengou]";
@@ -33765,19 +33163,19 @@
 
 
 /***/ },
-/* 259 */
+/* 221 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n    {{#message}}\r\n    <div mc-name=\"message\" class=\"message\"\r\n         style=\"border:1px solid #990;color:#990;margin:4px;padding:4px;\">\r\n         {{message}}\r\n    </div>\r\n    {{/message}}\r\n    <div style=\"font-size:13px\" mc-name=\"disp-area\">\r\n        名前：<span mc-name=\"name\"></span>\r\n    </div>\r\n    <div class=\"start-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"gengou\" style=\"width:auto\">\r\n            <option value=\"平成\">平成</option>\r\n        </select>\r\n        <input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\">年\r\n        <input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\">月\r\n        <input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\">日\r\n    </div>\r\n    <div class=\"commandbox\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <a mc-name=\"suspectLink\" href=\"javascript:void(0)\" class=\"cmd-link\">の疑い</a> |\r\n        <a mc-name=\"deleteAdjLink\" href=\"javascript:void(0)\" class=\"cmd-link\">修飾語削除</a>\r\n    </div>\r\n    <hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n        <div>\r\n            <input mc-name=\"searchText\" class=\"kanji\" style=\"width:100px;\">\r\n            <button mc-name=\"searchLink\">検索</button>\r\n            <a mc-name=\"exampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a>\r\n        </div>\r\n        <div mc-name=\"modeWrapper\">\r\n            <input type=\"radio\" name=\"search-kind\" value=\"disease\" checked>病名\r\n            <input type=\"radio\" name=\"search-kind\" value=\"adj\">修飾語\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"11\"></select>\r\n        </div>\r\n    </form>\r\n</div>"
 
 /***/ },
-/* 260 */
+/* 222 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{code}}\" data-mode=\"{{mode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 261 */
+/* 223 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -34026,18 +33424,18 @@
 	}
 
 /***/ },
-/* 262 */
+/* 224 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(263);
+	var tmplSrc = __webpack_require__(225);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
 	var kanjidate = __webpack_require__(118);
-	var DateBinder = __webpack_require__(261);
+	var DateBinder = __webpack_require__(223);
 	var moment = __webpack_require__(6);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
@@ -34175,21 +33573,20 @@
 
 
 /***/ },
-/* 263 */
+/* 225 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<table class=\"list\">\r\n\t    <tbody mc-name=\"tbody\">\r\n\t\t\t{{#diseases}}\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"disease\" value=\"{{disease_id}}\" data-start-date=\"{{start_date}}\" />\r\n\t\t\t\t\t</td>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t{{name_label}} <span style='color:#999'>({{start_date_label}})</span>\r\n\t\t\t\t\t</td>\r\n\t\t\t\t</tr>\r\n\t\t\t{{/diseases}}\r\n\t    </tbody>\r\n\t</table>\r\n\r\n\t<div class=\"end-date\" style=\"font-size:13px\">\r\n\t\t<select mc-name=\"gengou\" style=\"width:auto\"><option value=\"平成\">平成</option></select>\r\n\t\t<input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\"/><a\r\n\t        mc-name=\"nenLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">年</a>\r\n\t\t<input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\"/><a\r\n\t\t\tmc-name=\"monthLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月</a>\r\n\t\t<input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\"/><a\r\n\t\t\tmc-name=\"dayLabel\" href=\"javascript:void(0)\"\r\n\t\t\tclass=\"cmd-link\">日</a>\r\n\t\t<div>\r\n\t\t\t<a mc-name=\"weekLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">週</a> |\r\n\t\t\t<a mc-name=\"todayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">今日</a> |\r\n\t\t\t<a mc-name=\"monthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月末</a> |\r\n\t\t\t<a mc-name=\"lastMonthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">先月末</a>\r\n\t\t</div>\t\r\n\t</div>\r\n\t<div mc-name=\"end-reason-area\">\r\n\t    <form style=\"margin:0;padding:0\">\r\n\t    転帰：<input type=\"radio\" value=\"C\" name=\"end-reason\" checked/>治癒\r\n\t          <input type=\"radio\" value=\"S\" name=\"end-reason\"/>中止\r\n\t          <input type=\"radio\" value=\"D\" name=\"end-reason\"/>死亡\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
-/* 264 */,
-/* 265 */
+/* 226 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(266);
+	var tmplSrc = __webpack_require__(227);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(5);
 	var kanjidate = __webpack_require__(118);
@@ -34280,27 +33677,27 @@
 	}
 
 /***/ },
-/* 266 */
+/* 227 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<div class=\"disease-editor\">\r\n\t\t<table>\r\n\t\t\t<tbody>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">名前：</td><td><span mc-name=\"name\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">開始日：</td><td><span mc-name=\"startDate\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">転帰：</td><td><span mc-name=\"endReason\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">終了日：</td><td><span mc-name=\"endDate\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t</tbody>\r\n\t\t</table>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"editLink\">編集</button>\r\n\t</div>\r\n\r\n\t<div class=\"disease-list\">\r\n\t\t<select mc-name=\"select\" size=\"10\">\r\n\t\t\t{{#diseases}}\r\n\t\t\t\t<option value=\"{{disease_id}}\">\r\n\t\t\t\t\t[{{end_reason_label}}] {{name_label}} ({{start_date_label}})\r\n\t\t\t\t</option>\r\n\t\t\t{{/diseases}}\r\n\t\t</select>\r\n\t</div>\r\n</div>"
 
 /***/ },
-/* 267 */
+/* 228 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(268);
-	var resultTmplSrc = __webpack_require__(269);
+	var tmplSrc = __webpack_require__(229);
+	var resultTmplSrc = __webpack_require__(230);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var mUtil = __webpack_require__(5);
 	var kanjidate = __webpack_require__(118);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
-	var DateBinder = __webpack_require__(261);
+	var DateBinder = __webpack_require__(223);
 	var moment = __webpack_require__(6);
 
 	var nameSelector = "> [mc-name=name-area] [mc-name=name]";
@@ -34612,16 +34009,613 @@
 	}
 
 /***/ },
-/* 268 */
+/* 229 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n    <div mc-name=\"name-area\" style=\"font-size:13px\">\r\n        名前：<span mc-name=\"name\"></span>\r\n    </div>\r\n    <div class=\"start-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"startDateGengou\" style=\"width:auto\">\r\n            <option value=\"平成\">平成</option>\r\n        </select>\r\n        <input mc-name=\"startDateNen\" class=\"disease-nen alpha\"/>年\r\n        <input mc-name=\"startDateMonth\" class=\"disease-month alpha\"/>月\r\n        <input mc-name=\"startDateDay\" class=\"disease-day alpha\"/>日\r\n    </div>\r\n    <div>から</div>\r\n    <div class=\"end-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"endDateGengou\" style=\"width:auto\">\r\n            <option value=\"昭和\">昭和</option>\r\n            <option value=\"平成\">平成</option>\r\n        </select>\r\n        <input mc-name=\"endDateNen\" class=\"disease-nen alpha\">年\r\n        <input mc-name=\"endDateMonth\" class=\"disease-month alpha\">月\r\n        <input mc-name=\"endDateDay\" class=\"disease-day alpha\">日\r\n    </div>\r\n    <div mc-name=\"end-reason-area\">\r\n        <select mc-name=\"endReason\" style=\"width:auto\">\r\n            <option value=\"N\">継続</option>\r\n            <option value=\"C\">治癒</option>\r\n            <option value=\"S\">中止</option>\r\n            <option value=\"D\">死亡</option>\r\n        </select>\r\n    </div>\r\n    <hr/>\r\n    <div class=\"command-box\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <a mc-name=\"deleteAdjLink\" href=\"javascript:void(0)\" class=\"cmd-link\">修飾語削除</a> |\r\n        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n    </div>\r\n    <hr/>\r\n    <form onsubmit=\"return false\" mc-name=\"search-form\">\r\n        <div>\r\n            <input mc-name=\"searchText\" class=\"kanji\" style=\"width:110px;\">\r\n            <button mc-name=\"searchLink\">検索</button>\r\n        </div>\r\n        <div>\r\n            <input type=\"radio\" name=\"search-kind\" value=\"disease\" checked>病名\r\n            <input type=\"radio\" name=\"search-kind\" value=\"adj\">修飾語\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"10\"></select>\r\n        </div>\r\n    </form>\r\n</div>"
 
 /***/ },
-/* 269 */
+/* 230 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{code}}\" data-mode=\"{{mode}}\">{{name}}</option>\r\n{{/list}}"
+
+/***/ },
+/* 231 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">病名</div>\r\n\t<div mc-name=\"workarea\"></div>\r\n\t<hr />\r\n\t<div mc-name=\"command-box\">\r\n\t\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n\t</div>\r\n</div>\r\n"
+
+/***/ },
+/* 232 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var SelectPatientItem = __webpack_require__(233);
+
+	var tmplHtml = __webpack_require__(235);
+
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+	};
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=selectWrapper]");
+	};
+
+	function getSelectDom(dom){
+		return dom.find("[mc-name=selectWrapper] select");
+	}
+
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(event){
+			event.preventDefault();
+			var ws = getWorkspaceDom(dom);
+			if( ws.is(":visible") ){
+				getSelectDom(dom).html("");
+				ws.hide();
+			} else {
+				var list;
+				task.run(function(done){
+					service.listFullWqueueForExam(function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						list = result;
+						done();
+					});
+				}, function(err){
+					if( err ){
+						alert(err);
+						return;
+					}
+					var select = getSelectDom(dom).html("");
+					list.forEach(function(wq){
+						var e = $("<option></option>").val(wq.visit_id);
+						var e = SelectPatientItem.create(wq);
+						select.append(e);
+					});
+					ws.show();
+				})
+			}
+		});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(event){
+			var opt = $(this);
+			var values = opt.val().split(",");
+			var patientId = +values[0];
+			var visitId = +values[1];
+			opt.trigger("start-exam", [patientId, visitId]);
+		});
+		dom.listen("rx-start-page", function(){
+			getSelectDom(dom).html("");
+			getWorkspaceDom(dom).hide();
+		});
+	};
+
+
+
+/***/ },
+/* 233 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(5);
+
+	var tmplSrc = __webpack_require__(234);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(data){
+		data = mUtil.assign({}, data, {
+			state_label: mUtil.wqueueStateToKanji(data.wait_state)
+		});
+		var e = $(tmpl.render(data));
+		return e;
+	};
+
+
+
+/***/ },
+/* 234 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}},{{visit_id}}\">[{{state_label}}] {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 235 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
+
+/***/ },
+/* 236 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var mUtil = __webpack_require__(5);
+
+	var tmplHtml = __webpack_require__(237);
+
+	var itemTmplSrc = __webpack_require__(238);
+	var itemTmpl = hogan.compile(itemTmplSrc);
+
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindForm(dom);
+		bindOption(dom);
+	};
+
+	function hideWorkspace(dom){
+		getWorkspaceDom(dom).hide();
+		getInputDom(dom).val("");
+		getSelectDom(dom).html("");
+	};
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=workspace]");
+	};
+
+	function getInputDom(dom){
+		return dom.find("[mc-name=searchForm] input.search-patient-input");
+	};
+
+	function getSelectDom(dom){
+		return dom.find("select");
+	};
+
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(){
+			var ws = getWorkspaceDom(dom);
+			if( ws.is(":visible") ){
+				hideWorkspace(dom);
+			} else {
+				ws.show();
+				getInputDom(dom).focus();
+			}
+		});
+	};
+
+	function bindForm(dom){
+		dom.on("submit", "form", function(){
+			var text = getInputDom(dom).val();
+			if( text === "" ){
+				return;
+			}
+			var list;
+			task.run(function(done){
+				service.searchPatient(text, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					list = result;
+					done();
+				});
+			}, function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = getSelectDom(dom).html("");
+				list.forEach(function(patient){
+					var data = mUtil.assign({}, patient, {
+						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
+					});
+					var opt = itemTmpl.render(data);
+					select.append(opt);
+				});
+			});
+		});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
+			var opt = $(this);
+			var patientId = +opt.val();
+			opt.trigger("start-patient", [patientId]);
+		});
+		dom.listen("rx-start-page", function(){
+			hideWorkspace(dom);
+		});
+	}
+
+
+
+/***/ },
+/* 237 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
+
+/***/ },
+/* 238 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 239 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(5);
+	var service = __webpack_require__(112);
+	var $ = __webpack_require__(1);
+	__webpack_require__(2);
+	var task = __webpack_require__(111)
+
+	var tmplHtml = __webpack_require__(240);
+	var optionTmpl = hogan.compile(__webpack_require__(241));
+
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+		dom.listen("rx-start-page", function(pageData){
+			getSelectDom(dom).hide().html("");
+		})
+	};
+
+	function getSelectDom(dom){
+		return dom.find("select");
+	}
+
+	function bindButton(dom){
+		dom.on("click", "button", function(){
+			var select = getSelectDom(dom);
+			if( select.is(":visible") ){
+				select.hide().html("");
+			} else {
+				task.run(function(cb){
+					service.recentVisits(cb);
+				}, function(err, list){
+					if( err ){
+						alert(err);
+						return;
+					}
+					updateSelect(select, list);
+					select.show();
+				});
+			}
+		});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
+			var patientId = $(this).val();
+			dom.trigger("start-patient", [+patientId]);
+		});
+	}
+
+	function updateSelect(select, list){
+		list.forEach(function(data){
+			data = mUtil.assign({}, data, {
+				patient_id_part: mUtil.padNumber(data.patient_id, 4)
+			});
+			select.append(optionTmpl.render(data))
+		});
+	}
+
+
+/***/ },
+/* 240 */
+/***/ function(module, exports) {
+
+	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
+
+/***/ },
+/* 241 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
+
+/***/ },
+/* 242 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var mUtil = __webpack_require__(5);
+
+	var tmplHtml = __webpack_require__(243);
+	var resultTmplSrc = __webpack_require__(244);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+
+	exports.setup = function(dom){
+		dom.html(tmplHtml);
+		bindButton(dom);
+		bindOption(dom);
+	};
+
+	function getWorkspaceDom(dom){
+		return dom.find("[mc-name=selectWrapper]");
+	};
+
+	function getSelectDom(dom){
+		return dom.find("select");
+	};
+
+	function bindButton(dom){
+		dom.on("click", "[mc-name=button]", function(){
+			var ws = getWorkspaceDom(dom);
+			if( ws.is(":visible") ){
+				ws.hide();
+				getSelectDom(dom).html("");
+			} else {
+				var list;
+				task.run(function(done){
+					service.listTodaysVisits(function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						list = result;
+						done();
+					})
+				}, function(err){
+					if( err ){
+						alert(err);
+						return;
+					}
+					var select = getSelectDom(dom);
+					select.html(searchResult(list));
+					ws.show();
+				});
+			}
+		})
+	}
+
+	function searchResult(list){
+		var data = list.map(function(item){
+			return {
+				patient_id: item.patient_id,
+				patient_id_label: mUtil.padNumber(item.patient_id, 4),
+				last_name: item.last_name,
+				first_name: item.first_name
+			};
+		})
+		return resultTmpl.render({list: data});
+	}
+
+	function bindOption(dom){
+		dom.on("dblclick", "option", function(){
+			var opt = $(this);
+			var patientId = opt.val();
+			opt.trigger("start-patient", [patientId]);
+		});
+		dom.listen("rx-start-page", function(appData){
+			if( appData.currentPatientId === 0 ){
+				getWorkspaceDom(dom).hide();
+				getSelectDom(dom).hide();
+			}
+		})
+	}
+
+
+
+/***/ },
+/* 243 */
+/***/ function(module, exports) {
+
+	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
+
+/***/ },
+/* 244 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}\r\n"
+
+/***/ },
+/* 245 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var modal = __webpack_require__(123);
+	var service = __webpack_require__(112);
+	var mUtil = __webpack_require__(5);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+
+	var mainTmpl = hogan.compile(__webpack_require__(246));
+	var optionTmpl = hogan.compile(__webpack_require__(247));
+	var dispTmpl = hogan.compile(__webpack_require__(248));
+
+	function getSearchTextDom(dom){
+		return dom.find("input[mc-name=searchText]");
+	}
+
+	function getDispDom(dom){
+		return dom.find("[mc-name=disp]");
+	}
+
+	function bindSelect(dom){
+		dom.on("click", "select[mc-name=searchResult] option", function(){
+			var opt = $(this);
+			var patientId = opt.val();
+			opt.trigger("patient-selected", [patientId]);
+		});
+	}
+
+	function bindPatientSelected(dom){
+		dom.on("patient-selected", function(event, patientId){
+			event.stopPropagation();
+			service.getPatient(patientId, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var data = makePatientData(result);
+				updateDisp(dom, data);
+			})
+		});
+	}
+
+	function bindSearchForm(dom){
+		dom.find("form[mc-name=searchForm]").submit(function(event){
+			event.preventDefault();
+			var text = getSearchTextDom(dom).val();
+			if( text === "" ){
+				return;
+			}
+			service.searchPatient(text, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var select = dom.find("select[mc-name=searchResult]").html("");
+				result.forEach(function(item){
+					var data = mUtil.assign({}, item, {
+						patient_id_part: mUtil.padNumber(item.patient_id, 4)
+					});
+					var opt = optionTmpl.render(data);
+					select.append(opt);
+				});
+			})
+		});
+	}
+
+	function bindEnter(dom){
+		dom.find("[mc-name=enterLink]").click(function(event){
+			var patientId = dom.data("patient_id");
+			if( !(patientId > 0) ){
+				alert("患者番号が不適切です。");
+				return;
+			}
+			service.startVisit(patientId, mUtil.nowAsSqlDatetime(), function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				modal.close();
+			})
+		})
+	}
+
+	function makeBirthdayLabel(birthday){
+		if( birthday && birthday !== "0000-00-00" ){
+			return kanjidate.format("{G}{N}年{M}月{D}日", birthday) + 
+				"（" + mUtil.calcAge(birthday) + "才）";
+		} else {
+			return "";
+		}
+	}
+
+	function makePatientData(patient){
+		return mUtil.assign({}, patient, {
+			birthday_label: makeBirthdayLabel(patient.birth_day),
+			sex_label: mUtil.sexToKanji(patient.sex)
+		});
+	}
+
+	function updateDisp(dom, data){
+		getDispDom(dom).html(dispTmpl.render(data));
+		dom.data("patient_id", data.patient_id);
+	}
+
+	exports.open = function(){
+		var dom = $("<div style='width:260px'></div>");
+		dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+		bindSearchForm(dom);
+		bindSelect(dom);
+		bindPatientSelected(dom);
+		bindEnter(dom);
+		modal.open("受付", dom);
+		getSearchTextDom(dom).focus();
+
+		// modal.open("受付", function(dom){
+		// 	dom.width("260px");
+		// 	dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
+		// 	bindSearchForm(dom);
+		// 	bindSelect(dom);
+		// 	bindPatientSelected(dom);
+		// 	bindEnter(dom);
+		// 	getSearchTextDom(dom).focus();
+		// });
+	}
+
+/***/ },
+/* 246 */
+/***/ function(module, exports) {
+
+	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
+
+/***/ },
+/* 247 */
+/***/ function(module, exports) {
+
+	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
+
+/***/ },
+/* 248 */
+/***/ function(module, exports) {
+
+	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
+
+/***/ },
+/* 249 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var kanjidate = __webpack_require__(118);
+	var mUtil = __webpack_require__(5);
+
+	var tmplSrc = __webpack_require__(250);
+	var tmpl = hogan.compile(tmplSrc);
+
+	exports.create = function(disease){
+		var data = mUtil.assign({}, disease, {
+			label: mUtil.diseaseFullName(disease),
+			start_date_label: kanjidate.format("{G:a}{N}.{M}.{D}.", disease.start_date)
+		});
+		var dom = $(tmpl.render(data));
+		bindClick(dom, disease);
+		return dom;
+	}
+
+	function bindClick(dom, disease){
+		dom.on("click", function(event){
+			event.preventDefault();
+			dom.trigger("3dynuzj3-selected", [disease]);
+		});
+	}
+
+
+
+/***/ },
+/* 250 */
+/***/ function(module, exports) {
+
+	module.exports = "<tr>\n\t<td>\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\">\n\t\t\t{{label}}\n\t\t</a>\n\t\t<span style=\"color:#999\">\n\t\t\t({{start_date_label}})\n\t\t</span>\n\t</td>\n</tr>\n"
 
 /***/ }
 /******/ ]);
