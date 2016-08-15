@@ -1,4 +1,7 @@
 -- TODO --
+* implement search text (current-manip)
+* implement whole text search
+* implement manage presc example
 * isn't it better to remove 'today' restriction from end_exam? (myclinic-db)
 
 -- DONE --

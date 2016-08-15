@@ -358,6 +358,14 @@ exports.deleteDiseaseWithAdj = function(diseaseId, done){
 	request("delete_disease_with_adj", {disease_id: diseaseId}, "POST", done);
 };
 
+exports.searchTextForPatient = function(patientId, text, cb){
+	request("search_text_for_patient", {patient_id: patientId, text: text}, "GET", cb);
+};
+
+exports.searchWholeText = function(text, cb){
+	request("search_whole_text", {text: text}, "GET", cb);
+};
+
 
 
 

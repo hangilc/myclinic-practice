@@ -25365,6 +25365,14 @@
 		request("delete_disease_with_adj", {disease_id: diseaseId}, "POST", done);
 	};
 
+	exports.searchTextForPatient = function(patientId, text, cb){
+		request("search_text_for_patient", {patient_id: patientId, text: text}, "GET", cb);
+	};
+
+	exports.searchWholeText = function(text, cb){
+		request("search_whole_text", {text: text}, "GET", cb);
+	};
+
 
 
 
@@ -26829,6 +26837,7 @@
 
 	var $ = __webpack_require__(1);
 	var Account = __webpack_require__(121);
+	var SearchText = __webpack_require__(253);
 	var modal = __webpack_require__(123);
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
@@ -26836,9 +26845,13 @@
 	var tmplHtml = __webpack_require__(124);
 
 	var accountLinkSelector = "[mc-name=accountButton]";
+	var searchTextLinkSelector = "[mc-name=searchTextLink]";
+	var referLinkSelector = "[mc-name=createReferLink]";
 
 	exports.setup = function(dom){
+		var patientId = 0;
 		dom.listen("rx-start-page", function(appData){
+			patientId = appData.currentPatientId;
 			if( appData.currentPatientId > 0 ){
 				dom.html(tmplHtml);
 			} else {
@@ -26848,7 +26861,11 @@
 		dom.on("click", accountLinkSelector, function(event){
 			event.preventDefault();
 			doAccount(dom);
-		})
+		});
+		dom.on("click", searchTextLinkSelector, function(event){
+			event.preventDefault();
+			doSearchText(patientId);
+		});
 		dom.on("click", "[mc-name=endPatientButton]", function(event){
 			event.preventDefault();
 			dom.trigger("end-patient");
@@ -26897,6 +26914,11 @@
 			var account = Account.create(meisai, visitId);
 			modal.open("会計", account);
 		})
+	}
+
+	function doSearchText(patientId){
+		var form = SearchText.create(patientId);
+		modal.open("文章検索", form);
 	}
 
 	// account dialog
@@ -34759,6 +34781,82 @@
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\n    <div class=\"title\">検査の入力</div>\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\n        <div>\n            <table width=\"100%\">\n                <tr valign=\"top\">\n                    <td width=\"50%\">\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"血算\">血算\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"末梢血液像\">末梢血液像\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨｂＡ１ｃ\">ＨｂＡ１ｃ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＴ\">ＰＴ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＯＴ\">ＧＯＴ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＰＴ\">ＧＰＴ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"γＧＴＰ\">γＧＴＰ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＰＫ\">ＣＰＫ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン\">クレアチニン\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"尿酸\">尿酸\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"カリウム\">カリウム\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＬＤＬ－コレステロール\">ＬＤＬ－Ｃｈ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨＤＬ－コレステロール\">ＨＤＬ－Ｃｈ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＧ\">ＴＧ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"グルコース\">グルコース\n                        </div>\n                    </td>\n                    <td>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＲＰ\">ＣＲＰ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＳＨ\">ＴＳＨ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ４\">ＦＴ４\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ３\">ＦＴ３\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＳＡ\">ＰＳＡ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"蛋白定量（尿）\">蛋白定量（尿）\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン（尿）\">クレアチニン（尿）\n                        </div>\n                    </td>\n                </tr>\n            </table>\n        </div>\n        <hr style=\"border:1px solid #ccc; height:1px\"/>\n        <div mc-name=\"form-commands\">\n            <a mc-name=\"setKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">セット検査</a> :\n            <a mc-name=\"clearKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">クリア</a>\n        </div>\n\n        <div class=\"workarea-commandbox\">\n            <button mc-name=\"enter\">入力</button>\n            <button mc-name=\"cancel\">キャンセル</button>\n        </div>\n    </form>\n</div>\n"
+
+/***/ },
+/* 253 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var mUtil = __webpack_require__(5);
+	var service = __webpack_require__(112);
+	var task = __webpack_require__(111);
+	var mConsts = __webpack_require__(110);
+	var kanjidate = __webpack_require__(118);
+
+	var tmplSrc = __webpack_require__(254);
+	var resultTmplSrc = __webpack_require__(255);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+
+	var searchTextSelector = "> form[mc-name=searchForm] input[mc-name=searchText]";
+	var searchLinkSelector = "> form[mc-name=searchForm] [mc-name=searchLink]";
+	var searchResultSelector = "> [mc-name=resultWrapper]";
+
+	exports.create = function(patientId){
+		var dom = $(tmplSrc);
+		bindSearch(dom, patientId);
+		return dom;
+	}
+
+	function bindSearch(dom, patientId){
+		dom.on("click", searchLinkSelector, function(event){
+			event.preventDefault();
+			var text = dom.find(searchTextSelector).val().trim();
+			if( text === "" ){
+				return;
+			}
+			var searchResult;
+			task.run([
+				function(done){
+					service.searchTextForPatient(patientId, text, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						searchResult = result;
+						done();
+					})
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var list = searchResult.map(function(item){
+					return {
+						title: kanjidate.format(kanjidate.f5, item.v_datetime),
+						content: item.content.replace(/\n/g, "<br />\n")
+					}
+				});
+				dom.find(searchResultSelector).html(resultTmpl.render({list: list}));
+			})
+		})
+	}
+
+
+/***/ },
+/* 254 */
+/***/ function(module, exports) {
+
+	module.exports = "<div style=\"font-size:13px; width:300px\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div mc-name=\"resultWrapper\"\r\n         style=\"height:300px;overflow:auto\">\r\n    </div>\r\n</div>"
+
+/***/ },
+/* 255 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<div>\r\n\t    <div style=\"margin:2px 0; padding: 3px; border: 1px solid #ccc\">\r\n\t        <div name=\"title\"\r\n\t             style=\"font-weight: bold; margin-bottom:4px\">{{title}}</div>\r\n\t        <div name=\"content\">{{& content}}</div>\r\n\t    </div>\r\n\t</div>\r\n{{/list}}\r\n"
 
 /***/ }
 /******/ ]);

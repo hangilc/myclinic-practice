@@ -2,6 +2,7 @@
 
 var $ = require("jquery");
 var Account = require("./account");
+var SearchText = require("./search-text");
 var modal = require("../../hc-modal");
 var task = require("../task");
 var service = require("../service");
@@ -9,9 +10,13 @@ var service = require("../service");
 var tmplHtml = require("raw!./current-manip.html");
 
 var accountLinkSelector = "[mc-name=accountButton]";
+var searchTextLinkSelector = "[mc-name=searchTextLink]";
+var referLinkSelector = "[mc-name=createReferLink]";
 
 exports.setup = function(dom){
+	var patientId = 0;
 	dom.listen("rx-start-page", function(appData){
+		patientId = appData.currentPatientId;
 		if( appData.currentPatientId > 0 ){
 			dom.html(tmplHtml);
 		} else {
@@ -21,7 +26,11 @@ exports.setup = function(dom){
 	dom.on("click", accountLinkSelector, function(event){
 		event.preventDefault();
 		doAccount(dom);
-	})
+	});
+	dom.on("click", searchTextLinkSelector, function(event){
+		event.preventDefault();
+		doSearchText(patientId);
+	});
 	dom.on("click", "[mc-name=endPatientButton]", function(event){
 		event.preventDefault();
 		dom.trigger("end-patient");
@@ -70,6 +79,11 @@ function doAccount(dom){
 		var account = Account.create(meisai, visitId);
 		modal.open("会計", account);
 	})
+}
+
+function doSearchText(patientId){
+	var form = SearchText.create(patientId);
+	modal.open("文章検索", form);
 }
 
 // account dialog
