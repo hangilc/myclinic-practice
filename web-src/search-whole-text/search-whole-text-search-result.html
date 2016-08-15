@@ -1,0 +1,12 @@
+{{#list}}
+	<div style="margin:2px 0;padding: 3px;border: 1px solid #ccc">
+		<div name="title"
+			style="font-weight: bold; margin-bottom: 4px; color: green">
+			({{patient_id}}) [{{last_name}} {{first_name}}]
+			{{ date_label }}
+		</div>
+		<div name="content">
+			{{& content}}
+		</div>
+	</div>;
+{{/list}}

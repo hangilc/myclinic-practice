@@ -19,6 +19,7 @@ var SearchPatient = require("./search-patient/search-patient");
 var RecentVisits = require("./recent-visits/recent-visits");
 var TodaysVisits = require("./todays-visits/todays-visits");
 var Reception = require("./reception/reception");
+var SearchWholeText = require("./search-whole-text/search-whole-text");
 
 PatientInfo.setup($("#patient-info-wrapper"));
 CurrentManip.setup($("#current-manip-pane"));
@@ -35,6 +36,7 @@ $("#reception-link").click(function(event){
 	event.preventDefault();
 	Reception.open();
 });
+SearchWholeText.setup($("#all-text-search-link"));
 
 var appData = new AppData();
 

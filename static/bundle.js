@@ -65,6 +65,7 @@
 	var RecentVisits = __webpack_require__(239);
 	var TodaysVisits = __webpack_require__(242);
 	var Reception = __webpack_require__(245);
+	var SearchWholeText = __webpack_require__(256);
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 	CurrentManip.setup($("#current-manip-pane"));
@@ -81,6 +82,7 @@
 		event.preventDefault();
 		Reception.open();
 	});
+	SearchWholeText.setup($("#all-text-search-link"));
 
 	var appData = new AppData();
 
@@ -34857,6 +34859,93 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<div>\r\n\t    <div style=\"margin:2px 0; padding: 3px; border: 1px solid #ccc\">\r\n\t        <div name=\"title\"\r\n\t             style=\"font-weight: bold; margin-bottom:4px\">{{title}}</div>\r\n\t        <div name=\"content\">{{& content}}</div>\r\n\t    </div>\r\n\t</div>\r\n{{/list}}\r\n"
+
+/***/ },
+/* 256 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var hogan = __webpack_require__(115);
+	var tmplSrc = __webpack_require__(257);
+	var resultTmplSrc = __webpack_require__(258);
+	var resultTmpl = hogan.compile(resultTmplSrc);
+	var modal = __webpack_require__(123);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var kanjidate = __webpack_require__(118);
+
+	var searchTextSelector = "> form[mc-name=search-form] input[mc-name=searchText]";
+	var searchLinkSelector = "> form[mc-name=search-form] [mc-name=searchButton]";
+	var searchResultSelector = "> [mc-name=resultBox]";
+
+	exports.setup = function(dom){
+		dom.on("click", function(event){
+			event.preventDefault();
+			var form = $(tmplSrc);
+			form.on("click", searchLinkSelector, function(event){
+				event.preventDefault();
+				var text = form.find(searchTextSelector).val().trim();
+				if( text === "" ){
+					return;
+				}
+				doSearch(form, text);
+			})
+			modal.open("全文検索", form);
+		})
+	}
+
+	function prepContent(content, searchText){
+		if( searchText !== "" && searchText.indexOf("<") < 0 ){
+			content = content.split(searchText).join('<span style="color:#f00">' + searchText + '</span>');
+		}
+		content = content.replace(/\n/g, "<br />\n");
+		return content;
+	}
+
+	function doSearch(form, text){
+		var searchResult;
+		task.run([
+			function(done){
+				service.searchWholeText(text, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					searchResult = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			var list = searchResult.map(function(item){
+				return {
+					patient_id: item.patient_id,
+					last_name: item.last_name,
+					first_name: item.first_name,
+					date_label: kanjidate.format(kanjidate.f5, item.v_datetime),
+					content: prepContent(item.content, text)
+				}
+			})
+			form.find(searchResultSelector).html(resultTmpl.render({list: list}));
+		})
+	}
+
+/***/ },
+/* 257 */
+/***/ function(module, exports) {
+
+	module.exports = "<div style=\"width:300px\">\r\n\t<form mc-name=\"search-form\" onsubmit=\"return false\">\r\n\t\t<input mc-name=\"searchText\" />\r\n\t\t<button mc-name=\"searchButton\">検索</button>\r\n\t</form>\r\n\t<div mc-name=\"resultBox\" style=\"height: 360px;font-size:12px;margin-top:6px;border:1px solid #ccc\"></div>\r\n</div>"
+
+/***/ },
+/* 258 */
+/***/ function(module, exports) {
+
+	module.exports = "{{#list}}\r\n\t<div style=\"margin:2px 0;padding: 3px;border: 1px solid #ccc\">\r\n\t\t<div name=\"title\"\r\n\t\t\tstyle=\"font-weight: bold; margin-bottom: 4px; color: green\">\r\n\t\t\t({{patient_id}}) [{{last_name}} {{first_name}}]\r\n\t\t\t{{ date_label }}\r\n\t\t</div>\r\n\t\t<div name=\"content\">\r\n\t\t\t{{& content}}\r\n\t\t</div>\r\n\t</div>;\r\n{{/list}}\r\n"
 
 /***/ }
 /******/ ]);
