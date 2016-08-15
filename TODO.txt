@@ -1,10 +1,10 @@
 -- TODO --
-* implement search text (current-manip)
-* implement whole text search
 * implement manage presc example
 * isn't it better to remove 'today' restriction from end_exam? (myclinic-db)
 
 -- DONE --
+* implement search text (current-manip) ; done 2017/08/15
+* implement whole text search ; done 2017/08/15
 * clear search text input after search in drug form ; done 2017/08/15
 * implement add kensa form ; done 2017/08/15
 * goto item pane by clicking the disease ; done 2017/08/15
