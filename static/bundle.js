@@ -28962,6 +28962,11 @@
 		}
 	}
 
+	function clearSearchArea(dom){
+		getSearchTextDom(dom).val("");
+		getSearchSelectDom(dom).empty();
+	}
+
 	function bindEnter(dom, visitId, at){
 		dom.on("click", "> .workarea-commandbox [mc-name=enterLink]", function(event){
 			event.stopPropagation();
@@ -29010,6 +29015,7 @@
 				}
 				dom.trigger("entered", [newDrug]);
 				clearDisplayConsideringFixedDays(dom);
+				clearSearchArea(dom);
 			})
 		});
 	}
