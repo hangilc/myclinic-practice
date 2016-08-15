@@ -1,91 +1,94 @@
-<div class="title">検査の入力</div>
+<div class="workarea">
+    <div class="title">検査の入力</div>
+    <form onsubmit="return false" mc-name="main-form">
+        <div>
+            <table width="100%">
+                <tr valign="top">
+                    <td width="50%">
+                        <div>
+                            <input type="checkbox" name="kensa" value="血算">血算
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="末梢血液像">末梢血液像
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＨｂＡ１ｃ">ＨｂＡ１ｃ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＰＴ">ＰＴ
+                        </div>
+                        <hr style="border:1px solid #ccc; height:1px"/>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＧＯＴ">ＧＯＴ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＧＰＴ">ＧＰＴ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="γＧＴＰ">γＧＴＰ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＣＰＫ">ＣＰＫ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="クレアチニン">クレアチニン
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="尿酸">尿酸
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="カリウム">カリウム
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＬＤＬ－コレステロール">ＬＤＬ－Ｃｈ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＨＤＬ－コレステロール">ＨＤＬ－Ｃｈ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＴＧ">ＴＧ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="グルコース">グルコース
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＣＲＰ">ＣＲＰ
+                        </div>
+                        <hr style="border:1px solid #ccc; height:1px"/>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＴＳＨ">ＴＳＨ
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＦＴ４">ＦＴ４
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＦＴ３">ＦＴ３
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="ＰＳＡ">ＰＳＡ
+                        </div>
+                        <hr style="border:1px solid #ccc; height:1px"/>
+                        <div>
+                            <input type="checkbox" name="kensa" value="蛋白定量（尿）">蛋白定量（尿）
+                        </div>
+                        <div>
+                            <input type="checkbox" name="kensa" value="クレアチニン（尿）">クレアチニン（尿）
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <hr style="border:1px solid #ccc; height:1px"/>
+        <div mc-name="form-commands">
+            <a mc-name="setKensa" class="cmd-link" href="javascript:void(0)">セット検査</a> :
+            <a mc-name="clearKensa" class="cmd-link" href="javascript:void(0)">クリア</a>
+        </div>
 
-<div>
-    <table width="100%">
-        <tr valign="top">
-            <td width="50%">
-                <div>
-                    <input type="checkbox" name="kensa" value="血算">血算
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="末梢血液像">末梢血液像
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＨｂＡ１ｃ">ＨｂＡ１ｃ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＰＴ">ＰＴ
-                </div>
-                <hr style="border:1px solid #ccc; height:1px"/>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＧＯＴ">ＧＯＴ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＧＰＴ">ＧＰＴ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="γＧＴＰ">γＧＴＰ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＣＰＫ">ＣＰＫ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="クレアチニン">クレアチニン
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="尿酸">尿酸
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="カリウム">カリウム
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＬＤＬ－コレステロール">ＬＤＬ－Ｃｈ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＨＤＬ－コレステロール">ＨＤＬ－Ｃｈ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＴＧ">ＴＧ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="グルコース">グルコース
-                </div>
-            </td>
-            <td>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＣＲＰ">ＣＲＰ
-                </div>
-                <hr style="border:1px solid #ccc; height:1px"/>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＴＳＨ">ＴＳＨ
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＦＴ４">ＦＴ４
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＦＴ３">ＦＴ３
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="ＰＳＡ">ＰＳＡ
-                </div>
-                <hr style="border:1px solid #ccc; height:1px"/>
-                <div>
-                    <input type="checkbox" name="kensa" value="蛋白定量（尿）">蛋白定量（尿）
-                </div>
-                <div>
-                    <input type="checkbox" name="kensa" value="クレアチニン（尿）">クレアチニン（尿）
-                </div>
-            </td>
-        </tr>
-    </table>
-</div>
-<hr style="border:1px solid #ccc; height:1px"/>
-<div>
-    <a mc-name="setKensa" class="cmd-link" href="javascript:void(0)">セット検査</a> :
-    <a mc-name="clearKensa" class="cmd-link" href="javascript:void(0)">クリア</a>
-</div>
-
-<div class="workarea-commandbox">
-    <button mc-name="enter">入力</button>
-    <button mc-name="cancel">キャンセル</button>
+        <div class="workarea-commandbox">
+            <button mc-name="enter">入力</button>
+            <button mc-name="cancel">キャンセル</button>
+        </div>
+    </form>
 </div>

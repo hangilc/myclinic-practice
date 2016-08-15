@@ -5,6 +5,7 @@ var tmplSrc = require("raw!./shinryou-submenu.html");
 
 exports.create = function(){
 	var dom = $(tmplSrc);
+	bindKensaForm(dom);
 	bindAddForm(dom);
 	bindCopyAll(dom);
 	bindCopySelected(dom);
@@ -13,6 +14,12 @@ exports.create = function(){
 	bindCancel(dom);
 	return dom;
 };
+
+function bindKensaForm(dom){
+	dom.on("click", "> [mc-name=kensa]", function(event){
+		dom.trigger("submenu-kensa-form");
+	});
+}
 
 function bindAddForm(dom){
 	dom.on("click", "> [mc-name=search]", function(event){

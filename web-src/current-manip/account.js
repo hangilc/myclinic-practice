@@ -24,6 +24,7 @@ exports.create = function(meisai, visitId){
 			name: sect,
 			items: meisai.meisai[sect].map(function(item){
 				return {
+					label: item.label,
 					tanka: mUtil.formatNumber(item.tanka),
 					count: item.count,
 					total: mUtil.formatNumber(item.tanka * item.count)

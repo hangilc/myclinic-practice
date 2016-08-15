@@ -5,6 +5,7 @@ var hogan = require("hogan");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
 var AddRegularForm = require("./shinryou-add-regular");
+var ShinryouKensaForm = require("./shinryou-add-kensa");
 var ShinryouAddForm = require("./shinryou-add-form");
 var ShinryouCopySelectedForm = require("./shinryou-copy-selected-form");
 var ShinryouDeleteSelectedForm = require("./shinryou-delete-selected-form");
@@ -19,6 +20,7 @@ exports.setup = function(dom, visitId, at){
 	dom.html(tmplHtml);
 	bindAddRegular(dom, visitId, at);
 	bindSubmenu(dom, visitId, at);
+	bindSubmenuKensaForm(dom, visitId, at);
 	bindSubmenuAddForm(dom, visitId, at);
 	bindSubmenuCopyAll(dom, visitId, at);
 	bindSubmenuCopySelected(dom, visitId, at);
@@ -76,6 +78,25 @@ function bindSubmenu(dom, visitId, at){
 			dom.find(submenuAreaSelector).append(ShinryouSubmenu.create());
 			setState(dom, "submenu");
 		}
+	})
+}
+
+function bindSubmenuKensaForm(dom, visitId, at){
+	dom.on("submenu-kensa-form", function(event){
+		event.stopPropagation();
+		if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、検査を追加しますか？"]) ){
+			return;
+		}
+		var form = ShinryouKensaForm.create(visitId, at);
+		form.on("9y9h9nm8-entered", function(event, list){
+			dom.trigger("shinryou-batch-entered", [visitId, list]);
+			endWork(dom);
+		});
+		form.on("9y9h9nm8-cancel", function(){
+			endWork(dom);
+		});
+		closeSubmenu(dom);
+		startWork(dom, "add-kensa", form);
 	})
 }
 

@@ -26941,6 +26941,7 @@
 				name: sect,
 				items: meisai.meisai[sect].map(function(item){
 					return {
+						label: item.label,
 						tanka: mUtil.formatNumber(item.tanka),
 						count: item.count,
 						total: mUtil.formatNumber(item.tanka * item.count)
@@ -29613,6 +29614,7 @@
 	var kanjidate = __webpack_require__(118);
 	var mUtil = __webpack_require__(5);
 	var AddRegularForm = __webpack_require__(166);
+	var ShinryouKensaForm = __webpack_require__(251);
 	var ShinryouAddForm = __webpack_require__(168);
 	var ShinryouCopySelectedForm = __webpack_require__(171);
 	var ShinryouDeleteSelectedForm = __webpack_require__(173);
@@ -29627,6 +29629,7 @@
 		dom.html(tmplHtml);
 		bindAddRegular(dom, visitId, at);
 		bindSubmenu(dom, visitId, at);
+		bindSubmenuKensaForm(dom, visitId, at);
 		bindSubmenuAddForm(dom, visitId, at);
 		bindSubmenuCopyAll(dom, visitId, at);
 		bindSubmenuCopySelected(dom, visitId, at);
@@ -29684,6 +29687,25 @@
 				dom.find(submenuAreaSelector).append(ShinryouSubmenu.create());
 				setState(dom, "submenu");
 			}
+		})
+	}
+
+	function bindSubmenuKensaForm(dom, visitId, at){
+		dom.on("submenu-kensa-form", function(event){
+			event.stopPropagation();
+			if( !dom.inquire("fn-confirm-edit", [visitId, "現在（暫定）診療中でありませんが、検査を追加しますか？"]) ){
+				return;
+			}
+			var form = ShinryouKensaForm.create(visitId, at);
+			form.on("9y9h9nm8-entered", function(event, list){
+				dom.trigger("shinryou-batch-entered", [visitId, list]);
+				endWork(dom);
+			});
+			form.on("9y9h9nm8-cancel", function(){
+				endWork(dom);
+			});
+			closeSubmenu(dom);
+			startWork(dom, "add-kensa", form);
 		})
 	}
 
@@ -30088,7 +30110,7 @@
 /* 167 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"手帳記載加算\"> 手帳記載加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来後発加算１\"> 外来後発加算１<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ },
 /* 168 */
@@ -30392,6 +30414,7 @@
 
 	exports.create = function(){
 		var dom = $(tmplSrc);
+		bindKensaForm(dom);
 		bindAddForm(dom);
 		bindCopyAll(dom);
 		bindCopySelected(dom);
@@ -30400,6 +30423,12 @@
 		bindCancel(dom);
 		return dom;
 	};
+
+	function bindKensaForm(dom){
+		dom.on("click", "> [mc-name=kensa]", function(event){
+			dom.trigger("submenu-kensa-form");
+		});
+	}
 
 	function bindAddForm(dom){
 		dom.on("click", "> [mc-name=search]", function(event){
@@ -30441,7 +30470,7 @@
 /* 176 */
 /***/ function(module, exports) {
 
-	module.exports = "<div>\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"deleteDuplicated\" href=\"javascript:void(0)\" class=\"cmd-link\">重複削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
+	module.exports = "<div>\r\n\t<a mc-name=\"kensa\" href=\"javascript:void(0)\" class=\"cmd-link\">検査</a> |\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"deleteDuplicated\" href=\"javascript:void(0)\" class=\"cmd-link\">重複削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
 
 /***/ },
 /* 177 */
@@ -34616,6 +34645,114 @@
 /***/ function(module, exports) {
 
 	module.exports = "<tr>\n\t<td>\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\">\n\t\t\t{{label}}\n\t\t</a>\n\t\t<span style=\"color:#999\">\n\t\t\t({{start_date_label}})\n\t\t</span>\n\t</td>\n</tr>\n"
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var $ = __webpack_require__(1);
+	var tmplSrc = __webpack_require__(252);
+	var task = __webpack_require__(111);
+	var service = __webpack_require__(112);
+	var conti = __webpack_require__(4);
+
+	var inputSelector = "> form[mc-name=main-form] input[type=checkbox][name=kensa]";
+	var setKensaLinkSelector = "> form[mc-name=main-form] [mc-name=form-commands] [mc-name=setKensa]";
+	var clearKensaLinkSelector = "> form[mc-name=main-form] [mc-name=form-commands] [mc-name=clearKensa]";
+	var enterLinkSelector = "> form[mc-name=main-form] .workarea-commandbox [mc-name=enter]";
+	var cancelLinkSelector = "> form[mc-name=main-form] .workarea-commandbox [mc-name=cancel]";
+
+	exports.create = function(visitId, at){
+		var dom = $(tmplSrc);
+		bindSetKensa(dom);
+		bindClearKensa(dom);
+		bindEnter(dom, visitId, at);
+		bindCancel(dom);
+		return dom;
+	}
+
+	var kensaSetNames = ["血算", "ＨｂＡ１ｃ", "ＧＯＴ", "ＧＰＴ", "γＧＴＰ", "クレアチニン",
+	        "尿酸", "ＬＤＬ－コレステロール", "ＨＤＬ－コレステロール", "ＴＧ"];
+
+	function bindSetKensa(dom){
+		dom.on("click", setKensaLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(inputSelector).each(function(){
+				var chk = $(this);
+				if( kensaSetNames.indexOf(chk.val()) >= 0 ){
+					chk.prop("checked", true);
+				}
+			})
+		});
+	}
+
+	function bindClearKensa(dom){
+		dom.on("click", clearKensaLinkSelector, function(event){
+			event.preventDefault();
+			dom.find(inputSelector).each(function(){
+				var chk = $(this);
+				chk.prop("checked", false);
+			});
+		});
+	}
+
+	function bindEnter(dom, visitId, at){
+		dom.on("click", enterLinkSelector, function(event){
+			event.preventDefault();
+			var names = dom.find(inputSelector + ":checked").map(function(){
+				return $(this).val();
+			}).get();
+			var shinryouIds, newShinryouList;
+			task.run([
+				function(done){
+					service.enterShinryouByNames(visitId, names, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						shinryouIds = result.shinryou_ids;
+						if( result.conduct_ids.length > 0 ){
+							alert("WARNING: entered conducts were ignored");
+						}
+						done();
+					});
+				},
+				function(done){
+					conti.mapPara(shinryouIds, function(shinryouId, cb){
+						service.getFullShinryou(shinryouId, at, cb);
+					}, function(err, result){
+						if( err ){
+							done(err);
+							return;
+						}
+						newShinryouList = result;
+						done();
+					});
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("9y9h9nm8-entered", [newShinryouList]);
+			})
+		});
+	}
+
+	function bindCancel(dom){
+		dom.on("click", cancelLinkSelector, function(event){
+			event.preventDefault();
+			dom.trigger("9y9h9nm8-cancel")
+		})
+	}
+
+/***/ },
+/* 252 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\n    <div class=\"title\">検査の入力</div>\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\n        <div>\n            <table width=\"100%\">\n                <tr valign=\"top\">\n                    <td width=\"50%\">\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"血算\">血算\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"末梢血液像\">末梢血液像\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨｂＡ１ｃ\">ＨｂＡ１ｃ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＴ\">ＰＴ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＯＴ\">ＧＯＴ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＰＴ\">ＧＰＴ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"γＧＴＰ\">γＧＴＰ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＰＫ\">ＣＰＫ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン\">クレアチニン\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"尿酸\">尿酸\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"カリウム\">カリウム\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＬＤＬ－コレステロール\">ＬＤＬ－Ｃｈ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨＤＬ－コレステロール\">ＨＤＬ－Ｃｈ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＧ\">ＴＧ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"グルコース\">グルコース\n                        </div>\n                    </td>\n                    <td>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＲＰ\">ＣＲＰ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＳＨ\">ＴＳＨ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ４\">ＦＴ４\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ３\">ＦＴ３\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＳＡ\">ＰＳＡ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"蛋白定量（尿）\">蛋白定量（尿）\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン（尿）\">クレアチニン（尿）\n                        </div>\n                    </td>\n                </tr>\n            </table>\n        </div>\n        <hr style=\"border:1px solid #ccc; height:1px\"/>\n        <div mc-name=\"form-commands\">\n            <a mc-name=\"setKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">セット検査</a> :\n            <a mc-name=\"clearKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">クリア</a>\n        </div>\n\n        <div class=\"workarea-commandbox\">\n            <button mc-name=\"enter\">入力</button>\n            <button mc-name=\"cancel\">キャンセル</button>\n        </div>\n    </form>\n</div>\n"
 
 /***/ }
 /******/ ]);

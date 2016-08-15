@@ -1,5 +1,7 @@
 -- TODO --
-* implement select preset in add regular shinryou
+* implement add kensa form
+* clear search text input after search in drug form
+* isn't it better to remove 'today' restriction from end_exam? (myclinic-db)
 
 -- DONE --
 * goto item pane by clicking the disease ; done 2017/08/15
