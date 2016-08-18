@@ -142,11 +142,7 @@ DateBinder.prototype.bindMonthLastDayClick = function(link){
 DateBinder.prototype.bindLastMonthLastDayClick = function(link){
 	var self = this;
 	link.on("click", function(event){
-		var dateOpt = self.getDate();
-		if( !dateOpt.ok ){
-			return;
-		}
-		var m = dateOpt.date;
+		var m = moment();
 		m.date(1).add(-1, "days");
 		self.setDate(m);
 	});
