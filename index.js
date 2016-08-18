@@ -47,6 +47,7 @@ module.exports = function(config){
 						conn.commit(function(err){
 							if( err ){
 								console.log(err);
+								console.log(err.stack);
 								res.status(500).send(err);
 							} else {
 								res.json(result);

@@ -1,4 +1,6 @@
 -- TODO --
+* 傷病名終了時、「の疑い」の場合理由は中止にする。
+* 傷病名追加時に、「例」を表示する。
 * implement manage presc example
 * isn't it better to remove 'today' restriction from end_exam? (myclinic-db)
 
