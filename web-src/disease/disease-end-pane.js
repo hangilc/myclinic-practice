@@ -11,6 +11,7 @@ var moment = require("moment");
 var task = require("../task");
 var service = require("../service");
 var conti = require("conti");
+var mConsts = require("myclinic-consts");
 
 var diseaseCheckboxSelector = "> .list input[type=checkbox][name=disease]";
 var endDateGengouSelector = "> .end-date select[mc-name=gengou]";
@@ -86,6 +87,20 @@ function bindSelectionChange(dom, ctx){
 	})
 }
 
+function hasSusp(fullDisease){
+	return fullDisease.adj_list.some(function(adj){
+		console.log(adj.name);
+		return adj.name == "の疑い";
+	})
+}
+
+function fixEndReason(fullDisease, proposedReason){
+	if( proposedReason === mConsts.DiseaseEndReasonCured && hasSusp(fullDisease) ){
+		return mConsts.DiseaseEndReasonStopped;
+	}
+	return proposedReason;
+}
+
 function bindEnter(dom, ctx){
 	dom.on("click", enterLinkSelector, function(event){
 		event.preventDefault();
@@ -103,7 +118,7 @@ function bindEnter(dom, ctx){
 		task.run([
 			function(done){
 				conti.forEach(diseaseIds, function(diseaseId, done){
-					service.getDisease(diseaseId, function(err, result){
+					service.getFullDisease(diseaseId, function(err, result){
 						if( err ){
 							done(err);
 							return;
@@ -115,7 +130,7 @@ function bindEnter(dom, ctx){
 			},
 			function(done){
 				diseases.forEach(function(disease){
-					disease.end_reason = reason;
+					disease.end_reason = fixEndReason(disease, reason);
 					disease.end_date = endDate;
 				});
 				service.batchUpdateDiseases(diseases, done);
