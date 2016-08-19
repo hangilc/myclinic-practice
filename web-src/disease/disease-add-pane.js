@@ -61,6 +61,7 @@ exports.create = function(patientId, optMessage){
 	bindSearch(dom, ctx.dateBinder);
 	bindExampleLink(dom);
 	bindSearchResult(dom, ctx);
+	fillExampleOptions(dom);
 	return dom;
 };
 
@@ -89,7 +90,8 @@ function parseDiseaseExamplesSrc(src){
 	});
 }
 
-function fillExampleOptions(select){
+function fillExampleOptions(dom){
+	var select = dom.find(searchResultSelector);
 	var data = diseaseExamplesData;
 	select.empty();
 	data.forEach(function(item){
@@ -282,8 +284,9 @@ function bindSearch(dom, dateBinder){
 function bindExampleLink(dom){
 	dom.on("click", exampleLinkSelector, function(event){
 		event.preventDefault();
-		var select = dom.find(searchResultSelector);
-		fillExampleOptions(select);
+		fillExampleOptions(dom);
+		// var select = dom.find(searchResultSelector);
+		// fillExampleOptions(select);
 	});
 }
 
