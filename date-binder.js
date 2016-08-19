@@ -48,6 +48,7 @@ function analyzeDate(m){
 DateBinder.prototype.bindDayClick = function(dayLabel){
 	var self = this;
 	dayLabel.on("click", function(event){
+		event.preventDefault();
 		var dateOpt = self.getDate();
 		if( !dateOpt.ok ){
 			return;
@@ -66,6 +67,7 @@ DateBinder.prototype.bindDayClick = function(dayLabel){
 DateBinder.prototype.bindMonthClick = function(monthLabel){
 	var self = this;
 	monthLabel.on("click", function(event){
+		event.preventDefault();
 		var dateOpt = self.getDate();
 		if( !dateOpt.ok ){
 			return;
@@ -84,6 +86,7 @@ DateBinder.prototype.bindMonthClick = function(monthLabel){
 DateBinder.prototype.bindNenClick = function(nenLabel){
 	var self = this;
 	nenLabel.on("click", function(event){
+		event.preventDefault();
 		var dateOpt = self.getDate();
 		if( !dateOpt.ok ){
 			return;
@@ -102,6 +105,7 @@ DateBinder.prototype.bindNenClick = function(nenLabel){
 DateBinder.prototype.bindWeekClick = function(weekLink){
 	var self = this;
 	weekLink.on("click", function(event){
+		event.preventDefault();
 		var dateOpt = self.getDate();
 		if( !dateOpt.ok ){
 			return;
@@ -120,6 +124,7 @@ DateBinder.prototype.bindWeekClick = function(weekLink){
 DateBinder.prototype.bindTodayClick = function(todayLink){
 	var self = this;
 	todayLink.on("click", function(event){
+		event.preventDefault();
 		self.setDate(moment());
 	});
 	return this;
@@ -128,6 +133,7 @@ DateBinder.prototype.bindTodayClick = function(todayLink){
 DateBinder.prototype.bindMonthLastDayClick = function(link){
 	var self = this;
 	link.on("click", function(event){
+		event.preventDefault();
 		var dateOpt = self.getDate();
 		if( !dateOpt.ok ){
 			return;
@@ -142,6 +148,7 @@ DateBinder.prototype.bindMonthLastDayClick = function(link){
 DateBinder.prototype.bindLastMonthLastDayClick = function(link){
 	var self = this;
 	link.on("click", function(event){
+		event.preventDefault();
 		var m = moment();
 		m.date(1).add(-1, "days");
 		self.setDate(m);

@@ -1,4 +1,5 @@
 -- TODO --
+* add check before change charge
 * implement manage presc example
 * isn't it better to remove 'today' restriction from end_exam? (myclinic-db)
 
