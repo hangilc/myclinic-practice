@@ -69,14 +69,19 @@ function bindForm(dom){
 				alert(err);
 				return;
 			}
-			var select = getSelectDom(dom).html("");
-			list.forEach(function(patient){
-				var data = mUtil.assign({}, patient, {
-					patient_id_label: mUtil.padNumber(patient.patient_id, 4)
+			if( list.length === 1 ){
+				var patient = list[0];
+				dom.trigger("start-patient", [patient.patient_id]);
+			} else {
+				var select = getSelectDom(dom).html("");
+				list.forEach(function(patient){
+					var data = mUtil.assign({}, patient, {
+						patient_id_label: mUtil.padNumber(patient.patient_id, 4)
+					});
+					var opt = itemTmpl.render(data);
+					select.append(opt);
 				});
-				var opt = itemTmpl.render(data);
-				select.append(opt);
-			});
+			}
 		});
 	});
 }
