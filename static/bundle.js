@@ -28866,6 +28866,9 @@
 
 	function searchMaster(dom, text, at){
 		var list;
+		if( text === "" ){
+			return;
+		}
 		task.run(function(done){
 			service.searchIyakuhinMaster(text, at, function(err, result){
 				if( err ){
@@ -28911,6 +28914,9 @@
 
 	function searchStock(dom, text){
 		var list;
+		if( text === "" ){
+			return;
+		}
 		task.run(function(done){
 			service.searchPrescExample(text, function(err, result){
 				if( err ){
@@ -28968,9 +28974,6 @@
 			event.preventDefault();
 			event.stopPropagation();
 			var text = getSearchTextDom(dom).val().trim();
-			if( text === "" ){
-				return;
-			}
 			var mode = getSearchMode(dom);
 			switch(mode){
 				case "master": searchMaster(dom, text, at); break;
