@@ -1,4 +1,6 @@
 -- TODO --
+* 当日、薬剤が変更されたら、pharma_queue に加える。
+* 薬剤の内容（量など）を変更した場合、未処方(prescribed = 0)に変更する。
 * add check before change charge
 * implement manage presc example
 * isn't it better to remove 'today' restriction from end_exam? (myclinic-db)
