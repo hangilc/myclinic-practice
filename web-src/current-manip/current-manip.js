@@ -3,7 +3,7 @@
 var $ = require("jquery");
 var Account = require("./account");
 var SearchText = require("./search-text");
-var modal = require("../../hc-modal");
+var modal = require("../../myclinic-modal");
 var task = require("../task");
 var service = require("../service");
 
@@ -77,22 +77,39 @@ function doAccount(dom){
 			return;
 		}
 		var account = Account.create(meisai, visitId);
-		modal.open("会計", account);
+		modal.startModal({
+			title: "会計",
+			init: function(content, close){
+				content.appendChild(account.get(0));
+				account.on("0ms9b2wl-cancel", close);
+				account.on("0ms9b2wl-entered", function(){
+					close();
+					$("body").trigger("exam-ended");
+				})
+			}
+		})
+		//modal.open("会計", account);
 	})
 }
 
 function doSearchText(patientId){
 	var form = SearchText.create(patientId);
-	modal.open("文章検索", form);
+	modal.startModal({
+		title: "文章検索",
+		init: function(content){
+			content.appendChild(form.get(0));
+		}
+	})
+	//modal.open("文章検索", form);
 }
 
 // account dialog
-$("body").on("0ms9b2wl-cancel", function(){
-	modal.close();
-})
+// $("body").on("0ms9b2wl-cancel", function(){
+// 	modal.close();
+// })
 
 // account dialog
-$("body").on("0ms9b2wl-entered", function(event){
-	modal.close();
-	$("body").trigger("exam-ended");
-});
+// $("body").on("0ms9b2wl-entered", function(event){
+// 	modal.close();
+// 	$("body").trigger("exam-ended");
+// });

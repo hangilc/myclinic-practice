@@ -65,7 +65,7 @@
 	var RecentVisits = __webpack_require__(244);
 	var TodaysVisits = __webpack_require__(247);
 	var Reception = __webpack_require__(250);
-	var SearchWholeText = __webpack_require__(254);
+	var SearchWholeText = __webpack_require__(255);
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 	CurrentManip.setup($("#current-manip-pane"));
@@ -26914,25 +26914,42 @@
 				return;
 			}
 			var account = Account.create(meisai, visitId);
-			modal.open("会計", account);
+			modal.startModal({
+				title: "会計",
+				init: function(content, close){
+					content.appendChild(account.get(0));
+					account.on("0ms9b2wl-cancel", close);
+					account.on("0ms9b2wl-entered", function(){
+						close();
+						$("body").trigger("exam-ended");
+					})
+				}
+			})
+			//modal.open("会計", account);
 		})
 	}
 
 	function doSearchText(patientId){
 		var form = SearchText.create(patientId);
-		modal.open("文章検索", form);
+		modal.startModal({
+			title: "文章検索",
+			init: function(content){
+				content.appendChild(form.get(0));
+			}
+		})
+		//modal.open("文章検索", form);
 	}
 
 	// account dialog
-	$("body").on("0ms9b2wl-cancel", function(){
-		modal.close();
-	})
+	// $("body").on("0ms9b2wl-cancel", function(){
+	// 	modal.close();
+	// })
 
 	// account dialog
-	$("body").on("0ms9b2wl-entered", function(event){
-		modal.close();
-		$("body").trigger("exam-ended");
-	});
+	// $("body").on("0ms9b2wl-entered", function(event){
+	// 	modal.close();
+	// 	$("body").trigger("exam-ended");
+	// });
 
 
 /***/ },
@@ -27128,140 +27145,240 @@
 /* 126 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var $ = __webpack_require__(1);
+	"use strict";
 
-	var screen = $('<div></div>').css({
-	    position:"fixed",
-	    backgroundColor:"#999",
-	    width:"100%",
-	    height:"100%",
-	    left:0,
-	    top:0,
-	    opacity:0.5,
-	    filter:"alpha(opacity=50)",
-	    zIndex:10,
-	    display:"none"
-	});
+	(function(exports){
 
-	var dialog = $('<div id="modal-dialog-outer-pane"></div>').css({
-	    position:"absolute",
-	    left:"100px",
-	    top:"50px",
-	    padding:"10px",
-	    border:"2px solid gray",
-	    backgroundColor:"white",
-	    opacity:1.0,
-	    filter:"alpha(opacity=100)",
-	    zIndex:20,
-	    overflow: "auto"
-	});
-	var header = $("<table width='100%' cellpadding='0' cellspacing='0'><tr>" +
-	    "<td width='*'></td><td width='auto'></td></tr></table>").css({
-	        margin:0,
-	        padding:0
-	    });
-	dialog.append(header);
-	var handle = $('<div></div>');
-	var title = $("<div></div>").css({
-	    cursor:"move",
-	    backgroundColor:"#ccc",
-	    fontWeight:"bold",
-	    padding:"6px 4px 4px 4px"
-	});
-	handle.append(title);
-	$(header.find("td")[0]).append(handle);
-	var closeBox = $("<a href='javascript:void(0)'>×</a>").css({
-	    fontSize:"13px",
-	    fontWeight:"bold",
-	    margin:"4px 0 4px 4px",
-	    padding:0,
-	    textDecoration:"none",
-	    color:"#333"
-	});
-	$(header.find("td")[1]).css({
-	    width:"16px",
-	    verticalAlign:"middle"
-	}).append(closeBox);
-	var content = $("<div></div>").css({
-	    marginTop:"10px"
-	});
-	dialog.append(content);
-
-	$("body").append(screen);
-
-	var mouseTarget = handle.get(0).setCapture ? handle : $(document);
-
-	handle.on("mousedown", function(event){
-	    event.preventDefault();
-	    var offset = dialog.offset();
-	    var origEvent = event.originalEvent;
-	    var innerX = origEvent.pageX - offset.left;
-	    var innerY = origEvent.pageY - offset.top;
-	    dialog.data({innerX: innerX, innerY: innerY, width: dialog.outerWidth(), height: dialog.outerHeight()});
-	    mouseTarget.on("mousemove", function(event){
-	        event.preventDefault();
-	        var origEvent = event.originalEvent;
-	        var newLeft = origEvent.pageX - dialog.data("innerX");
-	        if( newLeft < 0 ){
-	            newLeft = 0;
-	        }
-	        var newTop = origEvent.pageY - dialog.data("innerY");
-	        if( newTop < 0 ){
-	            newTop = 0;
-	        }
-	        var newRight = newLeft + dialog.data("width");
-	        if( newRight > screen.innerWidth() ){
-	            newLeft = screen.innerWidth() - dialog.data("width");
-	        }
-	        var newBottom = newTop + dialog.data("height");
-	        if( newBottom > screen.innerHeight() ){
-	            newTop = screen.innerHeight() - dialog.data("height");
-	        }
-	        dialog.css({left: newLeft, top: newTop})
-	    })
-	    if( handle.get(0).setCapture ){
-	        handle.get(0).setCapture();
-	    }
-	})
-
-	mouseTarget.on("mouseup", function(event){
-	    mouseTarget.off("mousemove");
-	    if( handle.get(0).releaseCapture ){
-	        handle.get(0).releaseCapture();
-	    }
-	})
-
-	function reposition() {
-	    var screen_width = $(window).width();
-	    var screen_height = $(window).height();
-	    var dialog_width = dialog.outerWidth();
-	    dialog.css("left", (screen_width - dialog_width) / 2 + "px");
-	    dialog.css("max-height", (screen_height - 100) + "px");
+	function setAttributes(e, map){
+		for(var key in map){
+			e.setAttribute(key, map[key]);
+		}
 	}
 
-	exports.open = function(title_str, dom, onClose){
-	    title.text(title_str);
-	    content.html("").append(dom);
-	    screen.show();
-	    $("body").append(dialog);
-	    reposition();
-	    closeBox.on("click", function(event){
-	        if( onClose ){
-	            if( onClose() === false ){
-	                return;
-	            }
-	        }
-	        exports.close();
-	    });
-	};
+	function setStyles(e, map){
+		for(var key in map){
+			e.style[key] = map[key];
+		}
+	}
 
-	exports.close = function(){
-	    closeBox.off("click");
-	    dialog.detach();
-	    screen.hide();
-	    content.html("");
-	};
+	function getOpt(opts, key, defaultValue){
+		if( opts && key in opts ){
+			return opts[key];
+		} else {
+			return defaultValue;
+		}
+	}
 
+	function createScreen(zIndex, opacity){
+		var screen = document.createElement("div");
+		setStyles(screen, {
+		    position:"fixed",
+		    backgroundColor:"#999",
+		    width:"100%",
+		    height:"100%",
+		    left:0,
+		    top:0,
+		    opacity: opacity,
+		    filter:"alpha(opacity=" + Math.round(opacity*100) + ")",
+		    zIndex: zIndex,
+		    display:"none"
+		})
+		return screen;
+	}
+
+	function createDialog(zIndex){
+		var dialog = document.createElement("div");
+		setStyles(dialog, {
+		    position:"absolute",
+		    left:"100px",
+		    top:"50px",
+		    padding:"10px",
+		    border:"2px solid gray",
+		    backgroundColor:"white",
+		    opacity:1.0,
+		    filter:"alpha(opacity=100)",
+		    zIndex: zIndex,
+		    overflow: "auto"
+		})
+		return dialog;
+	}
+
+	function Header(title){
+		var header = document.createElement("table");
+		setAttributes(header, {
+			width: "100%",
+			cellpadding: "0",
+			cellspacing: "0"
+		});
+		setStyles(header, {
+			margin: "0",
+			padding: "0"
+		});
+		var tbody = document.createElement("tbody");
+		header.appendChild(tbody);
+		var tr = document.createElement("tr");
+		tbody.appendChild(tr);
+		var titleDom = document.createElement("td");
+		titleDom.setAttribute("width", "*");
+		titleDom.appendChild(createTitle(title));
+		tr.appendChild(titleDom);
+		var td = document.createElement("td");
+		td.setAttribute("width", "auto");
+		setStyles(td, {
+		    width:"16px",
+		    verticalAlign:"middle"
+		});
+		var closeBox = createCloseBox();
+		td.appendChild(closeBox);
+		tr.appendChild(td);
+		return {
+			dom: header,
+			handle: titleDom,
+			closeBox: closeBox
+		}
+	}
+
+	function bindHandle(handler, dialog){
+		handler.addEventListener("mousedown", function(event){
+			event.preventDefault();
+			event.stopPropagation();
+			var startX = event.pageX;
+			var startY = event.pageY;
+			var offsetX = dialog.offsetLeft;
+			var offsetY = dialog.offsetTop;
+			document.addEventListener("mousemove", mousemoveHandler);
+			document.addEventListener("mouseup", function(event){
+				document.removeEventListener("mousemove", mousemoveHandler);
+			});
+
+			function mousemoveHandler(event){
+				var windowWidth = window.innerWidth;
+				var windowHeight = window.innerHeight;
+				var dialogWidth = dialog.offsetWidth;
+				var dialogHeight = dialog.offsetHeight;
+				var currX = event.pageX;
+				var currY = event.pageY;
+				var newLeft = offsetX + (currX - startX);
+				if( newLeft + dialogWidth > windowWidth ){
+					newLeft = windowWidth - dialogWidth;
+				}
+				if( newLeft < 0 ){
+					newLeft = 0;
+				}
+				var newTop = offsetY + (currY - startY);
+				if( newTop + dialogHeight > windowHeight ){
+					newTop = windowHeight - dialogHeight;
+				}
+				if( newTop < 0 ){
+					newTop = 0;
+				}
+				dialog.style.left =  newLeft + "px";
+				dialog.style.top = newTop + "px";
+			}
+		})
+	}
+
+	function createTitle(titleLabel){
+		var handle = document.createElement("div");
+		var title = document.createElement("div");
+		setStyles(title, {
+		    cursor:"move",
+		    backgroundColor:"#ccc",
+		    fontWeight:"bold",
+		    padding:"6px 4px 4px 4px"
+		});
+		title.appendChild(document.createTextNode(titleLabel));
+		handle.appendChild(title);
+		return handle;
+	}
+
+	function createCloseBox(){
+		var closeBox = document.createElement("a");
+		closeBox.setAttribute("href", "javascript:void(0)");
+		setStyles(closeBox, {
+		    fontSize:"13px",
+		    fontWeight:"bold",
+		    margin:"4px 0 4px 4px",
+		    padding:0,
+		    textDecoration:"none",
+		    color:"#333"
+		});
+		closeBox.appendChild(document.createTextNode("×"));
+		return closeBox;
+	}
+
+	function createContent(){
+		var content = document.createElement("div");
+		content.style.marginTop = "10px";
+		return content;
+	}
+
+	function ModalDialog(opts){
+		this.screenZIndex = getOpt(opts, "scrrenZIndex", 10);
+		this.screenOpacity = getOpt(opts, "screenOpacity", 0.5);
+		this.dialogZIndex = getOpt(opts, "dialogZIndex", 11);
+		this.title = getOpt(opts, "title", "Untitled");
+		this.onCloseClick = getOpt(opts, "onCloseClick", null);
+	}
+
+	ModalDialog.prototype.open = function(){
+		var screen = createScreen(this.screenZIndex, this.screenOpacity);
+		screen.style.display = "block";
+		document.body.appendChild(screen);
+		var dialog = createDialog(this.dialogZIndex);
+		document.body.appendChild(dialog);
+		var header = new Header(this.title);
+		dialog.appendChild(header.dom);
+		bindHandle(header.handle, dialog);
+		header.closeBox.addEventListener("click", onClose.bind(this));
+		var content = createContent(this.content);
+		dialog.appendChild(content);
+		this.screen = screen;
+		this.dialog = dialog;
+		this.content = content;
+
+		function onClose(event){
+			event.preventDefault();
+			if( this.onCloseClick && this.onCloseClick() === false ){
+				return;
+			}
+			this.close();
+		}
+	}
+
+	ModalDialog.prototype.close = function(){
+		document.body.removeChild(this.dialog);
+		document.body.removeChild(this.screen);
+	}
+
+	// startModal({
+	// 	title: "Test",
+	// 	init: function(content, close){
+	// 		var a = document.createElement("button");
+	// 		a.setAttribute("href", "javascript:void(0)");
+	// 		a.addEventListener("click", function(event){
+	// 			close();
+	// 		});
+	// 		a.appendChild(document.createTextNode("Close"));
+	// 		content.innerHTML = "Hello, world!";
+	// 		content.appendChild(a);
+	// 		console.log(this.screenZIndex);
+	// 	},
+	// 	onCloseClick: function(){
+	// 		console.log("close box clicked");
+	// 		// return false // if not to close dialog
+	// 	}
+	// });
+
+	exports.startModal = function(opts){
+		var modalDialog = new ModalDialog(opts);
+		modalDialog.open();
+		if( opts.init ){
+			opts.init.call(modalDialog, modalDialog.content, function(){ modalDialog.close(); });
+		}
+	}
+
+	})( true ? exports : window);
 
 
 /***/ },
@@ -30219,7 +30336,7 @@
 /* 170 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為入力</div>\r\n<form onsubmit=\"return false\">\r\n<div>\r\n    <table width=\"100%\">\r\n        <tr valign=\"top\">\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\r\n            </td>\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n\r\n    <table width=\"100%\">\r\n        <tr valign=\"top\">\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\r\n            </td>\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"手帳記載加算\"> 手帳記載加算<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"外来後発加算１\"> 外来後発加算１<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\r\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\r\n    &nbsp;\r\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為入力</div>\n<form onsubmit=\"return false\">\n<div>\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\">\n        <tr valign=\"top\">\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\n            </td>\n            <td>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"手帳記載加算\"> 手帳記載加算<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外来後発加算１\"> 外来後発加算１<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\n            </td>\n        </tr>\n    </table>\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\n    &nbsp;\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">入力</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ },
 /* 171 */
@@ -30327,7 +30444,7 @@
 /* 172 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">検査の入力</div>\r\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\r\n        <div>\r\n            <table width=\"100%\">\r\n                <tr valign=\"top\">\r\n                    <td width=\"50%\">\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"血算\">血算\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"末梢血液像\">末梢血液像\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨｂＡ１ｃ\">ＨｂＡ１ｃ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＴ\">ＰＴ\r\n                        </div>\r\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＯＴ\">ＧＯＴ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＰＴ\">ＧＰＴ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"γＧＴＰ\">γＧＴＰ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＰＫ\">ＣＰＫ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン\">クレアチニン\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"尿酸\">尿酸\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"カリウム\">カリウム\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＬＤＬ－コレステロール\">ＬＤＬ－Ｃｈ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨＤＬ－コレステロール\">ＨＤＬ－Ｃｈ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＧ\">ＴＧ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"グルコース\">グルコース\r\n                        </div>\r\n                    </td>\r\n                    <td>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＲＰ\">ＣＲＰ\r\n                        </div>\r\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＳＨ\">ＴＳＨ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ４\">ＦＴ４\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ３\">ＦＴ３\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＳＡ\">ＰＳＡ\r\n                        </div>\r\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"蛋白定量（尿）\">蛋白定量（尿）\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン（尿）\">クレアチニン（尿）\r\n                        </div>\r\n                    </td>\r\n                </tr>\r\n            </table>\r\n        </div>\r\n        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n        <div mc-name=\"form-commands\">\r\n            <a mc-name=\"setKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">セット検査</a> :\r\n            <a mc-name=\"clearKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">クリア</a>\r\n        </div>\r\n\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\n    <div class=\"title\">検査の入力</div>\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\n        <div>\n            <table width=\"100%\">\n                <tr valign=\"top\">\n                    <td width=\"50%\">\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"血算\">血算\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"末梢血液像\">末梢血液像\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨｂＡ１ｃ\">ＨｂＡ１ｃ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＴ\">ＰＴ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＯＴ\">ＧＯＴ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＰＴ\">ＧＰＴ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"γＧＴＰ\">γＧＴＰ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＰＫ\">ＣＰＫ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン\">クレアチニン\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"尿酸\">尿酸\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"カリウム\">カリウム\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＬＤＬ－コレステロール\">ＬＤＬ－Ｃｈ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨＤＬ－コレステロール\">ＨＤＬ－Ｃｈ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＧ\">ＴＧ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"グルコース\">グルコース\n                        </div>\n                    </td>\n                    <td>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＲＰ\">ＣＲＰ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＳＨ\">ＴＳＨ\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ４\">ＦＴ４\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ３\">ＦＴ３\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＳＡ\">ＰＳＡ\n                        </div>\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"蛋白定量（尿）\">蛋白定量（尿）\n                        </div>\n                        <div>\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン（尿）\">クレアチニン（尿）\n                        </div>\n                    </td>\n                </tr>\n            </table>\n        </div>\n        <hr style=\"border:1px solid #ccc; height:1px\"/>\n        <div mc-name=\"form-commands\">\n            <a mc-name=\"setKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">セット検査</a> :\n            <a mc-name=\"clearKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">クリア</a>\n        </div>\n\n        <div class=\"workarea-commandbox\">\n            <button mc-name=\"enter\">入力</button>\n            <button mc-name=\"cancel\">キャンセル</button>\n        </div>\n    </form>\n</div>\n"
 
 /***/ },
 /* 173 */
@@ -30547,7 +30664,7 @@
 /* 177 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為コピー</div>\r\n<form onsubmit=\"return false\" mc-name=\"search-result\">\r\n<div>\r\n\t<table>\r\n\t\t<tbody mc-name=\"tbody\">\r\n\t\t\t{{#list}}\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value=\"{{shinryou_id}}\" />\r\n\t\t\t\t\t</td>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t{{name}}\r\n\t\t\t\t\t</td>\r\n\t\t\t\t</tr>\r\n\t\t\t{{/list}}\r\n\t\t</tbody>\r\n\t</table>\r\n</div>\r\n</form>\r\n<hr/>\r\n<div mc-name=\"selector-box\">\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\r\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<form onsubmit=\"return false\" mc-name=\"command-form\">\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">実行</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">診療行為コピー</div>\n<form onsubmit=\"return false\" mc-name=\"search-result\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t\t{{#list}}\n\t\t\t\t<tr>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value=\"{{shinryou_id}}\" />\n\t\t\t\t\t</td>\n\t\t\t\t\t<td>\n\t\t\t\t\t\t{{name}}\n\t\t\t\t\t</td>\n\t\t\t\t</tr>\n\t\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n</form>\n<hr/>\n<div mc-name=\"selector-box\">\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<form onsubmit=\"return false\" mc-name=\"command-form\">\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ },
 /* 178 */
@@ -30618,7 +30735,7 @@
 /* 179 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">複数診療削除</div>\r\n<form onsubmit=\"return false\">\r\n<div>\r\n\t<table>\r\n\t\t<tbody mc-name=\"tbody\">\r\n\t\t{{#list}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td>\r\n\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value={{shinryou_id}} />\r\n\t\t\t\t</td>\r\n\t\t\t\t<td>\r\n\t\t\t\t\t{{name}}\r\n\t\t\t\t</td>\r\n\t\t\t</tr>\r\n\t\t{{/list}}\r\n\t\t</tbody>\r\n\t</table>\r\n</div>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\r\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">削除実行</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
+	module.exports = "<div class=\"workarea\">\n<div class=\"title\">複数診療削除</div>\n<form onsubmit=\"return false\">\n<div>\n\t<table>\n\t\t<tbody mc-name=\"tbody\">\n\t\t{{#list}}\n\t\t\t<tr>\n\t\t\t\t<td>\n\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value={{shinryou_id}} />\n\t\t\t\t</td>\n\t\t\t\t<td>\n\t\t\t\t\t{{name}}\n\t\t\t\t</td>\n\t\t\t</tr>\n\t\t{{/list}}\n\t\t</tbody>\n\t</table>\n</div>\n<hr/>\n<div>\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\n</div>\n<div class=\"workarea-commandbox\">\n    <button mc-name=\"enter\">削除実行</button>\n    <button mc-name=\"cancel\">キャンセル</button>\n</div>\n</form>\n</div>\n"
 
 /***/ },
 /* 180 */
@@ -33021,7 +33138,7 @@
 /* 224 */
 /***/ function(module, exports) {
 
-	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
+	module.exports = "<tr>\n\t<td>\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\">\n\t\t\t{{label}}\n\t\t</a>\n\t\t<span style=\"color:#999\">\n\t\t\t({{start_date_label}})\n\t\t</span>\n\t</td>\n</tr>\n"
 
 /***/ },
 /* 225 */
@@ -34752,9 +34869,9 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 
-	var mainTmpl = hogan.compile(__webpack_require__(251));
-	var optionTmpl = hogan.compile(__webpack_require__(252));
-	var dispTmpl = hogan.compile(__webpack_require__(253));
+	var mainTmpl = hogan.compile(__webpack_require__(252));
+	var optionTmpl = hogan.compile(__webpack_require__(253));
+	var dispTmpl = hogan.compile(__webpack_require__(254));
 
 	function getSearchTextDom(dom){
 		return dom.find("input[mc-name=searchText]");
@@ -34810,7 +34927,7 @@
 		});
 	}
 
-	function bindEnter(dom){
+	function bindEnter(dom, close){
 		dom.find("[mc-name=enterLink]").click(function(event){
 			var patientId = dom.data("patient_id");
 			if( !(patientId > 0) ){
@@ -34822,7 +34939,7 @@
 					alert(err);
 					return;
 				}
-				modal.close();
+				close();
 			})
 		})
 	}
@@ -34854,49 +34971,48 @@
 		bindSearchForm(dom);
 		bindSelect(dom);
 		bindPatientSelected(dom);
-		bindEnter(dom);
-		modal.open("受付", dom);
-		getSearchTextDom(dom).focus();
-
-		// modal.open("受付", function(dom){
-		// 	dom.width("260px");
-		// 	dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
-		// 	bindSearchForm(dom);
-		// 	bindSelect(dom);
-		// 	bindPatientSelected(dom);
-		// 	bindEnter(dom);
-		// 	getSearchTextDom(dom).focus();
-		// });
+		modal.startModal({
+			title: "受付",
+			init: function(content, close){
+				content.appendChild(dom.get(0));
+				bindEnter(dom, close);
+				getSearchTextDom(dom).focus();
+			}
+		})
+		//bindEnter(dom);
+		//modal.open("受付", dom);
+		//getSearchTextDom(dom).focus();
 	}
 
 /***/ },
-/* 251 */
+/* 251 */,
+/* 252 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
 
 /***/ },
-/* 252 */
+/* 253 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 253 */
+/* 254 */
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
 
 /***/ },
-/* 254 */
+/* 255 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(255);
-	var resultTmplSrc = __webpack_require__(256);
+	var tmplSrc = __webpack_require__(256);
+	var resultTmplSrc = __webpack_require__(257);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var modal = __webpack_require__(126);
 	var task = __webpack_require__(111);
@@ -34918,8 +35034,14 @@
 					return;
 				}
 				doSearch(form, text);
+			});
+			modal.startModal({
+				title: "全文検索",
+				init: function(content){
+					content.appendChild(form.get(0));
+				}
 			})
-			modal.open("全文検索", form);
+			//modal.open("全文検索", form);
 		})
 	}
 
@@ -34963,13 +35085,13 @@
 	}
 
 /***/ },
-/* 255 */
+/* 256 */
 /***/ function(module, exports) {
 
 	module.exports = "<div style=\"width:300px\">\r\n\t<form mc-name=\"search-form\" onsubmit=\"return false\">\r\n\t\t<input mc-name=\"searchText\" />\r\n\t\t<button mc-name=\"searchButton\">検索</button>\r\n\t</form>\r\n\t<div mc-name=\"resultBox\" style=\"height: 360px;font-size:12px;margin-top:6px;border:1px solid #ccc\"></div>\r\n</div>"
 
 /***/ },
-/* 256 */
+/* 257 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<div style=\"margin:2px 0;padding: 3px;border: 1px solid #ccc\">\r\n\t\t<div name=\"title\"\r\n\t\t\tstyle=\"font-weight: bold; margin-bottom: 4px; color: green\">\r\n\t\t\t({{patient_id}}) [{{last_name}} {{first_name}}]\r\n\t\t\t{{ date_label }}\r\n\t\t</div>\r\n\t\t<div name=\"content\">\r\n\t\t\t{{& content}}\r\n\t\t</div>\r\n\t</div>;\r\n{{/list}}\r\n"

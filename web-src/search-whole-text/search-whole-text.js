@@ -5,7 +5,7 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./search-whole-text.html");
 var resultTmplSrc = require("raw!./search-whole-text-search-result.html");
 var resultTmpl = hogan.compile(resultTmplSrc);
-var modal = require("../../hc-modal");
+var modal = require("../../myclinic-modal");
 var task = require("../task");
 var service = require("../service");
 var kanjidate = require("kanjidate");
@@ -25,8 +25,14 @@ exports.setup = function(dom){
 				return;
 			}
 			doSearch(form, text);
+		});
+		modal.startModal({
+			title: "全文検索",
+			init: function(content){
+				content.appendChild(form.get(0));
+			}
 		})
-		modal.open("全文検索", form);
+		//modal.open("全文検索", form);
 	})
 }
 

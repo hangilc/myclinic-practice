@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var modal = require("../../hc-modal");
+var modal = require("../../myclinic-modal");
 var service = require("../service");
 var mUtil = require("../../myclinic-util");
 var hogan = require("hogan");
@@ -65,7 +65,7 @@ function bindSearchForm(dom){
 	});
 }
 
-function bindEnter(dom){
+function bindEnter(dom, close){
 	dom.find("[mc-name=enterLink]").click(function(event){
 		var patientId = dom.data("patient_id");
 		if( !(patientId > 0) ){
@@ -77,7 +77,7 @@ function bindEnter(dom){
 				alert(err);
 				return;
 			}
-			modal.close();
+			close();
 		})
 	})
 }
@@ -109,17 +109,15 @@ exports.open = function(){
 	bindSearchForm(dom);
 	bindSelect(dom);
 	bindPatientSelected(dom);
-	bindEnter(dom);
-	modal.open("受付", dom);
-	getSearchTextDom(dom).focus();
-
-	// modal.open("受付", function(dom){
-	// 	dom.width("260px");
-	// 	dom.html(mainTmpl.render({patient: {}}, {disp: dispTmpl}));
-	// 	bindSearchForm(dom);
-	// 	bindSelect(dom);
-	// 	bindPatientSelected(dom);
-	// 	bindEnter(dom);
-	// 	getSearchTextDom(dom).focus();
-	// });
+	modal.startModal({
+		title: "受付",
+		init: function(content, close){
+			content.appendChild(dom.get(0));
+			bindEnter(dom, close);
+			getSearchTextDom(dom).focus();
+		}
+	})
+	//bindEnter(dom);
+	//modal.open("受付", dom);
+	//getSearchTextDom(dom).focus();
 }
