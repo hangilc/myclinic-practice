@@ -34,7 +34,7 @@ function createScreen(zIndex, opacity){
 	    opacity: opacity,
 	    filter:"alpha(opacity=" + Math.round(opacity*100) + ")",
 	    zIndex: zIndex,
-	    display:"none"
+	    //display:"none"
 	})
 	return screen;
 }
@@ -176,7 +176,7 @@ function ModalDialog(opts){
 
 ModalDialog.prototype.open = function(){
 	var screen = createScreen(this.screenZIndex, this.screenOpacity);
-	screen.style.display = "block";
+	//screen.style.display = "block";
 	document.body.appendChild(screen);
 	var dialog = createDialog(this.dialogZIndex);
 	document.body.appendChild(dialog);
@@ -189,6 +189,7 @@ ModalDialog.prototype.open = function(){
 	this.screen = screen;
 	this.dialog = dialog;
 	this.content = content;
+	this.reposition();
 
 	function onClose(event){
 		event.preventDefault();
@@ -197,6 +198,17 @@ ModalDialog.prototype.open = function(){
 		}
 		this.close();
 	}
+};
+
+ModalDialog.prototype.reposition = function(){
+	if( !this.dialog ){
+		return;
+	}
+	var dialog = this.dialog;
+	var space = window.innerWidth - dialog.offsetWidth;
+	if( space > 0 ){
+		dialog.style.left = Math.floor(space / 2) + "px";
+	}
 }
 
 ModalDialog.prototype.close = function(){
@@ -204,6 +216,8 @@ ModalDialog.prototype.close = function(){
 	document.body.removeChild(this.screen);
 }
 
+// Example ----------------------------------------------
+//
 // startModal({
 // 	title: "Test",
 // 	init: function(content, close){
@@ -222,12 +236,14 @@ ModalDialog.prototype.close = function(){
 // 		// return false // if not to close dialog
 // 	}
 // });
+//
 
 exports.startModal = function(opts){
 	var modalDialog = new ModalDialog(opts);
 	modalDialog.open();
 	if( opts.init ){
 		opts.init.call(modalDialog, modalDialog.content, function(){ modalDialog.close(); });
+		modalDialog.reposition();
 	}
 }
 
