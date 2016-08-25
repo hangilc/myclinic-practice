@@ -27,6 +27,9 @@ function getSelectDom(dom){
 function bindButton(dom){
 	dom.on("click", "[mc-name=button]", function(){
 		var ws = getWorkspaceDom(dom);
+		if( ws.length === 0 ){
+			console.log("TODAYS-VISITS: cannot find workspace dom");
+		}
 		if( ws.is(":visible") ){
 			ws.hide();
 			getSelectDom(dom).html("");
@@ -47,7 +50,14 @@ function bindButton(dom){
 					return;
 				}
 				var select = getSelectDom(dom);
+				if( select.length === 0 ){
+					console.log("TODAYS-VISITS: cannot find ")
+				}
 				select.html(searchResult(list));
+				ws = getWorkspaceDom(dom);
+				if( ws.length === 0 ){
+					console.log("TODAYS-VISITS: cannot find workspace (2)")
+				}
 				ws.show();
 			});
 		}
