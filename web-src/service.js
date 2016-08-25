@@ -13,9 +13,10 @@ function request(service, data, method, cb){
 		success: function(list){
 			cb(undefined, list);
 		},
-		error: function(xhr){
-			cb(xhr.responseText);
-		}
+		error: function(xhr, err, errThrown){
+			cb("ERROR: " + (xhr.responseText || err || errThrown));
+		},
+		timeout: 10000
 	};
 	if( method === "POST" && typeof data === "string" ){
 		config.contentType = "application/json";

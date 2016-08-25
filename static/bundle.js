@@ -65,7 +65,7 @@
 	var RecentVisits = __webpack_require__(244);
 	var TodaysVisits = __webpack_require__(247);
 	var Reception = __webpack_require__(250);
-	var SearchWholeText = __webpack_require__(255);
+	var SearchWholeText = __webpack_require__(254);
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 	CurrentManip.setup($("#current-manip-pane"));
@@ -25022,9 +25022,10 @@
 			success: function(list){
 				cb(undefined, list);
 			},
-			error: function(xhr){
-				cb(xhr.responseText);
-			}
+			error: function(xhr, err, errThrown){
+				cb("ERROR: " + (xhr.responseText || err || errThrown));
+			},
+			timeout: 10000
 		};
 		if( method === "POST" && typeof data === "string" ){
 			config.contentType = "application/json";
@@ -34805,6 +34806,9 @@
 	function bindButton(dom){
 		dom.on("click", "[mc-name=button]", function(){
 			var ws = getWorkspaceDom(dom);
+			if( ws.length === 0 ){
+				console.log("TODAYS-VISITS: cannot find workspace dom");
+			}
 			if( ws.is(":visible") ){
 				ws.hide();
 				getSelectDom(dom).html("");
@@ -34825,7 +34829,14 @@
 						return;
 					}
 					var select = getSelectDom(dom);
+					if( select.length === 0 ){
+						console.log("TODAYS-VISITS: cannot find ")
+					}
 					select.html(searchResult(list));
+					ws = getWorkspaceDom(dom);
+					if( ws.length === 0 ){
+						console.log("TODAYS-VISITS: cannot find workspace (2)")
+					}
 					ws.show();
 				});
 			}
@@ -34885,9 +34896,9 @@
 	var hogan = __webpack_require__(115);
 	var kanjidate = __webpack_require__(118);
 
-	var mainTmpl = hogan.compile(__webpack_require__(252));
-	var optionTmpl = hogan.compile(__webpack_require__(253));
-	var dispTmpl = hogan.compile(__webpack_require__(254));
+	var mainTmpl = hogan.compile(__webpack_require__(251));
+	var optionTmpl = hogan.compile(__webpack_require__(252));
+	var dispTmpl = hogan.compile(__webpack_require__(253));
 
 	function getSearchTextDom(dom){
 		return dom.find("input[mc-name=searchText]");
@@ -35001,34 +35012,33 @@
 	}
 
 /***/ },
-/* 251 */,
-/* 252 */
+/* 251 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
 
 /***/ },
-/* 253 */
+/* 252 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 254 */
+/* 253 */
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
 
 /***/ },
-/* 255 */
+/* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(115);
-	var tmplSrc = __webpack_require__(256);
-	var resultTmplSrc = __webpack_require__(257);
+	var tmplSrc = __webpack_require__(255);
+	var resultTmplSrc = __webpack_require__(256);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var modal = __webpack_require__(126);
 	var task = __webpack_require__(111);
@@ -35101,13 +35111,13 @@
 	}
 
 /***/ },
-/* 256 */
+/* 255 */
 /***/ function(module, exports) {
 
 	module.exports = "<div style=\"width:300px\">\r\n\t<form mc-name=\"search-form\" onsubmit=\"return false\">\r\n\t\t<input mc-name=\"searchText\" />\r\n\t\t<button mc-name=\"searchButton\">検索</button>\r\n\t</form>\r\n\t<div mc-name=\"resultBox\" style=\"height: 360px;font-size:12px;margin-top:6px;border:1px solid #ccc\"></div>\r\n</div>"
 
 /***/ },
-/* 257 */
+/* 256 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<div style=\"margin:2px 0;padding: 3px;border: 1px solid #ccc\">\r\n\t\t<div name=\"title\"\r\n\t\t\tstyle=\"font-weight: bold; margin-bottom: 4px; color: green\">\r\n\t\t\t({{patient_id}}) [{{last_name}} {{first_name}}]\r\n\t\t\t{{ date_label }}\r\n\t\t</div>\r\n\t\t<div name=\"content\">\r\n\t\t\t{{& content}}\r\n\t\t</div>\r\n\t</div>;\r\n{{/list}}\r\n"
