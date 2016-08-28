@@ -75,7 +75,11 @@ function bindCopyAll(dom, visitId, at){
 							done(err);
 							return;
 						}
-						mUtil.assign(drug, {visit_id: targetVisitId}, result);
+						var modify = {
+							visit_id: targetVisitId,
+							d_iyakuhincode: result.iyakuhincode
+						}
+						mUtil.assign(drug, result, modify);
 						done();
 					})
 				}, done);

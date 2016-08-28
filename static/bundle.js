@@ -28649,7 +28649,11 @@
 								done(err);
 								return;
 							}
-							mUtil.assign(drug, {visit_id: targetVisitId}, result);
+							var modify = {
+								visit_id: targetVisitId,
+								d_iyakuhincode: result.iyakuhincode
+							}
+							mUtil.assign(drug, result, modify);
 							done();
 						})
 					}, done);
@@ -29410,12 +29414,14 @@
 								return;
 							}
 							var modify = {
-								visit_id: targetVisitId
+								visit_id: targetVisitId,
+								d_iyakuhincode: result.iyakuhincode
 							};
 							if( newDays !== "" ){
 								modify.d_days = newDays;
 							}
 							mUtil.assign(drug, result, modify);
+							console.log(drug);
 							done();
 						})
 					}, done);
