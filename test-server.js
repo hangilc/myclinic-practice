@@ -4,6 +4,11 @@ var practice = require("./index")(config);
 
 app.use("/practice", practice);
 
+app.post("/shohousen", function(req, res){
+	console.log("REDIRECT");
+	res.redirect(307, req.protocol + "://localhost:8081/shohousen");
+});
+
 app.listen(8080, function(){
 	console.log("server listening to 8080");
 })

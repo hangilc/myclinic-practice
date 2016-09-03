@@ -9,14 +9,18 @@ var service = require("../service");
 var mUtil = require("../../myclinic-util");
 
 exports.create = function(text){
+	var isEditing = text.text_id > 0;
 	var html = tmpl.render(mUtil.assign({}, text, {
-		isEditing: text.text_id > 0,
-		isEntering: text.text_id <= 0
+		isEditing: isEditing,
+		isEntering: !isEditing
 	}));
 	var dom = $(html);
 	bindEnter(dom, text);
 	bindCancel(dom);
 	bindDelete(dom, text.text_id);
+	if( isEditing ){
+		bindShohousen(dom, text.content);
+	}
 	return dom;
 };
 
@@ -118,4 +122,15 @@ function bindDelete(dom, textId){
 			dom.trigger("text-deleted");
 		});
 	});
+}
+
+function bindShohousen(dom, content){
+	dom.find("[mc-name=prescribeLink]").click(function(event){
+		event.preventDefault();
+		var form = dom.find("form[target=shohousen]");
+		form.find("input[name=json-data]").val(JSON.stringify({
+			"shimei": "無名太郎"
+		}))
+		form.submit();
+	})
 }
