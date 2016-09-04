@@ -1,6 +1,7 @@
 "use strict";
 
 var mConsts = require("myclinic-consts");
+var moment = require("moment");
 
 // used
 function shuukeiToMeisaiSection(shuukeisaki){
@@ -120,4 +121,34 @@ exports.calcCharge = function(ten, futanWari){
 		c += (10 - r);
 	return c;
 }
+
+exports.calcFutanWari = function(visit, patient){
+	var futanWari, bd, at, age;
+	futanWari = 10;
+	if( visit.shahokokuho ){
+		bd = moment(patient.birth_day);
+		at = moment(visit.v_datetime);
+		age = exports.calcRcptAge(bd.year(), bd.month()+1, bd.date(),
+			at.year(), at.month()+1);
+		futanWari = exports.calcShahokokuhoFutanWariByAge(age);
+		if( visit.shahokokuho.kourei > 0 ){
+			futanWari = visit.shahokokuho.kourei;
+		}
+	}
+	if( visit.koukikourei ){
+		futanWari = visit.koukikourei.futan_wari;
+	}
+	if( visit.roujin ){
+		futanWari = visit.roujin.futan_wari;
+	}
+	visit.kouhi_list.forEach(function(kouhi){
+		var kouhiFutanWari;
+		kouhiFutanWari = exports.kouhiFutanWari(kouhi.futansha);
+		if( kouhiFutanWari < futanWari ){
+			futanWari = kouhiFutanWari;
+		}
+	});
+	return futanWari;
+};
+
 

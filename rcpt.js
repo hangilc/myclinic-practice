@@ -325,5 +325,5 @@ function calcFutanWari(visit, patient){
 }
 
 exports.RcptVisit = RcptVisit;
-exports.calcFutanWari = calcFutanWari;
+exports.calcFutanWari = util.calcFutanWari;
 

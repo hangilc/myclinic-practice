@@ -27988,6 +27988,9 @@
 	var task = __webpack_require__(111);
 	var service = __webpack_require__(112);
 	var mUtil = __webpack_require__(5);
+	var conti = __webpack_require__(4);
+	var rcptUtil = __webpack_require__(258);
+	var moment = __webpack_require__(6);
 
 	exports.create = function(text){
 		var isEditing = text.text_id > 0;
@@ -28000,7 +28003,7 @@
 		bindCancel(dom);
 		bindDelete(dom, text.text_id);
 		if( isEditing ){
-			bindShohousen(dom, text.content);
+			bindShohousen(dom, text.visit_id, text.content);
 		}
 		return dom;
 	};
@@ -28105,14 +28108,105 @@
 		});
 	}
 
-	function bindShohousen(dom, content){
+	function fetchData(visitId, cb){
+		var data = {};
+		conti.exec([
+			function(done){
+				service.getVisitWithFullHoken(visitId, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					data.visit = result;
+					done();
+				})
+			},
+			function(done){
+				service.getPatient(data.visit.patient_id, function(err, result){
+					if( err ){
+						done(err);
+						return;
+					}
+					data.patient = result;
+					done();
+				})
+			}
+		], function(err){
+			if( err ){
+				cb(err);
+				return;
+			}
+			data.futanWari = rcptUtil.calcFutanWari(data.visit, data.patient);
+			cb(undefined, data);
+		})
+	}
+
+	function extendShohousenData(data, dbData){
+		var patient = dbData.patient;
+		if( patient ){
+			var lastName = patient.last_name || "";
+			var firstName = patient.first_name || "";
+			if( lastName || firstName ){
+				data.shimei = lastName + firstName;
+			}
+			if( patient.birth_day && patient.birth_day !== "0000-00-00" ){
+				var birthday = moment(patient.birth_day);
+				if( birthday.isValid() ){
+					data.birthday = [birthday.year(), birthday.month()+1, birthday.date()];
+				}
+			}
+			if( patient.sex === "M" || patient.sex === "F" ){
+				data.sex = patient.sex;
+			}
+		}
+		var visit = dbData.visit;
+		if( visit ){
+			var shahokokuho = visit.shahokokuho;
+			if( shahokokuho ){
+				data["hokensha-bangou"] = "" + shahokokuho.hokensha_bangou;
+				data.hihokensha = [shahokokuho.hihokensha_kigou || "", shahokokuho.hihokensha_bangou || ""].join(" ・ ");
+				if( 0 === +shahokokuho.honnin ){
+					data["kubun-hifuyousha"] = true;
+				} else if( 1 === +shahokokuho.honnin ){
+					data["kubun-hihokensha"] = true;
+				}
+			}
+			var koukikourei = visit.koukikourei;
+			if( koukikourei ){
+				data["hokensha-bangou"] = "" + koukikourei.hokensha_bangou;
+				data["hihokensha"] = "" + koukikourei.hihokensha_bangou;
+			}
+			var kouhi_list = visit.kouhi_list || [];
+			if( kouhi_list.length > 0 ){
+				data["kouhi-1-futansha"] = kouhi_list[0].futansha;
+				data["kouhi-1-jukyuusha"] = kouhi_list[0].jukyuusha;
+			}
+			if( kouhi_list.length > 1 ){
+				data["kouhi-2-futansha"] = kouhi_list[1].futansha;
+				data["kouhi-2-jukyuusha"] = kouhi_list[1].jukyuusha;
+			}
+			var at = moment(visit.v_datetime);
+			data["koufu-date"] = [at.year(), at.month()+1, at.date()];
+		}
+	}
+
+	function bindShohousen(dom, visitId, content){
 		dom.find("[mc-name=prescribeLink]").click(function(event){
 			event.preventDefault();
 			var form = dom.find("form[target=shohousen]");
-			form.find("input[name=json-data]").val(JSON.stringify({
-				"shimei": "無名太郎"
-			}))
-			form.submit();
+			fetchData(visitId, function(err, result){
+				if( err ){
+					alert(err);
+					return;
+				}
+				var data = {
+					"drugs": content,
+					"futan-wari": result.futanWari
+				}
+				extendShohousenData(data, result);
+				form.find("input[name=json-data]").val(JSON.stringify(data))
+				form.submit();
+			})
 		})
 	}
 
@@ -35132,6 +35226,167 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<div style=\"margin:2px 0;padding: 3px;border: 1px solid #ccc\">\r\n\t\t<div name=\"title\"\r\n\t\t\tstyle=\"font-weight: bold; margin-bottom: 4px; color: green\">\r\n\t\t\t({{patient_id}}) [{{last_name}} {{first_name}}]\r\n\t\t\t{{ date_label }}\r\n\t\t</div>\r\n\t\t<div name=\"content\">\r\n\t\t\t{{& content}}\r\n\t\t</div>\r\n\t</div>;\r\n{{/list}}\r\n"
+
+/***/ },
+/* 257 */,
+/* 258 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var mConsts = __webpack_require__(110);
+	var moment = __webpack_require__(6);
+
+	// used
+	function shuukeiToMeisaiSection(shuukeisaki){
+		switch(shuukeisaki){
+			case mConsts.SHUUKEI_SHOSHIN:
+			case mConsts.SHUUKEI_SAISHIN_SAISHIN:
+			case mConsts.SHUUKEI_SAISHIN_GAIRAIKANRI:
+			case mConsts.SHUUKEI_SAISHIN_JIKANGAI:
+			case mConsts.SHUUKEI_SAISHIN_KYUUJITSU:
+			case mConsts.SHUUKEI_SAISHIN_SHINYA:
+				return "初・再診料";
+			case mConsts.SHUUKEI_SHIDO:
+				return "医学管理等";
+			case mConsts.SHUUKEI_ZAITAKU:
+				return "在宅医療";
+			case mConsts.SHUUKEI_KENSA:
+				return "検査";
+			case mConsts.SHUUKEI_GAZOSHINDAN:
+				return "画像診断";
+			case mConsts.SHUUKEI_TOYAKU_NAIFUKUTONPUKUCHOZAI:
+			case mConsts.SHUUKEI_TOYAKU_GAIYOCHOZAI:
+			case mConsts.SHUUKEI_TOYAKU_SHOHO:
+			case mConsts.SHUUKEI_TOYAKU_MADOKU:
+			case mConsts.SHUUKEI_TOYAKU_CHOKI:
+				return "投薬";
+			case mConsts.SHUUKEI_CHUSHA_SEIBUTSUETC:
+			case mConsts.SHUUKEI_CHUSHA_HIKA:
+			case mConsts.SHUUKEI_CHUSHA_JOMYAKU:
+			case mConsts.SHUUKEI_CHUSHA_OTHERS:
+				return "注射";
+			case mConsts.SHUUKEI_SHOCHI:
+				return "処置";
+			case mConsts.SHUUKEI_SHUJUTSU_SHUJUTSU:
+			case mConsts.SHUUKEI_SHUJUTSU_YUKETSU:
+			case mConsts.SHUUKEI_MASUI:
+			case mConsts.SHUUKEI_OTHERS:
+			default: return "その他";
+		}
+	}
+	exports.shuukeiToMeisaiSection = shuukeiToMeisaiSection;
+
+	// used
+	exports.touyakuKingakuToTen = function(kingaku){
+	    if( kingaku <= 15 ){
+	        return 1;
+	    } else {
+	        return Math.ceil((kingaku - 15)/10 + 1);
+	    }
+	};
+
+	// used
+	exports.shochiKingakuToTen = function(kingaku){
+			if( kingaku <= 15 )
+				return 0;
+			else
+				return Math.ceil((kingaku - 15)/10 + 1);
+	};
+
+	// used
+	exports.kizaiKingakuToTen = function(kingaku){
+	    return Math.round(kingaku/10.0);
+	}
+
+	// used
+	exports.calcRcptAge = function(bdYear, bdMonth, bdDay, atYear, atMonth){
+	    var age;
+		age = atYear - bdYear;
+		if( atMonth < bdMonth ){
+			age -= 1;
+		} else if( atMonth === bdMonth ){
+			if( bdDay != 1 ){
+				age -= 1;
+			}
+		}
+		return age;
+	};
+
+	// used
+	exports.calcShahokokuhoFutanWariByAge = function(age){
+	    if( age < 3 )
+	        return 2;
+	    else if( age >= 70 )
+	        return 2;
+	    else
+	        return 3;
+	};
+
+	// used
+	exports.kouhiFutanWari = function(futanshaBangou){
+	    futanshaBangou = Number(futanshaBangou);
+		if( Math.floor(futanshaBangou / 1000000) === 41 )
+			return 1;
+		else if( Math.floor(futanshaBangou / 1000) === 80136 )
+			return 1;
+		else if( Math.floor(futanshaBangou / 1000) === 80137 )
+			return 0;
+		else if( Math.floor(futanshaBangou / 1000) === 81136 )
+			return 1;
+		else if( Math.floor(futanshaBangou / 1000) === 81137 )
+			return 0;
+		else if( Math.floor(futanshaBangou / 1000000) === 88 )
+			return 0;
+		else{
+			console.log("unknown kouhi futansha: " + futanshaBangou);
+			return 0;
+		}
+	};
+
+	// used
+	exports.calcCharge = function(ten, futanWari){
+	    var c, r;
+		c = parseInt(ten) * parseInt(futanWari);
+		r = c % 10;
+		if( r < 5 )
+			c -= r;
+		else
+			c += (10 - r);
+		return c;
+	}
+
+	exports.calcFutanWari = function(visit, patient){
+		var futanWari, bd, at, age;
+		futanWari = 10;
+		if( visit.shahokokuho ){
+			bd = moment(patient.birth_day);
+			at = moment(visit.v_datetime);
+			age = exports.calcRcptAge(bd.year(), bd.month()+1, bd.date(),
+				at.year(), at.month()+1);
+			futanWari = exports.calcShahokokuhoFutanWariByAge(age);
+			if( visit.shahokokuho.kourei > 0 ){
+				futanWari = visit.shahokokuho.kourei;
+			}
+		}
+		if( visit.koukikourei ){
+			futanWari = visit.koukikourei.futan_wari;
+		}
+		if( visit.roujin ){
+			futanWari = visit.roujin.futan_wari;
+		}
+		visit.kouhi_list.forEach(function(kouhi){
+			var kouhiFutanWari;
+			kouhiFutanWari = exports.kouhiFutanWari(kouhi.futansha);
+			if( kouhiFutanWari < futanWari ){
+				futanWari = kouhiFutanWari;
+			}
+		});
+		return futanWari;
+	};
+
+
+
 
 /***/ }
 /******/ ]);
