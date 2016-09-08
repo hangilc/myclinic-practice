@@ -1,11 +1,14 @@
 "use strict";
 
 var moment = require("moment");
-var fs = require("fs");
 var mConsts = require("myclinic-consts");
 var util = require("./rcpt-util");
 
-var gHoukatsuList = JSON.parse(fs.readFileSync("rcpt-houkatsu.json", "utf-8")).houkatsu;
+var gHoukatsuList = [];
+
+exports.setHoukatsuList = function(list){
+	gHoukatsuList = list;
+};
 
 function RcptVisit(visit, patient){
 	var m;
