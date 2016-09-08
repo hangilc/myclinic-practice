@@ -1,8 +1,17 @@
-var app = require("express")();
+var express = require("express");
+var bodyParser = require("body-parser");
 var config = require("./test-config");
-var practice = require("./index")(config);
+var practice = require("./index");
 
-app.use("/practice", practice);
+var app = express();
+
+var practiceApp = express();
+practiceApp.use(bodyParser.urlencoded({extended: false}));
+practiceApp.use(bodyParser.json());
+practiceApp.use(express.static("static"));
+practice.initApp(practiceApp, config);
+
+app.use("/practice", practiceApp);
 
 app.post("/shohousen", function(req, res){
 	res.redirect(307, req.protocol + "://localhost:8081/shohousen");
