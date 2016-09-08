@@ -1,6 +1,6 @@
 var express = require("express");
 var bodyParser = require("body-parser");
-var config = require("./test-config");
+var config = require("./sample-config/practice-config");
 var practice = require("./index");
 
 var app = express();
