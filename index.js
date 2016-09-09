@@ -6,6 +6,8 @@ var MasterMap = require("./master-map");
 var NameMap = require("./master-name");
 var rcpt = require("./rcpt");
 
+exports.staticDir = "static";
+
 exports.initApp = function(app, config){
 	if( config.masterMap ){
 		MasterMap.import(config.masterMap);
@@ -64,7 +66,5 @@ exports.initApp = function(app, config){
 			res.sendStatus(400);
 		}
 	});
-	app.use(express.static("static"));
-
 	return app;	
 }

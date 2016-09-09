@@ -10,6 +10,9 @@ practiceApp.use(bodyParser.urlencoded({extended: false}));
 practiceApp.use(bodyParser.json());
 practiceApp.use(express.static("static"));
 practice.initApp(practiceApp, config);
+if( "staticDir" in practice ){
+	practiceApp.use(express.static(__dirname + "/" + practice.staticDir))
+}
 
 app.use("/practice", practiceApp);
 
