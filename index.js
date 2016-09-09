@@ -6,7 +6,7 @@ var MasterMap = require("./master-map");
 var NameMap = require("./master-name");
 var rcpt = require("./rcpt");
 
-exports.staticDir = "static";
+exports.staticDir = __dirname + "/static";
 
 exports.initApp = function(app, config){
 	if( config.masterMap ){
