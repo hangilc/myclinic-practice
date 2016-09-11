@@ -1,7 +1,6 @@
 var service = require("./lib/service");
 var noDbService = require("./lib/no-db-service");
 var mysql = require("mysql");
-var bodyParser = require("body-parser");
 var MasterMap = require("./master-map");
 var NameMap = require("./master-name");
 var rcpt = require("./rcpt");
