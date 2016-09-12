@@ -6,7 +6,7 @@ var tmplSrc = require("raw!./conduct-add-inject-form.html");
 var resultTmplSrc = require("raw!./conduct-add-inject-search-result.html");
 var resultTmpl = hogan.compile(resultTmplSrc);
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var mConsts = require("myclinic-consts");
 
 exports.create = function(at){

@@ -3,7 +3,7 @@
 var $ = require("jquery");
 var tmplSrc = require("raw!./shinryou-add-kensa.html");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var conti = require("conti");
 
 var inputSelector = "> form[mc-name=main-form] input[type=checkbox][name=kensa]";

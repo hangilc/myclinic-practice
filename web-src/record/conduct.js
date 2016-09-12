@@ -7,7 +7,7 @@ var mUtil = require("../../myclinic-util");
 var ConductDisp = require("./conduct-disp");
 var ConductForm = require("./conduct-form");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var tmplSrc = require("raw!./conduct.html");
 
 var dispAreaSelector = "> [mc-name=disp-area]";

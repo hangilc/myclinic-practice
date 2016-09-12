@@ -9,7 +9,7 @@ var kanjidate = require("kanjidate");
 var DateBinder = require("../../date-binder");
 var moment = require("moment");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var conti = require("conti");
 var mConsts = require("myclinic-consts");
 

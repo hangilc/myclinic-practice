@@ -2,7 +2,7 @@
 
 var $ = require("jquery");
 var modal = require("../../myclinic-modal");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var mUtil = require("../../myclinic-util");
 var hogan = require("hogan");
 var kanjidate = require("kanjidate");

@@ -5,7 +5,7 @@ var Account = require("./account");
 var SearchText = require("./search-text");
 var modal = require("../../myclinic-modal");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
 

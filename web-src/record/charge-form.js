@@ -6,7 +6,7 @@ var tmplSrc = require("raw!./charge-form.html");
 var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 var chargeInputSelector = "input[mc-name=newCharge]";
 var enterLinkSelector = "[mc-name=enterLink]"

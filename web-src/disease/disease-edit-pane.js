@@ -7,7 +7,7 @@ var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
 var kanjidate = require("kanjidate");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 var dispNameSelector = "> .disease-editor [mc-name=name]";
 var dispStartDateSelector = "> .disease-editor [mc-name=startDate]";

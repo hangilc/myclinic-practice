@@ -5,7 +5,7 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./shinryou-delete-selected-form.html");
 var tmpl = hogan.compile(tmplSrc);
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 exports.create = function(shinryouList){
 	var dom = $(tmpl.render({list: shinryouList}));

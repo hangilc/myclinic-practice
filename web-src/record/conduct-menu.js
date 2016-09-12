@@ -8,7 +8,7 @@ var ConductSubmenu = require("./conduct-submenu");
 var ConductAddXpForm = require("./conduct-add-xp-form");
 var ConductAddInjectForm = require("./conduct-add-inject-form");
 var conti = require("conti");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var task = require("../task");
 var mConsts = require("myclinic-consts");
 

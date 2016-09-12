@@ -3,7 +3,7 @@
 var $ = require("jquery");
 var hogan = require("hogan");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 var tmplSrc = require("raw!./shinryou-add-form.html");
 var resultTmplSrc = require("raw!./shinryou-add-form-search-result.html");

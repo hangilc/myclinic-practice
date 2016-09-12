@@ -6,7 +6,7 @@ var tmplSrc = require("raw!./drug-modify-days-form.html");
 var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
 var mConst = require("myclinic-consts");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var task = require("../task");
 var conti = require("conti");
 

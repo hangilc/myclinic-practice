@@ -5,7 +5,7 @@ var hogan = require("hogan");
 var mUtil = require("../../myclinic-util");
 var ChargeDisp = require("./charge-disp");
 var ChargeForm = require("./charge-form");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var task = require("../task");
 
 exports.setup = function(dom, visitId, charge){

@@ -10,7 +10,7 @@ var ShinryouAddForm = require("./shinryou-add-form");
 var ShinryouCopySelectedForm = require("./shinryou-copy-selected-form");
 var ShinryouDeleteSelectedForm = require("./shinryou-delete-selected-form");
 var ShinryouSubmenu = require("./shinryou-submenu");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var task = require("../task");
 var conti = require("conti");
 

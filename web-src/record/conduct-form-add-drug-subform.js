@@ -4,7 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var tmplSrc = require("raw!./conduct-form-add-drug-subform.html");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var resultTmplSrc = require("raw!./conduct-form-add-drug-subform-search-result.html");
 var resultTmpl = hogan.compile(resultTmplSrc);
 

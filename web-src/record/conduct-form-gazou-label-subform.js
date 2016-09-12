@@ -4,7 +4,7 @@ var $ = require("jquery");
 var hogan = require("hogan");
 var tmplSrc = require("raw!./conduct-form-gazou-label-subform.html");
 var tmpl = hogan.compile(tmplSrc);
-var service = require("../service");
+var service = require("myclinic-service-api");
 var task = require("../task");
 var conti = require("conti");
 

@@ -6,7 +6,7 @@ require("../jquery-inquire");
 var conti = require("conti");
 var mUtil = require("../myclinic-util");
 var task = require("./task");
-var service = require("./service");
+var service = require("myclinic-service-api");
 var AppData = require("./app-data");
 
 var PatientInfo = require("./patient-info/patient-info");

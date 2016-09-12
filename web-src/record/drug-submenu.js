@@ -4,7 +4,7 @@ var $ = require("jquery");
 require("../../jquery-inquire");
 var tmplHtml = require("raw!./drug-submenu.html");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var mUtil = require("../../myclinic-util");
 var conti = require("conti");
 

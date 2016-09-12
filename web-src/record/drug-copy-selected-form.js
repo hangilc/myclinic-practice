@@ -5,7 +5,7 @@ var hogan = require("hogan");
 var tmplSrc = require("raw!./drug-copy-selected-form.html");
 var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var task = require("../task");
 var conti = require("conti");
 

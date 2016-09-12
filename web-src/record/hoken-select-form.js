@@ -7,7 +7,7 @@ var itemTmplSrc = require("raw!./hoken-select-form-item.html");
 var itemTmpl = hogan.compile(itemTmplSrc);
 var mUtil = require("../../myclinic-util");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 exports.create = function(hoken, visit){
 	var dom = $(tmplHtml);

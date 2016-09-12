@@ -6,7 +6,7 @@ var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
 var HokenSelectForm = require("./hoken-select-form");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 var tmplSrc = require("raw!./hoken.html");
 var tmpl = hogan.compile(tmplSrc);

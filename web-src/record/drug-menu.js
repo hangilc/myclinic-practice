@@ -14,7 +14,7 @@ var ModifyDays = require("./drug-modify-days-form");
 var DeleteSelected = require("./drug-delete-selected-form");
 
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 exports.setup = function(dom, visit){
 	dom.html(tmplHtml);

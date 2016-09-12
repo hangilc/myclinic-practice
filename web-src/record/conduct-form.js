@@ -10,7 +10,7 @@ var AddDrugForm = require("./conduct-form-add-drug-subform");
 var AddKizaiForm = require("./conduct-form-add-kizai-subform");
 var GazouLabelForm = require("./conduct-form-gazou-label-subform");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 exports.create = function(conductEx, at){
 	var conductId = conductEx.id;

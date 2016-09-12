@@ -6,7 +6,7 @@ var tmplSrc = require("raw!./account.html");
 var tmpl = hogan.compile(tmplSrc);
 var mUtil = require("../../myclinic-util");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 var chargeDispSelector = "[mc-name=charge-disp]";
 var modifyLinkSelector = "[mc-name=modifyLink]";

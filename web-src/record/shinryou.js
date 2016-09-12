@@ -6,7 +6,7 @@ var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
 var ShinryouForm = require("./shinryou-form");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 var tmplSrc = require("raw!./shinryou.html");
 var tmpl = hogan.compile(tmplSrc);

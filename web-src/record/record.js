@@ -15,7 +15,7 @@ var ConductMenu = require("./conduct-menu");
 var ConductList = require("./conduct-list");
 var Charge = require("./charge");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 
 exports.create = function(visit, currentVisitId, tempVisitId){
 	var dom = $(tmplSrc);

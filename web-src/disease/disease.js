@@ -9,7 +9,7 @@ var EditPane = require("./disease-edit-pane");
 var ItemPane = require("./disease-item-pane");
 var mConsts = require("myclinic-consts");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var conti = require("conti");
 
 var tmplHtml = require("raw!./disease.html");

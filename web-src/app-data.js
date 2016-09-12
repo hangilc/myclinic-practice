@@ -1,7 +1,7 @@
 "use strict";
 
 var task = require("./task");
-var service = require("./service");
+var service = require("myclinic-service-api");
 var conti = require("conti");
 
 function calcNumberOfPages(totalItems, itemsPerPage){

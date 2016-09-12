@@ -7,7 +7,7 @@ var resultTmplSrc = require("raw!./search-whole-text-search-result.html");
 var resultTmpl = hogan.compile(resultTmplSrc);
 var modal = require("../../myclinic-modal");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var kanjidate = require("kanjidate");
 
 var searchTextSelector = "> form[mc-name=search-form] input[mc-name=searchText]";

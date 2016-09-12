@@ -8,7 +8,7 @@ var resultTmpl = hogan.compile(resultTmplSrc);
 var mUtil = require("../../myclinic-util");
 var kanjidate = require("kanjidate");
 var task = require("../task");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var DateBinder = require("../../date-binder");
 var moment = require("moment");
 

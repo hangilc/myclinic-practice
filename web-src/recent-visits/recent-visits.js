@@ -2,7 +2,7 @@
 
 var hogan = require("hogan");
 var mUtil = require("../../myclinic-util");
-var service = require("../service");
+var service = require("myclinic-service-api");
 var $ = require("jquery");
 require("../../jquery-broadcast");
 var task = require("../task")
