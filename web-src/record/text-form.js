@@ -210,9 +210,8 @@ function extendShohousenData(data, dbData){
 }
 
 function bindShohousen(dom, visitId, content){
-	dom.find("[mc-name=prescribeLink]").click(function(event){
+	dom.find("button[mc-name=shohousen-button]").click(function(event){
 		event.preventDefault();
-		var form = dom.find("form[target=shohousen]");
 		fetchData(visitId, function(err, result){
 			if( err ){
 				alert(err);
@@ -223,8 +222,30 @@ function bindShohousen(dom, visitId, content){
 				"futan-wari": result.futanWari
 			}
 			extendShohousenData(data, result);
+			var form = dom.find("form[mc-name=shohousen-form]");
 			form.find("input[name=json-data]").val(JSON.stringify(data))
 			form.submit();
 		})
 	})
+	// dom.find("form[mc-name=shohousen-form]").submit(function(event){
+	// 	event.preventDefault();
+	// 	console.log($(event.target));
+	// })
+	// dom.find("[mc-name=prescribeLink]").click(function(event){
+	// 	event.preventDefault();
+	// 	var form = dom.find("form[target=shohousen]");
+	// 	fetchData(visitId, function(err, result){
+	// 		if( err ){
+	// 			alert(err);
+	// 			return;
+	// 		}
+	// 		var data = {
+	// 			"drugs": content,
+	// 			"futan-wari": result.futanWari
+	// 		}
+	// 		extendShohousenData(data, result);
+	// 		form.find("input[name=json-data]").val(JSON.stringify(data))
+	// 		form.submit();
+	// 	})
+	// })
 }

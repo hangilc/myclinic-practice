@@ -6,8 +6,9 @@
 	    <a mc-name="cancelLink" href="javascript:void(0)" class="cmd-link">キャンセル</a>
 	    {{#isEditing}}
 	    <a mc-name="deleteLink" href="javascript:void(0)" class="cmd-link" >削除</a>
-	    <form style="display:inline" target="shohousen", action="/shohousen" method="POST">
-	    	<a mc-name="prescribeLink" href="javascript:void(0)" class="cmd-link">処方箋発行</a>
+	    <form style="display:inline" target="shohousen", action="/shohousen" method="POST" mc-name="shohousen-form">
+	    	<!-- <a mc-name="prescribeLink" href="javascript:void(0)" class="cmd-link">処方箋発行</a> -->
+	    	<button type="submit" mc-name="shohousen-button">処方箋発行</button>
 	    	<input name="json-data" value="{}" type="hidden"/>
     	</form>
 	    {{/isEditing}}
