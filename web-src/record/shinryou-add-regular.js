@@ -7,12 +7,13 @@ var service = require("myclinic-service-api");
 var task = require("../task");
 var conti = require("conti");
 
-exports.create = function(visitId, at){
-	var dom = $(tmplSrc);
-	bindEnter(dom, visitId, at);
-	bindCancel(dom);
-	return dom;
+// Helpers /////////////////////////////////////////////////////////////////////////////
+
+function getInput(dom, value){
+	return dom.find("input[type=checkbox][name=item][value=" + value + "]");
 }
+
+// Bindings ////////////////////////////////////////////////////////////////////////////
 
 function bindEnter(dom, visitId, at){
 	var selector = "> form .workarea-commandbox [mc-name=enter]";
@@ -78,3 +79,22 @@ function bindCancel(dom){
 		dom.trigger("cancel");
 	});
 }
+
+function bindShohou(dom){
+	dom.on("change", "input[type=checkbox][name=item][value=処方料]", function(event){
+		var shohou = $(event.target);
+		var kasan = getInput(dom, "外来後発加算１");
+		kasan.prop("checked", shohou.is(":checked"));
+	});
+}
+
+// Exports /////////////////////////////////////////////////////////////////////////////
+
+exports.create = function(visitId, at){
+	var dom = $(tmplSrc);
+	bindEnter(dom, visitId, at);
+	bindCancel(dom);
+	bindShohou(dom);
+	return dom;
+}
+
