@@ -29142,7 +29142,7 @@
 /* 145 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	/* WEBPACK VAR INJECTION */(function(setImmediate) {"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
@@ -29154,6 +29154,9 @@
 	var conti = __webpack_require__(4);
 	var rcptUtil = __webpack_require__(147);
 	var moment = __webpack_require__(8);
+	var modal = __webpack_require__(132);
+	var shohousenTmplSrc = __webpack_require__(264);
+	var shohousenTmpl = hogan.compile(shohousenTmplSrc);
 
 	exports.create = function(text){
 		var isEditing = text.text_id > 0;
@@ -29353,10 +29356,69 @@
 		}
 	}
 
+	function shohousenDialog(dom, data){
+		modal.startModal({
+			title: "処方箋発行",
+			init: function(content, close){
+				var c = $(content);
+				var jsonData = JSON.stringify(data);
+				var html = shohousenTmpl.render({});
+				c.html(html);
+				c.find("input[name=json-data]").val(jsonData);
+				c.find("button[mc-name=enter]").click(function(event){
+					setImmediate(function(){
+						close();
+						dom.trigger("cancel-edit");
+					})
+				})
+				c.find("button[mc-name=cancel]").click(function(event){
+					event.preventDefault();
+					event.stopPropagation();
+					close();
+					dom.trigger("cancel-edit");
+				})
+			}
+		})
+
+	}
+
 	function bindShohousen(dom, visitId, content){
+		// dom.find("button[mc-name=shohousen-button]").click(function(event){
+		// 	event.preventDefault();
+		// 	fetchData(visitId, function(err, result){
+		// 		if( err ){
+		// 			alert(err);
+		// 			return;
+		// 		}
+		// 		var data = {
+		// 			"drugs": content,
+		// 			"futan-wari": result.futanWari
+		// 		}
+		// 		extendShohousenData(data, result);
+		// 		var form = dom.find("form[mc-name=shohousen-form]");
+		// 		form.find("input[name=json-data]").val(JSON.stringify(data))
+		// 		form.submit();
+		// 	})
+		// })
+		// dom.find("[mc-name=prescribeLink]").click(function(event){
+		// 	event.preventDefault();
+		// 	var form = dom.find("form[target=shohousen]");
+		// 	fetchData(visitId, function(err, result){
+		// 		if( err ){
+		// 			alert(err);
+		// 			return;
+		// 		}
+		// 		var data = {
+		// 			"drugs": content,
+		// 			"futan-wari": result.futanWari
+		// 		}
+		// 		extendShohousenData(data, result);
+		// 		form.find("input[name=json-data]").val(JSON.stringify(data))
+		// 		form.submit();
+		// 	})
+		// })
 		dom.find("[mc-name=prescribeLink]").click(function(event){
 			event.preventDefault();
-			var form = dom.find("form[target=shohousen]");
 			fetchData(visitId, function(err, result){
 				if( err ){
 					alert(err);
@@ -29367,17 +29429,17 @@
 					"futan-wari": result.futanWari
 				}
 				extendShohousenData(data, result);
-				form.find("input[name=json-data]").val(JSON.stringify(data))
-				form.submit();
+				shohousenDialog(dom, data);
 			})
 		})
 	}
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).setImmediate))
 
 /***/ },
 /* 146 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t    <form style=\"display:inline\" target=\"shohousen\", action=\"/shohousen\" method=\"POST\">\r\n\t    \t<a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t    \t<input name=\"json-data\" value=\"{}\" type=\"hidden\"/>\r\n    \t</form>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t    <form style=\"display:inline\" target=\"shohousen\", action=\"/shohousen\" method=\"POST\" mc-name=\"shohousen-form\">\r\n\t    \t<a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t    \t<input name=\"json-data\" value=\"{}\" type=\"hidden\"/>\r\n    \t</form>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
 /* 147 */
@@ -31792,7 +31854,7 @@
 		dom.on("change", "input[type=checkbox][name=item][value=処方料]", function(event){
 			var shohou = $(event.target);
 			var kasan = getInput(dom, "外来後発加算１");
-			kasan.prop("checked", shohou.is(":checked"));
+			kasan.prop("checked", shohou.is(":checked")); 
 		});
 	}
 
@@ -36570,6 +36632,12 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<div style=\"margin:2px 0;padding: 3px;border: 1px solid #ccc\">\r\n\t\t<div name=\"title\"\r\n\t\t\tstyle=\"font-weight: bold; margin-bottom: 4px; color: green\">\r\n\t\t\t({{patient_id}}) [{{last_name}} {{first_name}}]\r\n\t\t\t{{ date_label }}\r\n\t\t</div>\r\n\t\t<div name=\"content\">\r\n\t\t\t{{& content}}\r\n\t\t</div>\r\n\t</div>;\r\n{{/list}}\r\n"
+
+/***/ },
+/* 264 */
+/***/ function(module, exports) {
+
+	module.exports = "<form action=\"/shohousen\" method=\"POST\" target=\"shohousen\">\r\n<input type=\"hidden\" name=\"json-data\"/>\r\n<button type=\"submit\" mc-name=\"enter\">入力</button>\r\n<button type=\"button\" mc-name=\"cancel\">キャンセル</button>\r\n</form>"
 
 /***/ }
 /******/ ]);

@@ -84,7 +84,7 @@ function bindShohou(dom){
 	dom.on("change", "input[type=checkbox][name=item][value=処方料]", function(event){
 		var shohou = $(event.target);
 		var kasan = getInput(dom, "外来後発加算１");
-		kasan.prop("checked", shohou.is(":checked"));
+		kasan.prop("checked", shohou.is(":checked")); 
 	});
 }
 

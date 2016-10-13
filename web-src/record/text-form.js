@@ -10,6 +10,9 @@ var mUtil = require("../../myclinic-util");
 var conti = require("conti");
 var rcptUtil = require("../../rcpt-util");
 var moment = require("moment");
+var modal = require("../../myclinic-modal");
+var shohousenTmplSrc = require("raw!./shohousen-dialog.html");
+var shohousenTmpl = hogan.compile(shohousenTmplSrc);
 
 exports.create = function(text){
 	var isEditing = text.text_id > 0;
@@ -209,10 +212,69 @@ function extendShohousenData(data, dbData){
 	}
 }
 
+function shohousenDialog(dom, data){
+	modal.startModal({
+		title: "処方箋発行",
+		init: function(content, close){
+			var c = $(content);
+			var jsonData = JSON.stringify(data);
+			var html = shohousenTmpl.render({});
+			c.html(html);
+			c.find("input[name=json-data]").val(jsonData);
+			c.find("button[mc-name=enter]").click(function(event){
+				setImmediate(function(){
+					close();
+					dom.trigger("cancel-edit");
+				})
+			})
+			c.find("button[mc-name=cancel]").click(function(event){
+				event.preventDefault();
+				event.stopPropagation();
+				close();
+				dom.trigger("cancel-edit");
+			})
+		}
+	})
+
+}
+
 function bindShohousen(dom, visitId, content){
+	// dom.find("button[mc-name=shohousen-button]").click(function(event){
+	// 	event.preventDefault();
+	// 	fetchData(visitId, function(err, result){
+	// 		if( err ){
+	// 			alert(err);
+	// 			return;
+	// 		}
+	// 		var data = {
+	// 			"drugs": content,
+	// 			"futan-wari": result.futanWari
+	// 		}
+	// 		extendShohousenData(data, result);
+	// 		var form = dom.find("form[mc-name=shohousen-form]");
+	// 		form.find("input[name=json-data]").val(JSON.stringify(data))
+	// 		form.submit();
+	// 	})
+	// })
+	// dom.find("[mc-name=prescribeLink]").click(function(event){
+	// 	event.preventDefault();
+	// 	var form = dom.find("form[target=shohousen]");
+	// 	fetchData(visitId, function(err, result){
+	// 		if( err ){
+	// 			alert(err);
+	// 			return;
+	// 		}
+	// 		var data = {
+	// 			"drugs": content,
+	// 			"futan-wari": result.futanWari
+	// 		}
+	// 		extendShohousenData(data, result);
+	// 		form.find("input[name=json-data]").val(JSON.stringify(data))
+	// 		form.submit();
+	// 	})
+	// })
 	dom.find("[mc-name=prescribeLink]").click(function(event){
 		event.preventDefault();
-		var form = dom.find("form[target=shohousen]");
 		fetchData(visitId, function(err, result){
 			if( err ){
 				alert(err);
@@ -223,8 +285,7 @@ function bindShohousen(dom, visitId, content){
 				"futan-wari": result.futanWari
 			}
 			extendShohousenData(data, result);
-			form.find("input[name=json-data]").val(JSON.stringify(data))
-			form.submit();
+			shohousenDialog(dom, data);
 		})
 	})
 }
