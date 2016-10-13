@@ -47,6 +47,7 @@ function startPage(patientId, visitId){
 			return;
 		}
 		var data = mUtil.assign({}, appData);
+		updateTitle(data.currentPatient);
 		$("body").broadcast("rx-start-page", [data]);
 	});
 }
@@ -120,4 +121,12 @@ $("body").reply("fn-get-temp-visit-id", function(){
 	return appData.tempVisitId;
 });
 
+
+function updateTitle(patient){
+	if( patient ){
+		document.title = "診察 (" + patient.patient_id + ") " + patient.last_name + patient.first_name;
+	} else {
+		document.title = "診察";
+	}
+}
 
