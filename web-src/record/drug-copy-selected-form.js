@@ -68,8 +68,9 @@ function bindEnter(dom, drugs){
 						}
 						var modify = {
 							visit_id: targetVisitId,
-							d_iyakuhincode: result.iyakuhincode
-						};
+							d_iyakuhincode: result.iyakuhincode,
+							d_prescribed: 0
+						}; 
 						if( newDays !== "" ){
 							modify.d_days = newDays;
 						}

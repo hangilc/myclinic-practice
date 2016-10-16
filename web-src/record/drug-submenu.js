@@ -77,7 +77,8 @@ function bindCopyAll(dom, visitId, at){
 						}
 						var modify = {
 							visit_id: targetVisitId,
-							d_iyakuhincode: result.iyakuhincode
+							d_iyakuhincode: result.iyakuhincode,
+							d_prescribed: 0
 						}
 						mUtil.assign(drug, result, modify);
 						done();
