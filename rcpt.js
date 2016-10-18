@@ -11,6 +11,7 @@ exports.setHoukatsuList = function(list){
 };
 
 function RcptVisit(visit, patient){
+	console.log("enter RcptVisit");
 	var m;
 	m = moment(visit.v_datetime);
 	this.visit = visit;
@@ -102,10 +103,12 @@ RcptVisit.prototype.handleSimpleShinryou = function(shinryouList){
 };
 
 RcptVisit.prototype.handleHoukatsu = function(houkatsuMap){
+	console.log("enter houkatsu");
 	var houkatsu, shinryouList, count, ten, name;
 	for(houkatsu in houkatsuMap){
 		shinryouList = houkatsuMap[houkatsu];
 		count = shinryouList.length;
+		console.log("houkatsu count:", count);
 		ten = houkatsuTen(this.yearMonth, houkatsu, count);
 		if( ten === null ){
 			ten = sumShinryouTen(shinryouList);
