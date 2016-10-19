@@ -28697,6 +28697,7 @@
 		bindDrugDeleted(dom);
 		bindShinryouBatchEntered(dom);
 		bindConductsBatchEntered(dom);
+		bindTextsBatchEntered(dom);
 	};
 
 	function bindDrugEntered(recordListDom){
@@ -28729,6 +28730,13 @@
 		dom.on("conducts-batch-entered", function(event, visitId, conducts){
 			event.stopPropagation();
 			dom.broadcast("rx-conducts-batch-entered", [visitId, conducts]);
+		});
+	}
+
+	function bindTextsBatchEntered(dom){
+		dom.on("texts-batch-entered", function(event, visitId, texts){
+			event.stopPropagation();
+			dom.broadcast("rx-texts-batch-entered", [visitId, texts]);
 		});
 	}
 
@@ -29180,6 +29188,7 @@
 		bindDelete(dom, text.text_id);
 		if( isEditing ){
 			bindShohousen(dom, text.visit_id, text.content);
+			bindCopy(dom, text);
 		}
 		return dom;
 	};
@@ -29444,13 +29453,51 @@
 		})
 	}
 
+	function bindCopy(dom, text){
+		dom.find("[mc-name=copy]").click(function(event){
+			event.preventDefault();
+			var targetVisitId = dom.inquire("fn-get-target-visit-id");
+			if( targetVisitId === 0 ){
+				alert("現在（暫定）診察中でないため、コピーできません。");
+				return;
+			}
+			if( targetVisitId === text.visit_id ){
+				alert("自分自身にはコピーできません。");
+				return;
+			}
+			var newText = {
+				visit_id: targetVisitId,
+				content: text.content
+			};
+			task.run([
+				function(done){
+					service.enterText(newText, function(err, textId){
+						if( err ){
+							done(err);
+							return;
+						}
+						newText.text_id = textId;
+						done();			
+					});
+				}
+			], function(err){
+				if( err ){
+					alert(err);
+					return;
+				}
+				dom.trigger("texts-batch-entered", [targetVisitId, [newText]]);
+				dom.trigger("cancel-edit");
+			});
+		});
+	}
+
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).setImmediate))
 
 /***/ },
 /* 146 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t    <form style=\"display:inline\" target=\"shohousen\", action=\"/shohousen\" method=\"POST\" mc-name=\"shohousen-form\">\r\n\t    \t<a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t    \t<input name=\"json-data\" value=\"{}\" type=\"hidden\"/>\r\n    \t</form>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t\t<a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t\t<a mc-name=\"copy\" href=\"javascript:void(0)\" class=\"cmd-link\">コピー</a>\r\n\t\t<!--\r\n\t    <form style=\"display:inline\" target=\"shohousen\", action=\"/shohousen\" method=\"POST\" mc-name=\"shohousen-form\">\r\n\t    \t<a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t    \t<input name=\"json-data\" value=\"{}\" type=\"hidden\"/>\r\n    \t</form>\r\n\t\t-->\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
 /* 147 */

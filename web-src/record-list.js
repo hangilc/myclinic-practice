@@ -23,6 +23,7 @@ exports.setup = function(dom){
 	bindDrugDeleted(dom);
 	bindShinryouBatchEntered(dom);
 	bindConductsBatchEntered(dom);
+	bindTextsBatchEntered(dom);
 };
 
 function bindDrugEntered(recordListDom){
@@ -55,6 +56,13 @@ function bindConductsBatchEntered(dom){
 	dom.on("conducts-batch-entered", function(event, visitId, conducts){
 		event.stopPropagation();
 		dom.broadcast("rx-conducts-batch-entered", [visitId, conducts]);
+	});
+}
+
+function bindTextsBatchEntered(dom){
+	dom.on("texts-batch-entered", function(event, visitId, texts){
+		event.stopPropagation();
+		dom.broadcast("rx-texts-batch-entered", [visitId, texts]);
 	});
 }
 

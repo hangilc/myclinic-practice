@@ -26,6 +26,7 @@ exports.create = function(text){
 	bindDelete(dom, text.text_id);
 	if( isEditing ){
 		bindShohousen(dom, text.visit_id, text.content);
+		bindCopy(dom, text);
 	}
 	return dom;
 };
@@ -288,4 +289,42 @@ function bindShohousen(dom, visitId, content){
 			shohousenDialog(dom, data);
 		})
 	})
+}
+
+function bindCopy(dom, text){
+	dom.find("[mc-name=copy]").click(function(event){
+		event.preventDefault();
+		var targetVisitId = dom.inquire("fn-get-target-visit-id");
+		if( targetVisitId === 0 ){
+			alert("現在（暫定）診察中でないため、コピーできません。");
+			return;
+		}
+		if( targetVisitId === text.visit_id ){
+			alert("自分自身にはコピーできません。");
+			return;
+		}
+		var newText = {
+			visit_id: targetVisitId,
+			content: text.content
+		};
+		task.run([
+			function(done){
+				service.enterText(newText, function(err, textId){
+					if( err ){
+						done(err);
+						return;
+					}
+					newText.text_id = textId;
+					done();			
+				});
+			}
+		], function(err){
+			if( err ){
+				alert(err);
+				return;
+			}
+			dom.trigger("texts-batch-entered", [targetVisitId, [newText]]);
+			dom.trigger("cancel-edit");
+		});
+	});
 }
