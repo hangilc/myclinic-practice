@@ -20,7 +20,7 @@
   "devDependencies": {
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
-    "hogan": "^1.0.2",
+    "hogan.js": "^3.0.2",
     "jquery": "^3.1.0",
     "kanjidate": "^1.1.0",
     "myclinic-service": "^1.0.0",

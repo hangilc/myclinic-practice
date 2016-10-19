@@ -1,6 +1,6 @@
 "use strict";
 
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var mUtil = require("../../myclinic-util");
 var service = require("myclinic-service-api");
 var $ = require("jquery");

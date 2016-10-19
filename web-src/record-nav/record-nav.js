@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 
 var tmplSrc = require("raw!./record-nav.html");
 var tmpl = hogan.compile(tmplSrc);

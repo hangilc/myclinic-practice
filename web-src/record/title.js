@@ -2,7 +2,7 @@
 
 var kanjidate = require("kanjidate");
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var service = require("myclinic-service-api");
 var task = require("../task");
 

@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var Shinryou = require("./shinryou");
 
 exports.setup = function(dom, shinryouList, visitId, at, patientId){

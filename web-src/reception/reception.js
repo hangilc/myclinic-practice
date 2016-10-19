@@ -4,7 +4,7 @@ var $ = require("jquery");
 var modal = require("../../myclinic-modal");
 var service = require("myclinic-service-api");
 var mUtil = require("../../myclinic-util");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var kanjidate = require("kanjidate");
 
 var mainTmpl = hogan.compile(require("raw!./reception.html"));

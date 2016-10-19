@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var tmplSrc = require("raw!./conduct-add-inject-form.html");
 var resultTmplSrc = require("raw!./conduct-add-inject-search-result.html");
 var resultTmpl = hogan.compile(resultTmplSrc);

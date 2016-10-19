@@ -28232,6 +28232,7 @@
 		});
 	}
 
+
 /***/ },
 /* 128 */
 /***/ function(module, exports) {
@@ -29442,6 +29443,7 @@
 			})
 		})
 	}
+
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).setImmediate))
 
 /***/ },
@@ -29888,6 +29890,7 @@
 		})
 	}
 
+
 /***/ },
 /* 154 */
 /***/ function(module, exports) {
@@ -30076,6 +30079,7 @@
 			clearWorkarea(dom);
 		})
 	}
+
 
 /***/ },
 /* 158 */
@@ -30834,6 +30838,7 @@
 		});
 	}
 
+
 /***/ },
 /* 161 */
 /***/ function(module, exports) {
@@ -31078,6 +31083,7 @@
 		})
 	}
 
+
 /***/ },
 /* 167 */
 /***/ function(module, exports) {
@@ -31142,6 +31148,7 @@
 			dom.trigger("cancel-workarea");
 		})
 	}
+
 
 /***/ },
 /* 169 */
@@ -31352,6 +31359,7 @@
 			}
 		});
 	}
+
 
 /***/ },
 /* 174 */
@@ -32146,6 +32154,7 @@
 		});
 	}
 
+
 /***/ },
 /* 182 */
 /***/ function(module, exports) {
@@ -32217,6 +32226,7 @@
 		});
 	}
 
+
 /***/ },
 /* 185 */
 /***/ function(module, exports) {
@@ -32287,6 +32297,7 @@
 			dom.trigger("cancel");
 		});
 	}
+
 
 /***/ },
 /* 187 */
@@ -32417,6 +32428,7 @@
 		})
 	}
 
+
 /***/ },
 /* 192 */
 /***/ function(module, exports, __webpack_require__) {
@@ -32545,6 +32557,7 @@
 			dom.trigger("cancel");
 		});
 	}
+
 
 /***/ },
 /* 194 */
@@ -33192,6 +33205,7 @@
 		});
 	}
 
+
 /***/ },
 /* 202 */
 /***/ function(module, exports) {
@@ -33361,6 +33375,7 @@
 		});
 		return dom;
 	};
+
 
 /***/ },
 /* 208 */
@@ -33657,6 +33672,7 @@
 			dom.trigger("delete");
 		});
 	}
+
 
 /***/ },
 /* 210 */
@@ -34371,6 +34387,7 @@
 		});
 	}
 
+
 /***/ },
 /* 225 */
 /***/ function(module, exports) {
@@ -34448,6 +34465,7 @@
 			dom.trigger("30g8sm2i-modified", [newCharge]);
 		});
 	}
+
 
 /***/ },
 /* 227 */
@@ -35654,6 +35672,7 @@
 		});
 	}
 
+
 /***/ },
 /* 240 */
 /***/ function(module, exports) {
@@ -35985,6 +36004,7 @@
 			}
 		});
 	}
+
 
 /***/ },
 /* 242 */
@@ -36541,6 +36561,7 @@
 		//getSearchTextDom(dom).focus();
 	}
 
+
 /***/ },
 /* 259 */
 /***/ function(module, exports) {
@@ -36639,6 +36660,7 @@
 			form.find(searchResultSelector).html(resultTmpl.render({list: list}));
 		})
 	}
+
 
 /***/ },
 /* 263 */

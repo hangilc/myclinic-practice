@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var tmplSrc = require("raw!./conduct-form-add-shinryou-subform.html");
 var task = require("../task");
 var service = require("myclinic-service-api");

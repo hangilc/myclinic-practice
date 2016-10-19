@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var tmplSrc = require("raw!./shinryou-delete-selected-form.html");
 var tmpl = hogan.compile(tmplSrc);
 var task = require("../task");

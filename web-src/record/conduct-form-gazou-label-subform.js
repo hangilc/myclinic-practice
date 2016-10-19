@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var tmplSrc = require("raw!./conduct-form-gazou-label-subform.html");
 var tmpl = hogan.compile(tmplSrc);
 var service = require("myclinic-service-api");

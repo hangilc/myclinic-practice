@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var kanjidate = require("kanjidate");
 var myclinicUtil = require("../../myclinic-util");
 var ConductSubmenu = require("./conduct-submenu");

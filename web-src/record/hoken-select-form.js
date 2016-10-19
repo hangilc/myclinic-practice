@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var tmplHtml = require("raw!./hoken-select-form.html");
 var itemTmplSrc = require("raw!./hoken-select-form-item.html");
 var itemTmpl = hogan.compile(itemTmplSrc);

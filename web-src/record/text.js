@@ -1,7 +1,7 @@
 "use strict";
 
 var $ = require("jquery");
-var hogan = require("hogan");
+var hogan = require("hogan.js");
 var TextDisp = require("./text-disp");
 var TextForm = require("./text-form");
 var tmplSrc = require("raw!./text.html");
