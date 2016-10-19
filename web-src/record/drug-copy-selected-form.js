@@ -14,6 +14,8 @@ exports.create = function(drugs){
 		drugs: drugs.map(drugToData)
 	};
 	var dom = $(tmpl.render(data));
+	bindSelectAll(dom);
+	bindUnselectAll(dom);
 	bindEnter(dom, drugs);
 	bindCancel(dom);
 	return dom;
@@ -24,6 +26,20 @@ function drugToData(drug){
 		drug_id: drug.drug_id,
 		label: mUtil.drugRep(drug)
 	}
+}
+
+function bindSelectAll(dom){
+	var link = dom.find("[mc-name=selectAll]").click(function(event){
+		event.preventDefault();
+		dom.find("input[type=checkbox][name=drug]").prop("checked", true);
+	});	
+}
+
+function bindUnselectAll(dom){
+	var link = dom.find("[mc-name=unselectAll]").click(function(event){
+		event.preventDefault();
+		dom.find("input[type=checkbox][name=drug]").prop("checked", false);
+	});	
 }
 
 function bindEnter(dom, drugs){
