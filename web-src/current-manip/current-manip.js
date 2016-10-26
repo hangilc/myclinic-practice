@@ -8,8 +8,9 @@ var task = require("../task");
 var service = require("myclinic-service-api");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
-
+var hogan = require("hogan.js");
 var tmplHtml = require("raw!./current-manip.html");
+var tmpl = hogan.compile(tmplHtml);
 
 var accountLinkSelector = "[mc-name=accountButton]";
 var searchTextLinkSelector = "[mc-name=searchTextLink]";
@@ -20,7 +21,9 @@ exports.setup = function(dom, referUrl){
 	dom.listen("rx-start-page", function(appData){
 		patientId = appData.currentPatientId;
 		if( appData.currentPatientId > 0 ){
-			dom.html(tmplHtml);
+			dom.html(tmpl.render({
+				patient_id: patientId
+			}));
 		} else {
 			dom.html("");
 		}

@@ -3,9 +3,6 @@
     <button mc-name="endPatientButton">患者終了</button>
     <a mc-name="searchTextLink" href="javascript:void(0)"
             class="cmd-link">文章検索</a> |
-    <form style="display:inline" action="/refer" method="POST" target="refer">
-	    <a mc-name="createReferLink" href="javascript:void(0)" class="cmd-link">紹介状作成</a>
-	    <input type="hidden" name="json-data" value="{}" />
-	</form>
+	<a href="/refer?patient_id={{patient_id}}" target="refer">紹介状作成</a>
 </div>
 <div mc-name="accountArea"></div>
