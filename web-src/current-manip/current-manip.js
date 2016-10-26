@@ -8,9 +8,10 @@ var task = require("../task");
 var service = require("myclinic-service-api");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
-var hogan = require("hogan.js");
 var tmplHtml = require("raw!./current-manip.html");
-var tmpl = hogan.compile(tmplHtml);
+var hogan = require("hogan.js");
+var referTmplSrc = require("raw!./submit-refer.html");
+var referTmpl = hogan.compile(referTmplSrc);
 
 var accountLinkSelector = "[mc-name=accountButton]";
 var searchTextLinkSelector = "[mc-name=searchTextLink]";
@@ -21,9 +22,7 @@ exports.setup = function(dom, referUrl){
 	dom.listen("rx-start-page", function(appData){
 		patientId = appData.currentPatientId;
 		if( appData.currentPatientId > 0 ){
-			dom.html(tmpl.render({
-				patient_id: patientId
-			}));
+			dom.html(tmplHtml);
 		} else {
 			dom.html("");
 		}
@@ -41,7 +40,6 @@ exports.setup = function(dom, referUrl){
 		var patient;
 		task.run([
 			function(done){
-				console.log(patientId);
 				service.getPatient(patientId, function(err, result){
 					if( err ){
 						done(err);
@@ -69,9 +67,26 @@ exports.setup = function(dom, referUrl){
 				"patient-age": age,
 				"patient-sex": mUtil.sexToKanji(patient.sex)
 			};
-			var form = event.target.closest("form");
-			form.querySelector("input[name=json-data]").value = JSON.stringify(data);
-			form.submit();
+			modal.startModal({
+				title: "紹介状発行",
+				init: function(content, close){
+					content = $(content);
+					var referData = {
+						patientName: data["patient-name"],
+						jsonData: JSON.stringify(data)
+					};
+					content.html(referTmpl.render(referData));
+					console.log(content.html());
+					content.find("form").submit(function(){
+						close();
+					});
+					content.find("[mc-name=cancelLink]").click(function(event){
+						event.preventDefault();
+						close();
+					});
+				}
+			});
+			return;
 		})
 	})
 	dom.on("click", "[mc-name=endPatientButton]", function(event){

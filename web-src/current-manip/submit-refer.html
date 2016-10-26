@@ -1,0 +1,16 @@
+<div class="workarea">
+	<form action="/refer" method="POST" target="refer">
+		<input type="hidden" name="json-data" value="{{jsonData}}"/>
+		<table>
+			<tbody>
+				<tr>
+					<td>名前</td><td>{{patientName}}</td>
+				</tr>
+			</tbody>
+		</table>
+		<div class="workarea-commandbox">
+			<button type="submit">入力</button>
+			<button mc-name="cancelLink">キャンセル</button>
+		</div>
+	</form>
+</div>

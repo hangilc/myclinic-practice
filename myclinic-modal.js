@@ -42,7 +42,8 @@ function createScreen(zIndex, opacity){
 function createDialog(zIndex){
 	var dialog = document.createElement("div");
 	setStyles(dialog, {
-	    position:"absolute",
+	    //position:"absolute",
+	    position:"fixed",
 	    left:"100px",
 	    top:"50px",
 	    padding:"10px",

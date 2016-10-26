@@ -27978,9 +27978,10 @@
 	var service = __webpack_require__(117);
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
-	var hogan = __webpack_require__(121);
 	var tmplHtml = __webpack_require__(133);
-	var tmpl = hogan.compile(tmplHtml);
+	var hogan = __webpack_require__(121);
+	var referTmplSrc = __webpack_require__(265);
+	var referTmpl = hogan.compile(referTmplSrc);
 
 	var accountLinkSelector = "[mc-name=accountButton]";
 	var searchTextLinkSelector = "[mc-name=searchTextLink]";
@@ -27991,9 +27992,7 @@
 		dom.listen("rx-start-page", function(appData){
 			patientId = appData.currentPatientId;
 			if( appData.currentPatientId > 0 ){
-				dom.html(tmpl.render({
-					patient_id: patientId
-				}));
+				dom.html(tmplHtml);
 			} else {
 				dom.html("");
 			}
@@ -28011,7 +28010,6 @@
 			var patient;
 			task.run([
 				function(done){
-					console.log(patientId);
 					service.getPatient(patientId, function(err, result){
 						if( err ){
 							done(err);
@@ -28039,9 +28037,26 @@
 					"patient-age": age,
 					"patient-sex": mUtil.sexToKanji(patient.sex)
 				};
-				var form = event.target.closest("form");
-				form.querySelector("input[name=json-data]").value = JSON.stringify(data);
-				form.submit();
+				modal.startModal({
+					title: "紹介状発行",
+					init: function(content, close){
+						content = $(content);
+						var referData = {
+							patientName: data["patient-name"],
+							jsonData: JSON.stringify(data)
+						};
+						content.html(referTmpl.render(referData));
+						console.log(content.html());
+						content.find("form").submit(function(){
+							close();
+						});
+						content.find("[mc-name=cancelLink]").click(function(event){
+							event.preventDefault();
+							close();
+						});
+					}
+				});
+				return;
 			})
 		})
 		dom.on("click", "[mc-name=endPatientButton]", function(event){
@@ -28366,7 +28381,8 @@
 	function createDialog(zIndex){
 		var dialog = document.createElement("div");
 		setStyles(dialog, {
-		    position:"absolute",
+		    //position:"absolute",
+		    position:"fixed",
 		    left:"100px",
 		    top:"50px",
 		    padding:"10px",
@@ -28578,7 +28594,7 @@
 /* 133 */
 /***/ function(module, exports) {
 
-	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\"\r\n            class=\"cmd-link\">文章検索</a> |\r\n\t<a href=\"/refer?patient_id={{patient_id}}\" target=\"refer\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\" class=\"cmd-link\">文章検索</a> |\r\n\t<a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
 
 /***/ },
 /* 134 */
@@ -36739,6 +36755,12 @@
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<div style=\"margin:2px 0;padding: 3px;border: 1px solid #ccc\">\r\n\t\t<div name=\"title\"\r\n\t\t\tstyle=\"font-weight: bold; margin-bottom: 4px; color: green\">\r\n\t\t\t({{patient_id}}) [{{last_name}} {{first_name}}]\r\n\t\t\t{{ date_label }}\r\n\t\t</div>\r\n\t\t<div name=\"content\">\r\n\t\t\t{{& content}}\r\n\t\t</div>\r\n\t</div>;\r\n{{/list}}\r\n"
+
+/***/ },
+/* 265 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"workarea\">\r\n\t<form action=\"/refer\" method=\"POST\" target=\"refer\">\r\n\t\t<input type=\"hidden\" name=\"json-data\" value=\"{{jsonData}}\"/>\r\n\t\t<table>\r\n\t\t\t<tbody>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td>名前</td><td>{{patientName}}</td>\r\n\t\t\t\t</tr>\r\n\t\t\t</tbody>\r\n\t\t</table>\r\n\t\t<div class=\"workarea-commandbox\">\r\n\t\t\t<button type=\"submit\">入力</button>\r\n\t\t\t<button mc-name=\"cancelLink\">キャンセル</button>\r\n\t\t</div>\r\n\t</form>\r\n</div>\r\n"
 
 /***/ }
 /******/ ]);
