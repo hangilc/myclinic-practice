@@ -78,7 +78,9 @@ exports.setup = function(dom, referUrl){
 					content.html(referTmpl.render(referData));
 					console.log(content.html());
 					content.find("form").submit(function(){
-						close();
+						setImmediate(function(){
+							close();
+						});
 					});
 					content.find("[mc-name=cancelLink]").click(function(event){
 						event.preventDefault();
