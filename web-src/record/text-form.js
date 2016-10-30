@@ -208,7 +208,8 @@ function extendShohousenData(data, dbData){
 			data["kouhi-2-futansha"] = kouhi_list[1].futansha;
 			data["kouhi-2-jukyuusha"] = kouhi_list[1].jukyuusha;
 		}
-		var at = moment(visit.v_datetime);
+		// var at = moment(visit.v_datetime);
+		var at = moment();
 		data["koufu-date"] = [at.year(), at.month()+1, at.date()];
 	}
 }
@@ -240,40 +241,6 @@ function shohousenDialog(dom, data){
 }
 
 function bindShohousen(dom, visitId, content){
-	// dom.find("button[mc-name=shohousen-button]").click(function(event){
-	// 	event.preventDefault();
-	// 	fetchData(visitId, function(err, result){
-	// 		if( err ){
-	// 			alert(err);
-	// 			return;
-	// 		}
-	// 		var data = {
-	// 			"drugs": content,
-	// 			"futan-wari": result.futanWari
-	// 		}
-	// 		extendShohousenData(data, result);
-	// 		var form = dom.find("form[mc-name=shohousen-form]");
-	// 		form.find("input[name=json-data]").val(JSON.stringify(data))
-	// 		form.submit();
-	// 	})
-	// })
-	// dom.find("[mc-name=prescribeLink]").click(function(event){
-	// 	event.preventDefault();
-	// 	var form = dom.find("form[target=shohousen]");
-	// 	fetchData(visitId, function(err, result){
-	// 		if( err ){
-	// 			alert(err);
-	// 			return;
-	// 		}
-	// 		var data = {
-	// 			"drugs": content,
-	// 			"futan-wari": result.futanWari
-	// 		}
-	// 		extendShohousenData(data, result);
-	// 		form.find("input[name=json-data]").val(JSON.stringify(data))
-	// 		form.submit();
-	// 	})
-	// })
 	dom.find("[mc-name=prescribeLink]").click(function(event){
 		event.preventDefault();
 		fetchData(visitId, function(err, result){
