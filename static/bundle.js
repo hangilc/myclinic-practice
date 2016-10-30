@@ -28039,6 +28039,7 @@
 				};
 				modal.startModal({
 					title: "紹介状発行",
+					position: "fixed",
 					init: function(content, close){
 						content = $(content);
 						var referData = {
@@ -28046,7 +28047,6 @@
 							jsonData: JSON.stringify(data)
 						};
 						content.html(referTmpl.render(referData));
-						console.log(content.html());
 						content.find("form").submit(function(){
 							setImmediate(function(){
 								close();
@@ -28346,7 +28346,7 @@
 
 	function setAttributes(e, map){
 		for(var key in map){
-			e.setAttribute(key, map[key]);
+		e.setAttribute(key, map[key]);
 		}
 	}
 
@@ -28385,7 +28385,7 @@
 		var dialog = document.createElement("div");
 		setStyles(dialog, {
 		    //position:"absolute",
-		    position:"fixed",
+		    position:"absolute",
 		    left:"100px",
 		    top:"50px",
 		    padding:"10px",
@@ -28515,6 +28515,7 @@
 		this.dialogZIndex = getOpt(opts, "dialogZIndex", 11);
 		this.title = getOpt(opts, "title", "Untitled");
 		this.onCloseClick = getOpt(opts, "onCloseClick", null);
+		this.position = opts.position;
 	}
 
 	ModalDialog.prototype.open = function(){
@@ -28522,6 +28523,9 @@
 		//screen.style.display = "block";
 		document.body.appendChild(screen);
 		var dialog = createDialog(this.dialogZIndex);
+		if( this.position ){
+			dialog.style.position = this.position;
+		}
 		document.body.appendChild(dialog);
 		var header = new Header(this.title);
 		dialog.appendChild(header.dom);
@@ -28582,8 +28586,11 @@
 	//
 
 	exports.startModal = function(opts){
+		if( !opts ){
+			opts = {};
+		}
 		var modalDialog = new ModalDialog(opts);
-		modalDialog.open();
+		modalDialog.open({ position: opts.position });
 		if( opts.init ){
 			opts.init.call(modalDialog, modalDialog.content, function(){ modalDialog.close(); });
 			modalDialog.reposition();
@@ -29407,6 +29414,7 @@
 	function shohousenDialog(dom, data){
 		modal.startModal({
 			title: "処方箋発行",
+			position: "fixed",
 			init: function(content, close){
 				var c = $(content);
 				var jsonData = JSON.stringify(data);

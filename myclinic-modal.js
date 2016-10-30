@@ -4,7 +4,7 @@
 
 function setAttributes(e, map){
 	for(var key in map){
-		e.setAttribute(key, map[key]);
+	e.setAttribute(key, map[key]);
 	}
 }
 
@@ -43,7 +43,7 @@ function createDialog(zIndex){
 	var dialog = document.createElement("div");
 	setStyles(dialog, {
 	    //position:"absolute",
-	    position:"fixed",
+	    position:"absolute",
 	    left:"100px",
 	    top:"50px",
 	    padding:"10px",
@@ -173,6 +173,7 @@ function ModalDialog(opts){
 	this.dialogZIndex = getOpt(opts, "dialogZIndex", 11);
 	this.title = getOpt(opts, "title", "Untitled");
 	this.onCloseClick = getOpt(opts, "onCloseClick", null);
+	this.position = opts.position;
 }
 
 ModalDialog.prototype.open = function(){
@@ -180,6 +181,9 @@ ModalDialog.prototype.open = function(){
 	//screen.style.display = "block";
 	document.body.appendChild(screen);
 	var dialog = createDialog(this.dialogZIndex);
+	if( this.position ){
+		dialog.style.position = this.position;
+	}
 	document.body.appendChild(dialog);
 	var header = new Header(this.title);
 	dialog.appendChild(header.dom);
@@ -240,8 +244,11 @@ ModalDialog.prototype.close = function(){
 //
 
 exports.startModal = function(opts){
+	if( !opts ){
+		opts = {};
+	}
 	var modalDialog = new ModalDialog(opts);
-	modalDialog.open();
+	modalDialog.open({ position: opts.position });
 	if( opts.init ){
 		opts.init.call(modalDialog, modalDialog.content, function(){ modalDialog.close(); });
 		modalDialog.reposition();

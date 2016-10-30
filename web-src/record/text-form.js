@@ -217,6 +217,7 @@ function extendShohousenData(data, dbData){
 function shohousenDialog(dom, data){
 	modal.startModal({
 		title: "処方箋発行",
+		position: "fixed",
 		init: function(content, close){
 			var c = $(content);
 			var jsonData = JSON.stringify(data);

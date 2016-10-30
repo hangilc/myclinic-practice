@@ -69,6 +69,7 @@ exports.setup = function(dom, referUrl){
 			};
 			modal.startModal({
 				title: "紹介状発行",
+				position: "fixed",
 				init: function(content, close){
 					content = $(content);
 					var referData = {
@@ -76,7 +77,6 @@ exports.setup = function(dom, referUrl){
 						jsonData: JSON.stringify(data)
 					};
 					content.html(referTmpl.render(referData));
-					console.log(content.html());
 					content.find("form").submit(function(){
 						setImmediate(function(){
 							close();
