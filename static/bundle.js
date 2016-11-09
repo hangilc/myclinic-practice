@@ -29215,14 +29215,15 @@
 		var isEditing = text.text_id > 0;
 		var html = tmpl.render(mUtil.assign({}, text, {
 			isEditing: isEditing,
-			isEntering: !isEditing
+			isEntering: !isEditing,
+			textId: text.text_id
 		}));
 		var dom = $(html);
 		bindEnter(dom, text);
 		bindCancel(dom);
 		bindDelete(dom, text.text_id);
 		if( isEditing ){
-			bindShohousen(dom, text.visit_id, text.content);
+			// bindShohousen(dom, text.visit_id, text.content);
 			bindCopy(dom, text);
 		}
 		return dom;
@@ -29500,7 +29501,7 @@
 /* 147 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t\t<a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t\t<a mc-name=\"copy\" href=\"javascript:void(0)\" class=\"cmd-link\">コピー</a>\r\n\t\t<!--\r\n\t    <form style=\"display:inline\" target=\"shohousen\", action=\"/shohousen\" method=\"POST\" mc-name=\"shohousen-form\">\r\n\t    \t<a mc-name=\"prescribeLink\" href=\"javascript:void(0)\" class=\"cmd-link\">処方箋発行</a>\r\n\t    \t<input name=\"json-data\" value=\"{}\" type=\"hidden\"/>\r\n    \t</form>\r\n\t\t-->\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t\t<a mc-name=\"prescribeLink\" target=\"shohousen\" href=\"shohousen-from-text/{{textId}}\" class=\"cmd-link\">処方箋発行</a>\r\n\t\t<a mc-name=\"copy\" href=\"javascript:void(0)\" class=\"cmd-link\">コピー</a>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
 /* 148 */

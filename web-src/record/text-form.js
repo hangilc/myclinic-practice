@@ -18,14 +18,15 @@ exports.create = function(text){
 	var isEditing = text.text_id > 0;
 	var html = tmpl.render(mUtil.assign({}, text, {
 		isEditing: isEditing,
-		isEntering: !isEditing
+		isEntering: !isEditing,
+		textId: text.text_id
 	}));
 	var dom = $(html);
 	bindEnter(dom, text);
 	bindCancel(dom);
 	bindDelete(dom, text.text_id);
 	if( isEditing ){
-		bindShohousen(dom, text.visit_id, text.content);
+		// bindShohousen(dom, text.visit_id, text.content);
 		bindCopy(dom, text);
 	}
 	return dom;
