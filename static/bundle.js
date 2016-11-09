@@ -59,13 +59,13 @@
 	var CurrentManip = __webpack_require__(126);
 	var RecordNav = __webpack_require__(135);
 	var RecordList = __webpack_require__(137);
-	var Disease = __webpack_require__(229);
-	var SelectPatient = __webpack_require__(246);
-	var SearchPatient = __webpack_require__(250);
-	var RecentVisits = __webpack_require__(253);
-	var TodaysVisits = __webpack_require__(256);
-	var Reception = __webpack_require__(259);
-	var SearchWholeText = __webpack_require__(263);
+	var Disease = __webpack_require__(227);
+	var SelectPatient = __webpack_require__(244);
+	var SearchPatient = __webpack_require__(248);
+	var RecentVisits = __webpack_require__(251);
+	var TodaysVisits = __webpack_require__(254);
+	var Reception = __webpack_require__(257);
+	var SearchWholeText = __webpack_require__(261);
 
 	PatientInfo.setup($("#patient-info-wrapper"));
 	CurrentManip.setup($("#current-manip-pane"));
@@ -28789,15 +28789,15 @@
 	var tmplSrc = __webpack_require__(139);
 	var Title = __webpack_require__(140);
 	var TextList = __webpack_require__(142);
-	var TextMenu = __webpack_require__(151);
-	var Hoken = __webpack_require__(153);
-	var DrugMenu = __webpack_require__(158);
-	var DrugList = __webpack_require__(171);
-	var ShinryouMenu = __webpack_require__(177);
-	var ShinryouList = __webpack_require__(192);
-	var ConductMenu = __webpack_require__(197);
-	var ConductList = __webpack_require__(206);
-	var Charge = __webpack_require__(224);
+	var TextMenu = __webpack_require__(149);
+	var Hoken = __webpack_require__(151);
+	var DrugMenu = __webpack_require__(156);
+	var DrugList = __webpack_require__(169);
+	var ShinryouMenu = __webpack_require__(175);
+	var ShinryouList = __webpack_require__(190);
+	var ConductMenu = __webpack_require__(195);
+	var ConductList = __webpack_require__(204);
+	var Charge = __webpack_require__(222);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 
@@ -29103,7 +29103,7 @@
 	var hogan = __webpack_require__(121);
 	var TextDisp = __webpack_require__(144);
 	var TextForm = __webpack_require__(146);
-	var tmplSrc = __webpack_require__(150);
+	var tmplSrc = __webpack_require__(148);
 
 	exports.create = function(text){
 		var dom = $(tmplSrc);
@@ -29205,11 +29205,6 @@
 	var service = __webpack_require__(117);
 	var mUtil = __webpack_require__(7);
 	var conti = __webpack_require__(4);
-	var rcptUtil = __webpack_require__(148);
-	var moment = __webpack_require__(8);
-	var modal = __webpack_require__(132);
-	var shohousenTmplSrc = __webpack_require__(149);
-	var shohousenTmpl = hogan.compile(shohousenTmplSrc);
 
 	exports.create = function(text){
 		var isEditing = text.text_id > 0;
@@ -29329,135 +29324,12 @@
 		});
 	}
 
-	function fetchData(visitId, cb){
-		var data = {};
-		conti.exec([
-			function(done){
-				service.getVisitWithFullHoken(visitId, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					data.visit = result;
-					done();
-				})
-			},
-			function(done){
-				service.getPatient(data.visit.patient_id, function(err, result){
-					if( err ){
-						done(err);
-						return;
-					}
-					data.patient = result;
-					done();
-				})
-			}
-		], function(err){
-			if( err ){
-				cb(err);
-				return;
-			}
-			data.futanWari = rcptUtil.calcFutanWari(data.visit, data.patient);
-			cb(undefined, data);
-		})
-	}
-
-	function extendShohousenData(data, dbData){
-		var patient = dbData.patient;
-		if( patient ){
-			var lastName = patient.last_name || "";
-			var firstName = patient.first_name || "";
-			if( lastName || firstName ){
-				data.shimei = lastName + firstName;
-			}
-			if( patient.birth_day && patient.birth_day !== "0000-00-00" ){
-				var birthday = moment(patient.birth_day);
-				if( birthday.isValid() ){
-					data.birthday = [birthday.year(), birthday.month()+1, birthday.date()];
-				}
-			}
-			if( patient.sex === "M" || patient.sex === "F" ){
-				data.sex = patient.sex;
-			}
-		}
-		var visit = dbData.visit;
-		if( visit ){
-			var shahokokuho = visit.shahokokuho;
-			if( shahokokuho ){
-				data["hokensha-bangou"] = "" + shahokokuho.hokensha_bangou;
-				data.hihokensha = [shahokokuho.hihokensha_kigou || "", shahokokuho.hihokensha_bangou || ""].join(" ・ ");
-				if( 0 === +shahokokuho.honnin ){
-					data["kubun-hifuyousha"] = true;
-				} else if( 1 === +shahokokuho.honnin ){
-					data["kubun-hihokensha"] = true;
-				}
-			}
-			var koukikourei = visit.koukikourei;
-			if( koukikourei ){
-				data["hokensha-bangou"] = "" + koukikourei.hokensha_bangou;
-				data["hihokensha"] = "" + koukikourei.hihokensha_bangou;
-			}
-			var kouhi_list = visit.kouhi_list || [];
-			if( kouhi_list.length > 0 ){
-				data["kouhi-1-futansha"] = kouhi_list[0].futansha;
-				data["kouhi-1-jukyuusha"] = kouhi_list[0].jukyuusha;
-			}
-			if( kouhi_list.length > 1 ){
-				data["kouhi-2-futansha"] = kouhi_list[1].futansha;
-				data["kouhi-2-jukyuusha"] = kouhi_list[1].jukyuusha;
-			}
-			// var at = moment(visit.v_datetime);
-			var at = moment();
-			data["koufu-date"] = [at.year(), at.month()+1, at.date()];
-		}
-	}
-
-	function shohousenDialog(dom, data){
-		modal.startModal({
-			title: "処方箋発行",
-			position: "fixed",
-			init: function(content, close){
-				var c = $(content);
-				var jsonData = JSON.stringify(data);
-				var html = shohousenTmpl.render({});
-				c.html(html);
-				c.find("input[name=json-data]").val(jsonData);
-				c.find("button[mc-name=enter]").click(function(event){
-					setImmediate(function(){
-						close();
-						dom.trigger("cancel-edit");
-					})
-				})
-				c.find("button[mc-name=cancel]").click(function(event){
-					event.preventDefault();
-					event.stopPropagation();
-					close();
-					dom.trigger("cancel-edit");
-				})
-			}
-		})
-
-	}
-
 	function bindShohousen(dom, visitId, content){
 		dom.find("[mc-name=prescribeLink]").click(function(event){
 			setImmediate(function(){
 				close();
 				dom.trigger("cancel-edit");
 			});
-	//		event.preventDefault();
-	//		fetchData(visitId, function(err, result){
-	//			if( err ){
-	//				alert(err);
-	//				return;
-	//			}
-	//			var data = {
-	//				"drugs": content,
-	//				"futan-wari": result.futanWari
-	//			}
-	//			extendShohousenData(data, result);
-	//			shohousenDialog(dom, data);
-	//		})
 		})
 	}
 
@@ -29509,184 +29381,18 @@
 
 /***/ },
 /* 148 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var mConsts = __webpack_require__(115);
-	var moment = __webpack_require__(8);
-
-	// used
-	function shuukeiToMeisaiSection(shuukeisaki){
-		switch(shuukeisaki){
-			case mConsts.SHUUKEI_SHOSHIN:
-			case mConsts.SHUUKEI_SAISHIN_SAISHIN:
-			case mConsts.SHUUKEI_SAISHIN_GAIRAIKANRI:
-			case mConsts.SHUUKEI_SAISHIN_JIKANGAI:
-			case mConsts.SHUUKEI_SAISHIN_KYUUJITSU:
-			case mConsts.SHUUKEI_SAISHIN_SHINYA:
-				return "初・再診料";
-			case mConsts.SHUUKEI_SHIDO:
-				return "医学管理等";
-			case mConsts.SHUUKEI_ZAITAKU:
-				return "在宅医療";
-			case mConsts.SHUUKEI_KENSA:
-				return "検査";
-			case mConsts.SHUUKEI_GAZOSHINDAN:
-				return "画像診断";
-			case mConsts.SHUUKEI_TOYAKU_NAIFUKUTONPUKUCHOZAI:
-			case mConsts.SHUUKEI_TOYAKU_GAIYOCHOZAI:
-			case mConsts.SHUUKEI_TOYAKU_SHOHO:
-			case mConsts.SHUUKEI_TOYAKU_MADOKU:
-			case mConsts.SHUUKEI_TOYAKU_CHOKI:
-				return "投薬";
-			case mConsts.SHUUKEI_CHUSHA_SEIBUTSUETC:
-			case mConsts.SHUUKEI_CHUSHA_HIKA:
-			case mConsts.SHUUKEI_CHUSHA_JOMYAKU:
-			case mConsts.SHUUKEI_CHUSHA_OTHERS:
-				return "注射";
-			case mConsts.SHUUKEI_SHOCHI:
-				return "処置";
-			case mConsts.SHUUKEI_SHUJUTSU_SHUJUTSU:
-			case mConsts.SHUUKEI_SHUJUTSU_YUKETSU:
-			case mConsts.SHUUKEI_MASUI:
-			case mConsts.SHUUKEI_OTHERS:
-			default: return "その他";
-		}
-	}
-	exports.shuukeiToMeisaiSection = shuukeiToMeisaiSection;
-
-	// used
-	exports.touyakuKingakuToTen = function(kingaku){
-	    if( kingaku <= 15 ){
-	        return 1;
-	    } else {
-	        return Math.ceil((kingaku - 15)/10 + 1);
-	    }
-	};
-
-	// used
-	exports.shochiKingakuToTen = function(kingaku){
-			if( kingaku <= 15 )
-				return 0;
-			else
-				return Math.ceil((kingaku - 15)/10 + 1);
-	};
-
-	// used
-	exports.kizaiKingakuToTen = function(kingaku){
-	    return Math.round(kingaku/10.0);
-	}
-
-	// used
-	exports.calcRcptAge = function(bdYear, bdMonth, bdDay, atYear, atMonth){
-	    var age;
-		age = atYear - bdYear;
-		if( atMonth < bdMonth ){
-			age -= 1;
-		} else if( atMonth === bdMonth ){
-			if( bdDay != 1 ){
-				age -= 1;
-			}
-		}
-		return age;
-	};
-
-	// used
-	exports.calcShahokokuhoFutanWariByAge = function(age){
-	    if( age < 3 )
-	        return 2;
-	    else if( age >= 70 )
-	        return 2;
-	    else
-	        return 3;
-	};
-
-	// used
-	exports.kouhiFutanWari = function(futanshaBangou){
-	    futanshaBangou = Number(futanshaBangou);
-		if( Math.floor(futanshaBangou / 1000000) === 41 )
-			return 1;
-		else if( Math.floor(futanshaBangou / 1000) === 80136 )
-			return 1;
-		else if( Math.floor(futanshaBangou / 1000) === 80137 )
-			return 0;
-		else if( Math.floor(futanshaBangou / 1000) === 81136 )
-			return 1;
-		else if( Math.floor(futanshaBangou / 1000) === 81137 )
-			return 0;
-		else if( Math.floor(futanshaBangou / 1000000) === 88 )
-			return 0;
-		else{
-			console.log("unknown kouhi futansha: " + futanshaBangou);
-			return 0;
-		}
-	};
-
-	// used
-	exports.calcCharge = function(ten, futanWari){
-	    var c, r;
-		c = parseInt(ten) * parseInt(futanWari);
-		r = c % 10;
-		if( r < 5 )
-			c -= r;
-		else
-			c += (10 - r);
-		return c;
-	}
-
-	exports.calcFutanWari = function(visit, patient){
-		var futanWari, bd, at, age;
-		futanWari = 10;
-		if( visit.shahokokuho ){
-			bd = moment(patient.birth_day);
-			at = moment(visit.v_datetime);
-			age = exports.calcRcptAge(bd.year(), bd.month()+1, bd.date(),
-				at.year(), at.month()+1);
-			futanWari = exports.calcShahokokuhoFutanWariByAge(age);
-			if( visit.shahokokuho.kourei > 0 ){
-				futanWari = visit.shahokokuho.kourei;
-			}
-		}
-		if( visit.koukikourei ){
-			futanWari = visit.koukikourei.futan_wari;
-		}
-		if( visit.roujin ){
-			futanWari = visit.roujin.futan_wari;
-		}
-		visit.kouhi_list.forEach(function(kouhi){
-			var kouhiFutanWari;
-			kouhiFutanWari = exports.kouhiFutanWari(kouhi.futansha);
-			if( kouhiFutanWari < futanWari ){
-				futanWari = kouhiFutanWari;
-			}
-		});
-		return futanWari;
-	};
-
-
-
-
-/***/ },
-/* 149 */
-/***/ function(module, exports) {
-
-	module.exports = "<form action=\"/shohousen\" method=\"POST\" target=\"shohousen\">\r\n<input type=\"hidden\" name=\"json-data\"/>\r\n<button type=\"submit\" mc-name=\"enter\">入力</button>\r\n<button type=\"button\" mc-name=\"cancel\">キャンセル</button>\r\n</form>"
-
-/***/ },
-/* 150 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<div mc-name=\"disp\" class=\"record-text cursor-pointer\"></div>\r\n\t<div mc-name=\"form\"></div>\r\n</div>\r\n"
 
 /***/ },
-/* 151 */
+/* 149 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplHtml = __webpack_require__(152);
+	var tmplHtml = __webpack_require__(150);
 	var TextForm = __webpack_require__(146);
 	var Text = __webpack_require__(143);
 
@@ -29736,13 +29442,13 @@
 	}
 
 /***/ },
-/* 152 */
+/* 150 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\">\r\n\t<a mc-name=\"addTextLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[文章追加]</a>\r\n</div>\r\n<div mc-name=\"workspace\"></div>\r\n"
 
 /***/ },
-/* 153 */
+/* 151 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29751,11 +29457,11 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
-	var HokenSelectForm = __webpack_require__(154);
+	var HokenSelectForm = __webpack_require__(152);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 
-	var tmplSrc = __webpack_require__(157);
+	var tmplSrc = __webpack_require__(155);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.setup = function(dom, visit){
@@ -29812,15 +29518,15 @@
 
 
 /***/ },
-/* 154 */
+/* 152 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplHtml = __webpack_require__(155);
-	var itemTmplSrc = __webpack_require__(156);
+	var tmplHtml = __webpack_require__(153);
+	var itemTmplSrc = __webpack_require__(154);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 	var mUtil = __webpack_require__(7);
 	var task = __webpack_require__(116);
@@ -29947,25 +29653,25 @@
 
 
 /***/ },
-/* 155 */
+/* 153 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">適用保険の編集</div>\r\n\t<form onsubmit=\"return false\">\r\n\t\t<div mc-name=\"checkboxes\"></div>\r\n\t\t<div class=\"workarea-commandbox\">\r\n\t\t\t<button mc-name=\"enter\">入力</button>\r\n\t\t\t<button mc-name=\"cancel\">キャンセル</button>\r\n\t\t</div>\r\n\t</form>\r\n</div>\r\n\r\n"
 
 /***/ },
-/* 156 */
+/* 154 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<input type=\"checkbox\" name=\"hoken\" data-kind=\"{{kind}}\" value=\"{{value}}\"\r\n\t\t{{#checked}}checked{{/checked}}>\r\n\t\t{{label}}\r\n</div>"
 
 /***/ },
-/* 157 */
+/* 155 */
 /***/ function(module, exports) {
 
 	module.exports = "<span mc-name=\"label\" class=\"cursor-pointer\">{{label}}</span>\r\n"
 
 /***/ },
-/* 158 */
+/* 156 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -29974,14 +29680,14 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 	var myclinicUtil = __webpack_require__(7);
-	var Submenu = __webpack_require__(159);
-	var DrugForm = __webpack_require__(161);
+	var Submenu = __webpack_require__(157);
+	var DrugForm = __webpack_require__(159);
 
-	var tmplHtml = __webpack_require__(164);
+	var tmplHtml = __webpack_require__(162);
 
-	var CopySelected = __webpack_require__(165);
-	var ModifyDays = __webpack_require__(167);
-	var DeleteSelected = __webpack_require__(169);
+	var CopySelected = __webpack_require__(163);
+	var ModifyDays = __webpack_require__(165);
+	var DeleteSelected = __webpack_require__(167);
 
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
@@ -30137,14 +29843,14 @@
 
 
 /***/ },
-/* 159 */
+/* 157 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	__webpack_require__(3);
-	var tmplHtml = __webpack_require__(160);
+	var tmplHtml = __webpack_require__(158);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 	var mUtil = __webpack_require__(7);
@@ -30312,13 +30018,13 @@
 
 
 /***/ },
-/* 160 */
+/* 158 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">部分コピー</a> |\r\n<a mc-name=\"modifyDays\" href=\"javascript:void(0)\" class=\"cmd-link\">日数変更</a> |\r\n<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n"
 
 /***/ },
-/* 161 */
+/* 159 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -30330,9 +30036,9 @@
 	var task = __webpack_require__(116);
 	var mConsts = __webpack_require__(115);
 
-	var tmplSrc = __webpack_require__(162);
+	var tmplSrc = __webpack_require__(160);
 	var tmpl = hogan.compile(tmplSrc);
-	var itemTmplSrc = __webpack_require__(163);
+	var itemTmplSrc = __webpack_require__(161);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	var Naifuku = mConsts.DrugCategoryNaifuku;
@@ -30895,32 +30601,32 @@
 
 
 /***/ },
-/* 162 */
+/* 160 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div mc-name=\"title\" class=\"title\">{{title}}</div>\r\n<div class=\"error-box\" style=\"display:none\"></div>\r\n<div class=\"drug-area\"> <!-- should be at the top level -->\r\n    <table width=\"100%\">\r\n        <tr>\r\n            <td style=\"width:3em;\">名称</td>\r\n            <td mc-name=\"name\"></td>\r\n        </tr>\r\n        <tr>\r\n            <td mc-name=\"amountLabel\">用量</td>\r\n            <td>\r\n                <input mc-name=\"amount\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"unit\"></span>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td>用法</td>\r\n            <td>\r\n                <table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\r\n                    <tr>\r\n                        <td>\r\n                            <input mc-name=\"usage\" class=\"kanji\" style=\"width:100%\" />\r\n                        </td>\r\n                        <td>\r\n                            &nbsp;\r\n                            <a mc-name=\"usageExampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                               >例</a>\r\n                        </td>\r\n                    </tr>\r\n                </table>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"usageExampleWrapper\" style=\"display:none\">\r\n            <td colspan=\"2\">\r\n                <select name=\"usage-example\" size=\"4\">\r\n                    <option>分１　朝食後</option>\r\n                    <option>分２　朝夕食後</option>\r\n                    <option>分３　毎食後</option>\r\n                    <option>分１　寝る前</option>\r\n                </select>\r\n            </td>\r\n        </tr>\r\n        <tr mc-name=\"daysRow\">\r\n            <td mc-name=\"daysLabel\">日数</td>\r\n            <td>\r\n                <input mc-name=\"days\" class=\"alpha-only\" style=\"width:4em\" />\r\n                <span mc-name=\"daysUnit\">日分</span>\r\n                {{#isCreating}}\r\n        \t\t<span mc-name=\"fixedDaysWrapper\">\r\n        \t\t\t<input mc-name=\"fixedDaysCheck\" type=\"checkbox\"  checked=\"checked\"/> 固定\r\n        \t\t</span>\r\n                {{/isCreating}}\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <div>\r\n        <input type=radio mc-name=\"categoryNaifuku\" name=\"category\" value=\"0\" checked>内服\r\n        <input type=radio mc-name=\"categoryTonpuku\" name=\"category\" value=\"1\">屯服\r\n        <input type=radio mc-name=\"categoryGaiyou\"  name=\"category\" value=\"2\">外用\r\n    </div>\r\n    {{#isEditing}}\r\n    <div>\r\n        <input type=\"checkbox\" mc-name=\"preserveUsage\" />用量・用法・日数をそのままに\r\n    </div>\r\n    {{/isEditing}}\r\n    <div mc-name=\"comment\" style=\"padding:6px;display:none;border:1px solid #ccc\"></div>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enterLink\">入力</button>\r\n    <button mc-name=\"closeLink\">閉じる</button>\r\n    <a mc-name=\"clearFormLink\" href=\"javascript:void(0)\" class=\"cmd-link\">クリア</a>\r\n    {{#isEditing}}\r\n    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n    {{/isEditing}}\r\n</div>\r\n<div class=\"drug-search-area\">\r\n    <form style=\"margin:4px 0\" mc-name=\"searchForm\">\r\n        <input mc-name=\"searchText\" type=\"text\" class=\"kanji\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div style=\"margin:4px 0\">\r\n        <input type=radio name=\"search-mode\" value=\"master\">マスター\r\n        <input type=radio name=\"search-mode\" value=\"stock\" checked>約束処方\r\n        <input type=radio name=\"search-mode\" value=\"prev\">過去の処方\r\n    </div>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=10 style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n</div>\r\n\r\n"
 
 /***/ },
-/* 163 */
+/* 161 */
 /***/ function(module, exports) {
 
 	module.exports = "<option>{{label}}</option>"
 
 /***/ },
-/* 164 */
+/* 162 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処方]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"drugSubmenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div class=\"drug-submenu\" />\r\n<div mc-name=\"workarea\" />\r\n"
 
 /***/ },
-/* 165 */
+/* 163 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(166);
+	var tmplSrc = __webpack_require__(164);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 	var service = __webpack_require__(117);
@@ -31060,20 +30766,20 @@
 
 
 /***/ },
-/* 166 */
+/* 164 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">選択して処方をコピー</div>\r\n<form onsubmit=\"return false\">\r\n<table>\r\n\t<tbody mc-name=\"tbody\">\r\n\t{{#drugs}}\r\n\t\t<tr>\r\n\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t<td>{{label}}</td>\r\n\t\t</tr>\r\n\t{{/drugs}}\r\n\t</tbody>\r\n</table>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> |\r\n    <a mc-name=\"unselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div>\r\n    日数：<input name=\"days\" style=\"width:2em\" class=\"alpha\">日分\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 167 */
+/* 165 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(168);
+	var tmplSrc = __webpack_require__(166);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 	var mConst = __webpack_require__(115);
@@ -31156,20 +30862,20 @@
 
 
 /***/ },
-/* 168 */
+/* 166 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">日数を変更</div>\r\n<form onsubmit=\"return false\">\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<hr />\r\n<div>\r\n\t<input name=\"days\" size=\"6\" class=\"alpha\"/> 日分に変更\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">入力</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 169 */
+/* 167 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(170);
+	var tmplSrc = __webpack_require__(168);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 	var service = __webpack_require__(117);
@@ -31222,20 +30928,20 @@
 
 
 /***/ },
-/* 170 */
+/* 168 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">薬剤の複数削除</div>\r\n<form>\r\n<div mc-name=\"list\">\r\n\t<table>\r\n\t\t{{#drugs}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td><input type=\"checkbox\" name=\"drug\" value=\"{{drug_id}}\" /></td>\r\n\t\t\t\t<td>{{label}}</td>\r\n\t\t\t</tr>\r\n\t\t{{/drugs}}\r\n\t</table>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n\t<button mc-name=\"enter\">削除</button>\r\n\t<button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 171 */
+/* 169 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplHtml = __webpack_require__(172);
-	var Drug = __webpack_require__(173);
+	var tmplHtml = __webpack_require__(170);
+	var Drug = __webpack_require__(171);
 
 	exports.setup = function(dom, drugs, visitId, at, patientId){
 		dom.html(tmplHtml);
@@ -31309,13 +31015,13 @@
 	}
 
 /***/ },
-/* 172 */
+/* 170 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"rp\"></div>\r\n<div mc-name=\"list\"></div>\r\n"
 
 /***/ },
-/* 173 */
+/* 171 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -31324,10 +31030,10 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
-	var DrugDisp = __webpack_require__(174);
-	var DrugForm = __webpack_require__(161);
+	var DrugDisp = __webpack_require__(172);
+	var DrugForm = __webpack_require__(159);
 
-	var tmplSrc = __webpack_require__(176);
+	var tmplSrc = __webpack_require__(174);
 
 	var dispAreaSelector = "> [mc-name=disp-area]";
 	var formAreaSelector = "> [mc-name=form-area]";
@@ -31400,14 +31106,14 @@
 
 
 /***/ },
-/* 174 */
+/* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(175);
+	var tmplSrc = __webpack_require__(173);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 
@@ -31433,19 +31139,19 @@
 
 
 /***/ },
-/* 175 */
+/* 173 */
 /***/ function(module, exports) {
 
 	module.exports = "<span mc-name=\"index\">{{index}}</span>) <span mc-name=\"label\">{{label}}</span>"
 
 /***/ },
-/* 176 */
+/* 174 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"wrapper\">\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"form-area\"></div>\r\n</div>\r\n"
 
 /***/ },
-/* 177 */
+/* 175 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -31454,17 +31160,17 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
-	var AddRegularForm = __webpack_require__(178);
-	var ShinryouKensaForm = __webpack_require__(180);
-	var ShinryouAddForm = __webpack_require__(182);
-	var ShinryouCopySelectedForm = __webpack_require__(185);
-	var ShinryouDeleteSelectedForm = __webpack_require__(187);
-	var ShinryouSubmenu = __webpack_require__(189);
+	var AddRegularForm = __webpack_require__(176);
+	var ShinryouKensaForm = __webpack_require__(178);
+	var ShinryouAddForm = __webpack_require__(180);
+	var ShinryouCopySelectedForm = __webpack_require__(183);
+	var ShinryouDeleteSelectedForm = __webpack_require__(185);
+	var ShinryouSubmenu = __webpack_require__(187);
 	var service = __webpack_require__(117);
 	var task = __webpack_require__(116);
 	var conti = __webpack_require__(4);
 
-	var tmplHtml = __webpack_require__(191);
+	var tmplHtml = __webpack_require__(189);
 
 	exports.setup = function(dom, visitId, at){
 		dom.html(tmplHtml);
@@ -31863,14 +31569,14 @@
 
 
 /***/ },
-/* 178 */
+/* 176 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(179);
+	var tmplSrc = __webpack_require__(177);
 	var service = __webpack_require__(117);
 	var task = __webpack_require__(116);
 	var conti = __webpack_require__(4);
@@ -31969,19 +31675,19 @@
 
 
 /***/ },
-/* 179 */
+/* 177 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為入力</div>\r\n<form onsubmit=\"return false\">\r\n<div>\r\n    <table width=\"100%\">\r\n        <tr valign=\"top\">\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"初診\"> 初診<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"再診\"> 再診<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"外来管理加算\"> 外来管理加算<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患管理\"> 特定疾患管理<br/>\r\n            </td>\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"尿一般\"> 尿一般<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"便潜血\"> 便潜血<br/>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n\r\n    <table width=\"100%\">\r\n        <tr valign=\"top\">\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"尿便検査判断料\"> 尿便検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"血液検査判断料\"> 血液検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅰ判断料\"> 生化Ⅰ判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"生化Ⅱ判断料\"> 生化Ⅱ判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"免疫検査判断料\"> 免疫検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"微生物検査判断料\"> 微生物検査判断料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"静脈採血\"> 静脈採血<br/>\r\n            </td>\r\n            <td>\r\n                <input type=\"checkbox\" name=\"item\" value=\"処方料\"> 処方料<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"処方料７\"> 処方料７<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"手帳記載加算\"> 手帳記載加算<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"外来後発加算１\"> 外来後発加算１<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"特定疾患処方\"> 特定疾患処方<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"長期処方\"> 長期処方<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"内服調剤\"> 内服調剤<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"外用調剤\"> 外用調剤<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"調剤基本\"> 調剤基本<br/>\r\n                <input type=\"checkbox\" name=\"item\" value=\"薬剤情報提供\"> 薬剤情報提供<br/>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n    <input type=\"checkbox\" name=\"item\" value=\"向精神薬\"> 向精神薬\r\n    <input type=\"checkbox\" name=\"item\" value=\"心電図\"> 心電図\r\n    &nbsp;\r\n    <input type=\"checkbox\" name=\"item\" value=\"骨塩定量\"> 骨塩定量\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 180 */
+/* 178 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplSrc = __webpack_require__(181);
+	var tmplSrc = __webpack_require__(179);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 	var conti = __webpack_require__(4);
@@ -32077,13 +31783,13 @@
 	}
 
 /***/ },
-/* 181 */
+/* 179 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">検査の入力</div>\r\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\r\n        <div>\r\n            <table width=\"100%\">\r\n                <tr valign=\"top\">\r\n                    <td width=\"50%\">\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"血算\">血算\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"末梢血液像\">末梢血液像\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨｂＡ１ｃ\">ＨｂＡ１ｃ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＴ\">ＰＴ\r\n                        </div>\r\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＯＴ\">ＧＯＴ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＧＰＴ\">ＧＰＴ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"γＧＴＰ\">γＧＴＰ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＰＫ\">ＣＰＫ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン\">クレアチニン\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"尿酸\">尿酸\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"カリウム\">カリウム\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＬＤＬ－コレステロール\">ＬＤＬ－Ｃｈ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＨＤＬ－コレステロール\">ＨＤＬ－Ｃｈ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＧ\">ＴＧ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"グルコース\">グルコース\r\n                        </div>\r\n                    </td>\r\n                    <td>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＣＲＰ\">ＣＲＰ\r\n                        </div>\r\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＴＳＨ\">ＴＳＨ\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ４\">ＦＴ４\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＦＴ３\">ＦＴ３\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"ＰＳＡ\">ＰＳＡ\r\n                        </div>\r\n                        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"蛋白定量（尿）\">蛋白定量（尿）\r\n                        </div>\r\n                        <div>\r\n                            <input type=\"checkbox\" name=\"kensa\" value=\"クレアチニン（尿）\">クレアチニン（尿）\r\n                        </div>\r\n                    </td>\r\n                </tr>\r\n            </table>\r\n        </div>\r\n        <hr style=\"border:1px solid #ccc; height:1px\"/>\r\n        <div mc-name=\"form-commands\">\r\n            <a mc-name=\"setKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">セット検査</a> :\r\n            <a mc-name=\"clearKensa\" class=\"cmd-link\" href=\"javascript:void(0)\">クリア</a>\r\n        </div>\r\n\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ },
-/* 182 */
+/* 180 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -32093,8 +31799,8 @@
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 
-	var tmplSrc = __webpack_require__(183);
-	var resultTmplSrc = __webpack_require__(184);
+	var tmplSrc = __webpack_require__(181);
+	var resultTmplSrc = __webpack_require__(182);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(visitId, at){
@@ -32227,26 +31933,26 @@
 
 
 /***/ },
-/* 183 */
+/* 181 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為検索</div>\r\n<div mc-name=\"disp-area\">\r\n    名称：<span mc-name=\"name\"></span>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">入力</button>\r\n    <button mc-name=\"close\">閉じる</button>\r\n</div>\r\n<form mc-name=\"search-form\">\r\n<div>\r\n    <input mc-name=\"text\">\r\n    <button mc-name=\"search\">検索</button>\r\n</div>\r\n<div>\r\n    <select mc-name=\"select\" size=\"10\"></select>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 184 */
+/* 182 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 185 */
+/* 183 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(186);
+	var tmplSrc = __webpack_require__(184);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryouList){
@@ -32299,20 +32005,20 @@
 
 
 /***/ },
-/* 186 */
+/* 184 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為コピー</div>\r\n<form onsubmit=\"return false\" mc-name=\"search-result\">\r\n<div>\r\n\t<table>\r\n\t\t<tbody mc-name=\"tbody\">\r\n\t\t\t{{#list}}\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value=\"{{shinryou_id}}\" />\r\n\t\t\t\t\t</td>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t{{name}}\r\n\t\t\t\t\t</td>\r\n\t\t\t\t</tr>\r\n\t\t\t{{/list}}\r\n\t\t</tbody>\r\n\t</table>\r\n</div>\r\n</form>\r\n<hr/>\r\n<div mc-name=\"selector-box\">\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\r\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<form onsubmit=\"return false\" mc-name=\"command-form\">\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">実行</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 187 */
+/* 185 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(188);
+	var tmplSrc = __webpack_require__(186);
 	var tmpl = hogan.compile(tmplSrc);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
@@ -32371,19 +32077,19 @@
 
 
 /***/ },
-/* 188 */
+/* 186 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">複数診療削除</div>\r\n<form onsubmit=\"return false\">\r\n<div>\r\n\t<table>\r\n\t\t<tbody mc-name=\"tbody\">\r\n\t\t{{#list}}\r\n\t\t\t<tr>\r\n\t\t\t\t<td>\r\n\t\t\t\t\t<input type=\"checkbox\" name=\"shinryou_id\" value={{shinryou_id}} />\r\n\t\t\t\t</td>\r\n\t\t\t\t<td>\r\n\t\t\t\t\t{{name}}\r\n\t\t\t\t</td>\r\n\t\t\t</tr>\r\n\t\t{{/list}}\r\n\t\t</tbody>\r\n\t</table>\r\n</div>\r\n<hr/>\r\n<div>\r\n    <a mc-name=\"selectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部選択</a> :\r\n    <a mc-name=\"deselectAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部解除</a>\r\n</div>\r\n<div class=\"workarea-commandbox\">\r\n    <button mc-name=\"enter\">削除実行</button>\r\n    <button mc-name=\"cancel\">キャンセル</button>\r\n</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 189 */
+/* 187 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplSrc = __webpack_require__(190);
+	var tmplSrc = __webpack_require__(188);
 
 	exports.create = function(){
 		var dom = $(tmplSrc);
@@ -32440,26 +32146,26 @@
 	}
 
 /***/ },
-/* 190 */
+/* 188 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<a mc-name=\"kensa\" href=\"javascript:void(0)\" class=\"cmd-link\">検査</a> |\r\n\t<a mc-name=\"search\" href=\"javascript:void(0)\" class=\"cmd-link\">診療行為検索</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"copySelected\" href=\"javascript:void(0)\" class=\"cmd-link\">選択コピー</a> |\r\n\t<a mc-name=\"deleteSelected\" href=\"javascript:void(0)\" class=\"cmd-link\">複数削除</a> |\r\n\t<a mc-name=\"deleteDuplicated\" href=\"javascript:void(0)\" class=\"cmd-link\">重複削除</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>\r\n"
 
 /***/ },
-/* 191 */
+/* 189 */
 /***/ function(module, exports) {
 
 	module.exports = "<a mc-name=\"addShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[診療行為]</a>\r\n<span class=\"cmd-link-span\">[</span>\r\n<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">+</a>\r\n<span class=\"cmd-link-span\">]</span>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"work-area\"></div>\r\n"
 
 /***/ },
-/* 192 */
+/* 190 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var Shinryou = __webpack_require__(193);
+	var Shinryou = __webpack_require__(191);
 
 	exports.setup = function(dom, shinryouList, visitId, at, patientId){
 		batchAdd(dom, shinryouList);
@@ -32501,7 +32207,7 @@
 
 
 /***/ },
-/* 193 */
+/* 191 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -32510,11 +32216,11 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
-	var ShinryouForm = __webpack_require__(194);
+	var ShinryouForm = __webpack_require__(192);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 
-	var tmplSrc = __webpack_require__(196);
+	var tmplSrc = __webpack_require__(194);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryou){
@@ -32588,14 +32294,14 @@
 
 
 /***/ },
-/* 194 */
+/* 192 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(195);
+	var tmplSrc = __webpack_require__(193);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(shinryou){
@@ -32631,19 +32337,19 @@
 
 
 /***/ },
-/* 195 */
+/* 193 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n<div class=\"title\">診療行為編集</div>\r\n<div>\r\n\t名称：<span mc-name=\"name\">{{name}}</span>\r\n</div>\r\n<form onsubmit=\"return false\" mc-name=\"command-box\">\r\n\t<div class=\"workarea-commandbox\">\r\n\t\t<a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a> |\r\n\t\t<a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t</div>\r\n</form>\r\n</div>\r\n"
 
 /***/ },
-/* 196 */
+/* 194 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<div mc-name=\"disp\">{{label}}</div>\r\n\t<div mc-name=\"form\"></div>\r\n</div>"
 
 /***/ },
-/* 197 */
+/* 195 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -32652,15 +32358,15 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 	var myclinicUtil = __webpack_require__(7);
-	var ConductSubmenu = __webpack_require__(198);
-	var ConductAddXpForm = __webpack_require__(200);
-	var ConductAddInjectForm = __webpack_require__(202);
+	var ConductSubmenu = __webpack_require__(196);
+	var ConductAddXpForm = __webpack_require__(198);
+	var ConductAddInjectForm = __webpack_require__(200);
 	var conti = __webpack_require__(4);
 	var service = __webpack_require__(117);
 	var task = __webpack_require__(116);
 	var mConsts = __webpack_require__(115);
 
-	var tmplHtml = __webpack_require__(205);
+	var tmplHtml = __webpack_require__(203);
 
 	exports.setup = function(dom, visitId, at){
 		dom.html(tmplHtml);
@@ -33010,13 +32716,13 @@
 
 
 /***/ },
-/* 198 */
+/* 196 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplSrc = __webpack_require__(199);
+	var tmplSrc = __webpack_require__(197);
 
 	exports.create = function(){
 		var dom = $(tmplSrc);
@@ -33056,19 +32762,19 @@
 	}
 
 /***/ },
-/* 199 */
+/* 197 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<a mc-name=\"addXp\" href=\"javascript:void(0)\" class=\"cmd-link\">Ｘ線検査追加</a> |\r\n\t<a mc-name=\"addInject\" href=\"javascript:void(0)\" class=\"cmd-link\">注射追加</a> |\r\n\t<a mc-name=\"copyAll\" href=\"javascript:void(0)\" class=\"cmd-link\">全部コピー</a> |\r\n\t<a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n</div>"
 
 /***/ },
-/* 200 */
+/* 198 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var tmplSrc = __webpack_require__(201);
+	var tmplSrc = __webpack_require__(199);
 
 	exports.create = function(){
 		var dom = $(tmplSrc);
@@ -33109,21 +32815,21 @@
 	}
 
 /***/ },
-/* 201 */
+/* 199 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">X線入力</div>\r\n    <form onsubmit=\"return false\">\r\n        <div style=\"margin: 3px 0\" mc-name=\"label-selector-area\">\r\n            <select mc-name=\"label\">\r\n                <option>胸部単純Ｘ線</option>\r\n                <option>腹部単純Ｘ線</option>\r\n            </select>\r\n        </div>\r\n        <div style=\"margin: 3px 0\" mc-name=\"film-selector-area\">\r\n            <select mc-name=\"film\">\r\n                <option>半切</option>\r\n                <option selected>大角</option>\r\n                <option>四ツ切</option>\r\n            </select>\r\n        </div>\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ },
-/* 202 */
+/* 200 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(203);
-	var resultTmplSrc = __webpack_require__(204);
+	var tmplSrc = __webpack_require__(201);
+	var resultTmplSrc = __webpack_require__(202);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
@@ -33278,31 +32984,31 @@
 
 
 /***/ },
-/* 203 */
+/* 201 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置注射入力</div>\r\n    <form onsubmit=\"return false\" mc-name=\"main-form\">\r\n        <div>\r\n            <table style=\"width:100%\">\r\n                <tr>\r\n                    <td style=\"width:3em\">名称：</td>\r\n                    <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n                </tr>\r\n                <tr>\r\n                    <td style=\"width:2.5em\">用量：</td>\r\n                    <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                        <span mc-name=\"unit\"></span></td>\r\n                </tr>\r\n            </table>\r\n        </div>\r\n        <div mc-name=\"kindWrapper\">\r\n            <input type=\"radio\" name=\"kind\" value=\"0\" checked>皮下・筋肉\r\n            <input type=\"radio\" name=\"kind\" value=\"1\">静脈\r\n            <input type=\"radio\" name=\"kind\" value=\"2\">その他\r\n        </div>\r\n        <div class=\"workarea-commandbox\">\r\n            <button mc-name=\"enter\">入力</button>\r\n            <button mc-name=\"cancel\">キャンセル</button>\r\n        </div>\r\n    </form>\r\n    <hr />\r\n    <form onsubmit=\"return false\" mc-name=\"search-form\">\r\n        <div style=\"margin:3px 0\">\r\n            <input mc-name=\"searchText\"/>\r\n            <button mc-name=\"searchLink\">検索</button>\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"10\" style=\"width:100%\"></select>\r\n        </div>\r\n    </form>\r\n</div>\r\n\r\n"
 
 /***/ },
-/* 204 */
+/* 202 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{iyakuhincode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 205 */
+/* 203 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"top-menu-area\">\r\n\t<a mc-name=\"submenuLink\" href=\"javascript:void(0)\" class=\"cmd-link\">[処置]</a>\r\n</div>\r\n<div mc-name=\"submenu-area\"></div>\r\n<div mc-name=\"workspace-area\"></div>\r\n"
 
 /***/ },
-/* 206 */
+/* 204 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
-	var Conduct = __webpack_require__(207);
+	var Conduct = __webpack_require__(205);
 
 	exports.setup = function(dom, conducts, visitId, at){
 		batchAdd(dom, conducts, visitId, at);
@@ -33325,7 +33031,7 @@
 
 
 /***/ },
-/* 207 */
+/* 205 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33334,11 +33040,11 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
-	var ConductDisp = __webpack_require__(208);
-	var ConductForm = __webpack_require__(210);
+	var ConductDisp = __webpack_require__(206);
+	var ConductForm = __webpack_require__(208);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
-	var tmplSrc = __webpack_require__(223);
+	var tmplSrc = __webpack_require__(221);
 
 	var dispAreaSelector = "> [mc-name=disp-area]";
 	var workAreaSelector = "> [mc-name=work-area]";
@@ -33424,14 +33130,14 @@
 
 
 /***/ },
-/* 208 */
+/* 206 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(209);
+	var tmplSrc = __webpack_require__(207);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(conductEx){
@@ -33449,26 +33155,26 @@
 
 
 /***/ },
-/* 209 */
+/* 207 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"kind\">&lt;{{kind_label}}&gt;</div>\r\n<div mc-name=\"gazouLabel\">{{gazou_label}}</div>\r\n<div mc-name=\"shinryouList\">\r\n\t{{#shinryou_list}}\r\n\t\t<div>{{name}}</div>\r\n\t{{/shinryou_list}}\r\n</div>\r\n<div mc-name=\"drugs\">\r\n\t{{#drugs}}\r\n\t\t<div>{{label}}</div>\r\n\t{{/drugs}}\r\n</div>\r\n<div mc-name=\"kizaiList\">\r\n\t{{#kizai_list}}\r\n\t\t<div>{{label}}</div>\r\n\t{{/kizai_list}}\r\n</div>\r\n"
 
 /***/ },
-/* 210 */
+/* 208 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(211);
+	var tmplSrc = __webpack_require__(209);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
-	var AddShinryouForm = __webpack_require__(212);
-	var AddDrugForm = __webpack_require__(215);
-	var AddKizaiForm = __webpack_require__(218);
-	var GazouLabelForm = __webpack_require__(221);
+	var AddShinryouForm = __webpack_require__(210);
+	var AddDrugForm = __webpack_require__(213);
+	var AddKizaiForm = __webpack_require__(216);
+	var GazouLabelForm = __webpack_require__(219);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 
@@ -33746,23 +33452,23 @@
 
 
 /***/ },
-/* 211 */
+/* 209 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">処置の編集</div>\r\n    <div mc-name=\"main-area\">\r\n        <div class=\"menu-box\">\r\n            <a mc-name=\"addShinryou\" class=\"cmd-link menu-item\" \r\n               href=\"javascript:void(0)\">診療行為追加</a> |\r\n            <a mc-name=\"addDrug\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">薬剤追加</a> |\r\n            <a mc-name=\"addKizai\" class=\"cmd-link menu-item\"\r\n               href=\"javascript:void(0)\">器材追加</a>\r\n        </div>\r\n        <div mc-name=\"subwidget\" class=\"subwidget-area\"></div>\r\n        <div mc-name=\"disp-area\">\r\n            <div mc-name=\"kind-area\">\r\n                <table style=\"margin-left:0\" padding=\"0\" cellspacing=\"0\">\r\n                    <tr>\r\n                        <td>種類：</td>\r\n                        <td width=\"*\">\r\n                            <select mc-name=\"kind\" style=\"margin: 3px 0\">\r\n                                <option value=\"0\">皮下・筋肉注射</option>\r\n                                <option value=\"1\">静脈注射</option>\r\n                                <option value=\"2\">その他の注射</option>\r\n                                <option value=\"3\">画像</option>\r\n                            </select>\r\n                        </td>\r\n                    </tr>\r\n                    </select>\r\n                </table>\r\n            </div>\r\n            <div mc-name=\"gazouLabelWrapper\" style=\"margin: 3px 0\">\r\n                <div mc-name=\"gazou-label-disp\">\r\n                    画像ラベル： <span mc-name=\"gazouLabel\">{{gazou_label}}</span>\r\n                    <a mc-name=\"editGazouLabelLink\" class=\"cmd-link\" href=\"javascript:void(0)\">編集</a>\r\n                </div>\r\n                <div mc-name=\"gazou-label-form\"></div>\r\n            </div>\r\n            <div mc-name=\"shinryouList\">\r\n                {{#shinryou_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{name}}</span> \r\n                        <a mc-name=\"deleteShinryouLink\" href=\"javascript:void(0)\" class=\"cmd-link\" \r\n                            id-value=\"{{id}}\">削除</a>\r\n                    </div>\r\n                {{/shinryou_list}}                \r\n            </div>\r\n            <div mc-name=\"drugList\">\r\n                {{#drugs}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span>  \r\n                        <a mc-name=\"deleteDrugLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                            id-value=\"{{id}}\">削除</a>  \r\n                    </div>\r\n                {{/drugs}}                \r\n            </div>\r\n            <div mc-name=\"kizaiList\">\r\n                {{#kizai_list}}\r\n                    <div>\r\n                        <span mc-name=\"label\">{{label}}</span> \r\n                        <a mc-name=\"deleteKizaiLink\" href=\"javascript:void(0)\" class=\"cmd-link\"\r\n                            id-value=\"{{id}}\">削除</a> \r\n                    </div>\r\n                {{/kizai_list}}                \r\n            </div>\r\n            <hr/>\r\n            <div class=\"workarea-commandbox\">\r\n                <button mc-name=\"closeLink\">閉じる</button>\r\n                <a mc-name=\"deleteLink\" class=\"cmd-link\" href=\"javascript:void(0)\">削除</a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
-/* 212 */
+/* 210 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(213);
+	var tmplSrc = __webpack_require__(211);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
-	var resultTmplSrc = __webpack_require__(214);
+	var resultTmplSrc = __webpack_require__(212);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(at, conductId){
@@ -33898,29 +33604,29 @@
 
 
 /***/ },
-/* 213 */
+/* 211 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">診療行為追加</div>\r\n\t<div mc-name=\"disp-area\">\r\n\t    名前：<span mc-name=\"name\"></span>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t<hr />\r\n\t<form onsubmit=\"return false\" mc-name=\"search-form\">\r\n\t\t<div>\r\n\t\t    <input mc-name=\"searchText\"/>\r\n\t\t    <button mc-name=\"searchLink\">検索</button>\r\n\t\t</div>\r\n\t\t<div>\r\n\t\t    <select mc-name=\"searchResult\" style=\"width:100%\" size=\"6\"></select>\r\n\t\t</div>\r\n\t</form>\r\n</div>\r\n"
 
 /***/ },
-/* 214 */
+/* 212 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{shinryoucode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 215 */
+/* 213 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(216);
+	var tmplSrc = __webpack_require__(214);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
-	var resultTmplSrc = __webpack_require__(217);
+	var resultTmplSrc = __webpack_require__(215);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(at, conductId){
@@ -34074,29 +33780,29 @@
 
 
 /***/ },
-/* 216 */
+/* 214 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n    <div class=\"title\">薬剤追加</div>\r\n    <form mc-name=\"main-form\" onsubmit=\"return false\">\r\n        <table style=\"width:100%\">\r\n            <tr>\r\n                <td style=\"width:3em\">名称：</td>\r\n                <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"width:2.5em\">用量：</td>\r\n                <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                    <span mc-name=\"unit\"></span></td>\r\n            </tr>\r\n        </table>\r\n    </form>\r\n    <div class=\"commandbox\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <button mc-name=\"cancelLink\">キャンセル</button>\r\n    </div>\r\n    <hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n        <div>\r\n            <input mc-name=\"searchText\"/>\r\n            <button mc-name=\"searchLink\">検索</button>\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"10\" style=\"width:100%\"></select>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ },
-/* 217 */
+/* 215 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{iyakuhincode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 218 */
+/* 216 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(219);
+	var tmplSrc = __webpack_require__(217);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
-	var resultTmplSrc = __webpack_require__(220);
+	var resultTmplSrc = __webpack_require__(218);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.create = function(at, conductId){
@@ -34250,26 +33956,26 @@
 
 
 /***/ },
-/* 219 */
+/* 217 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">器材追加</div>\r\n    <form mc-name=\"main-form\" onsubmit=\"return false\">\r\n        <table style=\"width:100%\">\r\n            <tr>\r\n                <td style=\"width:3em\">名称：</td>\r\n                <td width=\"*\"><span mc-name=\"name\"></span></td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"width:2.5em\">用量：</td>\r\n                <td><input mc-name=\"amount\" size=\"8\" value=\"1\"/>\r\n                    <span mc-name=\"unit\"></span></td>\r\n            </tr>\r\n        </table>\r\n        <!--\r\n\t\t<div>\r\n\t\t\t<div>名称：<span mc-name=\"name\"></span></div>\r\n\t\t\t<div>量：<input mc-name=\"amount\" size=\"6\"> <span mc-name=\"unit\"></span></div>\r\n\t\t</div>\r\n\t\t-->\r\n\t</form>\r\n\t<div class=\"commandbox\">\r\n\t    <button mc-name=\"enterLink\">入力</button>\r\n\t    <button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t<hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n\t\t<div>\r\n\t\t\t<input mc-name=\"searchText\"/>\r\n\t\t\t<button mc-name=\"searchLink\">検索</button>\r\n\t\t</div>\r\n\t\t<div>\r\n\t\t\t<select mc-name=\"searchResult\" style=\"width:100%\" size=\"6\"></select>\r\n\t\t</div>\r\n\t</form>\r\n</div>"
 
 /***/ },
-/* 220 */
+/* 218 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{kizaicode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 221 */
+/* 219 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(222);
+	var tmplSrc = __webpack_require__(220);
 	var tmpl = hogan.compile(tmplSrc);
 	var service = __webpack_require__(117);
 	var task = __webpack_require__(116);
@@ -34344,19 +34050,19 @@
 
 
 /***/ },
-/* 222 */
+/* 220 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\"> \r\n      <span mc-name=\"label\"></span>  \r\n      <input mc-name=\"text\" value=\"{{gazou_label}}\"/>  \r\n      <a mc-name=\"suggestLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a> \r\n      <div mc-name=\"selectWrapper\" style=\"display:none\"> \r\n        <select mc-name=\"select\" size=\"2\"> \r\n          <option>胸部単純Ｘ線</option> \r\n          <option>腹部単純Ｘ線</option> \r\n        </select> \r\n      </div> \r\n      <br /> \r\n      <a mc-name=\"enter\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a> |  \r\n      <a mc-name=\"cancel\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>  \r\n</div>\r\n"
 
 /***/ },
-/* 223 */
+/* 221 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<div mc-name=\"disp-area\"></div>\r\n\t<div mc-name=\"work-area\"></div>\r\n</div>\r\n"
 
 /***/ },
-/* 224 */
+/* 222 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -34364,8 +34070,8 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
 	var mUtil = __webpack_require__(7);
-	var ChargeDisp = __webpack_require__(225);
-	var ChargeForm = __webpack_require__(227);
+	var ChargeDisp = __webpack_require__(223);
+	var ChargeForm = __webpack_require__(225);
 	var service = __webpack_require__(117);
 	var task = __webpack_require__(116);
 
@@ -34427,14 +34133,14 @@
 
 
 /***/ },
-/* 225 */
+/* 223 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(226);
+	var tmplSrc = __webpack_require__(224);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 
@@ -34460,20 +34166,20 @@
 
 
 /***/ },
-/* 226 */
+/* 224 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#has_charge}}\r\n\t<div mc-name=\"chargeWrapper\">\r\n\t\t請求額： <span mc-name=\"charge\">{{charge_rep}}</span> 円\r\n\t</div>\r\n{{/has_charge}}\r\n{{^has_charge}}\r\n\t<div mc-name=\"noChargeWrapper\">\r\n\t（未請求）\r\n\t</div>\r\n{{/has_charge}}\r\n"
 
 /***/ },
-/* 227 */
+/* 225 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(228);
+	var tmplSrc = __webpack_require__(226);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 	var task = __webpack_require__(116);
@@ -34539,30 +34245,30 @@
 
 
 /***/ },
-/* 228 */
+/* 226 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\t\r\n\t<div class=\"title\">請求額の変更</div>\r\n\t<div>診療報酬総点： {{total_ten}} 点</div>\r\n\t<div>負担割： {{futan_wari}} 割</div>\r\n\t<div>現在の請求額： {{current_charge}} 円</div>\r\n\t<form onsubmit=\"return false\">\r\n\t<div>変更後の請求額： <input mc-name=\"newCharge\" value=\"{{calc_charge}}\" size=\"4\"> 円</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t\t<button mc-name=\"cancelLink\">キャンセル</button>\r\n\t</div>\r\n\t</form>\r\n</div>\r\n"
 
 /***/ },
-/* 229 */
+/* 227 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var moment = __webpack_require__(8);
-	var ListPane = __webpack_require__(230);
-	var AddPane = __webpack_require__(234);
-	var EndPane = __webpack_require__(238);
-	var EditPane = __webpack_require__(240);
-	var ItemPane = __webpack_require__(242);
+	var ListPane = __webpack_require__(228);
+	var AddPane = __webpack_require__(232);
+	var EndPane = __webpack_require__(236);
+	var EditPane = __webpack_require__(238);
+	var ItemPane = __webpack_require__(240);
 	var mConsts = __webpack_require__(115);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 	var conti = __webpack_require__(4);
 
-	var tmplHtml = __webpack_require__(245);
+	var tmplHtml = __webpack_require__(243);
 
 	var workareaSelector = "> div > [mc-name=workarea]";
 	var listLinkSelector = "> div > [mc-name=command-box] [mc-name=listLink]";
@@ -34716,7 +34422,7 @@
 
 
 /***/ },
-/* 230 */
+/* 228 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -34724,10 +34430,10 @@
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
 
-	var tmplSrc = __webpack_require__(231);
+	var tmplSrc = __webpack_require__(229);
 	var tmpl = hogan.compile(tmplSrc);
 
-	var DiseaseListItem = __webpack_require__(232);
+	var DiseaseListItem = __webpack_require__(230);
 
 	exports.create = function(list){
 		var dom = $(tmpl.render({}));
@@ -34742,13 +34448,13 @@
 
 
 /***/ },
-/* 231 */
+/* 229 */
 /***/ function(module, exports) {
 
 	module.exports = "<table class=\"list\" style=\"font-size:13px;\">\r\n\t<tbody mc-name=\"list\">\r\n\t</tbody>\r\n</table>\r\n"
 
 /***/ },
-/* 232 */
+/* 230 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -34758,7 +34464,7 @@
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
 
-	var tmplSrc = __webpack_require__(233);
+	var tmplSrc = __webpack_require__(231);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(disease){
@@ -34781,28 +34487,28 @@
 
 
 /***/ },
-/* 233 */
+/* 231 */
 /***/ function(module, exports) {
 
 	module.exports = "<tr>\r\n\t<td>\r\n\t\t<a href=\"javascript:void(0)\" class=\"disease-full-name\">\r\n\t\t\t{{label}}\r\n\t\t</a>\r\n\t\t<span style=\"color:#999\">\r\n\t\t\t({{start_date_label}})\r\n\t\t</span>\r\n\t</td>\r\n</tr>\r\n"
 
 /***/ },
-/* 234 */
+/* 232 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(235);
+	var tmplSrc = __webpack_require__(233);
 	var tmpl = hogan.compile(tmplSrc);
-	var resultTmplSrc = __webpack_require__(236);
+	var resultTmplSrc = __webpack_require__(234);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
 	var conti = __webpack_require__(4);
 	var moment = __webpack_require__(8);
-	var DateBinder = __webpack_require__(237);
+	var DateBinder = __webpack_require__(235);
 	var mUtil = __webpack_require__(7);
 
 	var gengouSelector = "> .start-date select[mc-name=gengou]";
@@ -35212,19 +34918,19 @@
 
 
 /***/ },
-/* 235 */
+/* 233 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n    {{#message}}\r\n    <div mc-name=\"message\" class=\"message\"\r\n         style=\"border:1px solid #990;color:#990;margin:4px;padding:4px;\">\r\n         {{message}}\r\n    </div>\r\n    {{/message}}\r\n    <div style=\"font-size:13px\" mc-name=\"disp-area\">\r\n        名前：<span mc-name=\"name\"></span>\r\n    </div>\r\n    <div class=\"start-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"gengou\" style=\"width:auto\">\r\n            <option value=\"平成\">平成</option>\r\n        </select><input \r\n\t\t\ttype=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\">年<input \r\n\t\t\ttype=\"text\" mc-name=\"month\" class=\"disease-month alpha\">月<input \r\n\t\t\ttype=\"text\" mc-name=\"day\" class=\"disease-day alpha\">日\r\n    </div>\r\n    <div class=\"commandbox\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <a mc-name=\"suspectLink\" href=\"javascript:void(0)\" class=\"cmd-link\" style=\"font-size:90%\">の疑い</a> |\r\n\t\t<a mc-name=\"deleteAdjLink\" href=\"javascript:void(0)\" class=\"cmd-link\" style=\"font-size:90%\">修飾語削除</a>\r\n    </div>\r\n    <hr/>\r\n    <form mc-name=\"search-form\" onsubmit=\"return false\">\r\n        <div>\r\n            <input mc-name=\"searchText\" class=\"kanji\" style=\"width:100px;\">\r\n            <button mc-name=\"searchLink\">検索</button>\r\n            <a mc-name=\"exampleLink\" href=\"javascript:void(0)\" class=\"cmd-link\">例</a>\r\n        </div>\r\n        <div mc-name=\"modeWrapper\">\r\n            <input type=\"radio\" name=\"search-kind\" value=\"disease\" checked>病名\r\n            <input type=\"radio\" name=\"search-kind\" value=\"adj\">修飾語\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"11\"></select>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ },
-/* 236 */
+/* 234 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{code}}\" data-mode=\"{{mode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 237 */
+/* 235 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -35476,18 +35182,18 @@
 	}
 
 /***/ },
-/* 238 */
+/* 236 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(239);
+	var tmplSrc = __webpack_require__(237);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 	var kanjidate = __webpack_require__(124);
-	var DateBinder = __webpack_require__(237);
+	var DateBinder = __webpack_require__(235);
 	var moment = __webpack_require__(8);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
@@ -35640,20 +35346,20 @@
 
 
 /***/ },
-/* 239 */
+/* 237 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<table class=\"list\">\r\n\t    <tbody mc-name=\"tbody\">\r\n\t\t\t{{#diseases}}\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t<input type=\"checkbox\" name=\"disease\" value=\"{{disease_id}}\" data-start-date=\"{{start_date}}\" />\r\n\t\t\t\t\t</td>\r\n\t\t\t\t\t<td>\r\n\t\t\t\t\t\t{{name_label}} <span style='color:#999'>({{start_date_label}})</span>\r\n\t\t\t\t\t</td>\r\n\t\t\t\t</tr>\r\n\t\t\t{{/diseases}}\r\n\t    </tbody>\r\n\t</table>\r\n\r\n\t<div class=\"end-date\" style=\"font-size:13px\">\r\n\t\t<select mc-name=\"gengou\" style=\"width:auto\">\r\n\t\t\t<option value=\"平成\">平成</option>\r\n\t\t</select><!--\r\n\t\t--><input type=\"text\" mc-name=\"nen\" class=\"disease-nen alpha\" /><!--\r\n\t\t--><a mc-name=\"nenLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">年</a><!--\r\n\t\t--><input type=\"text\" mc-name=\"month\" class=\"disease-month alpha\"/><!--\r\n\t\t--><a mc-name=\"monthLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月</a><!--\r\n\t\t--><input type=\"text\" mc-name=\"day\" class=\"disease-day alpha\"/><!--\r\n\t\t--><a mc-name=\"dayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">日</a>\r\n\t\t<div>\r\n\t\t\t<a mc-name=\"weekLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">週</a> |\r\n\t\t\t<a mc-name=\"todayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">今日</a> |\r\n\t\t\t<a mc-name=\"monthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">月末</a> |\r\n\t\t\t<a mc-name=\"lastMonthLastDayLabel\" href=\"javascript:void(0)\" class=\"cmd-link\">先月末</a>\r\n\t\t</div>\t\r\n\t</div>\r\n\t<div mc-name=\"end-reason-area\">\r\n\t    <form style=\"margin:0;padding:0\">\r\n\t    転帰：<input type=\"radio\" value=\"C\" name=\"end-reason\" checked/>治癒<!--\r\n\t\t--><input type=\"radio\" value=\"S\" name=\"end-reason\"/>中止<!--\r\n\t\t--><input type=\"radio\" value=\"D\" name=\"end-reason\"/>死亡\r\n\t    </form>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"enterLink\">入力</button>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
-/* 240 */
+/* 238 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(241);
+	var tmplSrc = __webpack_require__(239);
 	var tmpl = hogan.compile(tmplSrc);
 	var mUtil = __webpack_require__(7);
 	var kanjidate = __webpack_require__(124);
@@ -35745,27 +35451,27 @@
 
 
 /***/ },
-/* 241 */
+/* 239 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n\t<div class=\"disease-editor\">\r\n\t\t<table>\r\n\t\t\t<tbody>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">名前：</td><td><span mc-name=\"name\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">開始日：</td><td><span mc-name=\"startDate\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">転帰：</td><td><span mc-name=\"endReason\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t\t<tr>\r\n\t\t\t\t\t<td style=\"text-align:right\">終了日：</td><td><span mc-name=\"endDate\"></span></td>\r\n\t\t\t\t</tr>\r\n\t\t\t</tbody>\r\n\t\t</table>\r\n\t</div>\r\n\t<div class=\"commandbox\">\r\n\t\t<button mc-name=\"editLink\">編集</button>\r\n\t</div>\r\n\r\n\t<div class=\"disease-list\">\r\n\t\t<select mc-name=\"select\" size=\"10\">\r\n\t\t\t{{#diseases}}\r\n\t\t\t\t<option value=\"{{disease_id}}\">\r\n\t\t\t\t\t[{{end_reason_label}}] {{name_label}} ({{start_date_label}})\r\n\t\t\t\t</option>\r\n\t\t\t{{/diseases}}\r\n\t\t</select>\r\n\t</div>\r\n</div>"
 
 /***/ },
-/* 242 */
+/* 240 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(243);
-	var resultTmplSrc = __webpack_require__(244);
+	var tmplSrc = __webpack_require__(241);
+	var resultTmplSrc = __webpack_require__(242);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var mUtil = __webpack_require__(7);
 	var kanjidate = __webpack_require__(124);
 	var task = __webpack_require__(116);
 	var service = __webpack_require__(117);
-	var DateBinder = __webpack_require__(237);
+	var DateBinder = __webpack_require__(235);
 	var moment = __webpack_require__(8);
 
 	var nameSelector = "> [mc-name=name-area] [mc-name=name]";
@@ -36078,25 +35784,25 @@
 
 
 /***/ },
-/* 243 */
+/* 241 */
 /***/ function(module, exports) {
 
 	module.exports = "<div>\r\n    <div mc-name=\"name-area\" style=\"font-size:13px\">\r\n        名前：<span mc-name=\"name\"></span>\r\n    </div>\r\n    <div class=\"start-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"startDateGengou\" style=\"width:auto\">\r\n            <option value=\"平成\">平成</option>\r\n        </select><!--\r\n\t\t--><input mc-name=\"startDateNen\" class=\"disease-nen alpha\"/>年<!--\r\n\t\t--><input mc-name=\"startDateMonth\" class=\"disease-month alpha\"/>月<!--\r\n\t\t--><input mc-name=\"startDateDay\" class=\"disease-day alpha\"/>日\r\n    </div>\r\n    <div>から</div>\r\n    <div class=\"end-date\" style=\"font-size:13px\">\r\n        <select mc-name=\"endDateGengou\" style=\"width:auto\">\r\n            <option value=\"昭和\">昭和</option>\r\n            <option value=\"平成\">平成</option>\r\n        </select><!--\r\n\t\t--><input mc-name=\"endDateNen\" class=\"disease-nen alpha\">年<!--\r\n\t\t--><input mc-name=\"endDateMonth\" class=\"disease-month alpha\">月<!--\r\n\t\t--><input mc-name=\"endDateDay\" class=\"disease-day alpha\">日\r\n    </div>\r\n    <div mc-name=\"end-reason-area\">\r\n        <select mc-name=\"endReason\" style=\"width:auto\">\r\n            <option value=\"N\">継続</option>\r\n            <option value=\"C\">治癒</option>\r\n            <option value=\"S\">中止</option>\r\n            <option value=\"D\">死亡</option>\r\n        </select>\r\n    </div>\r\n    <hr/>\r\n    <div class=\"command-box\">\r\n        <button mc-name=\"enterLink\">入力</button>\r\n        <a mc-name=\"deleteAdjLink\" href=\"javascript:void(0)\" class=\"cmd-link\">修飾語削除</a> |\r\n        <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\">削除</a>\r\n    </div>\r\n    <hr/>\r\n    <form onsubmit=\"return false\" mc-name=\"search-form\">\r\n        <div>\r\n            <input mc-name=\"searchText\" class=\"kanji\" style=\"width:110px;\">\r\n            <button mc-name=\"searchLink\">検索</button>\r\n        </div>\r\n        <div>\r\n            <input type=\"radio\" name=\"search-kind\" value=\"disease\" checked>病名\r\n            <input type=\"radio\" name=\"search-kind\" value=\"adj\">修飾語\r\n        </div>\r\n        <div>\r\n            <select mc-name=\"searchResult\" size=\"10\"></select>\r\n        </div>\r\n    </form>\r\n</div>\r\n"
 
 /***/ },
-/* 244 */
+/* 242 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{code}}\" data-mode=\"{{mode}}\">{{name}}</option>\r\n{{/list}}"
 
 /***/ },
-/* 245 */
+/* 243 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"workarea\">\r\n\t<div class=\"title\">病名</div>\r\n\t<div mc-name=\"workarea\"></div>\r\n\t<hr />\r\n\t<div mc-name=\"command-box\">\r\n\t\t<a mc-name=\"listLink\" href=\"javascript:void(0)\" class=\"cmd-link\">現行</a> |\r\n\t\t<a mc-name=\"addLink\" href=\"javascript:void(0)\" class=\"cmd-link\">追加</a> |\r\n\t\t<a mc-name=\"endLink\" href=\"javascript:void(0)\" class=\"cmd-link\">転帰</a> |\r\n\t\t<a mc-name=\"editLink\"href=\"javascript:void(0)\" class=\"cmd-link\">編集</a>\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
-/* 246 */
+/* 244 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -36105,9 +35811,9 @@
 	var hogan = __webpack_require__(121);
 	var service = __webpack_require__(117);
 	var task = __webpack_require__(116);
-	var SelectPatientItem = __webpack_require__(247);
+	var SelectPatientItem = __webpack_require__(245);
 
-	var tmplHtml = __webpack_require__(249);
+	var tmplHtml = __webpack_require__(247);
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -36175,7 +35881,7 @@
 
 
 /***/ },
-/* 247 */
+/* 245 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -36184,7 +35890,7 @@
 	var hogan = __webpack_require__(121);
 	var mUtil = __webpack_require__(7);
 
-	var tmplSrc = __webpack_require__(248);
+	var tmplSrc = __webpack_require__(246);
 	var tmpl = hogan.compile(tmplSrc);
 
 	exports.create = function(data){
@@ -36198,19 +35904,19 @@
 
 
 /***/ },
-/* 248 */
+/* 246 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}},{{visit_id}}\">[{{state_label}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 249 */
+/* 247 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者選択</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n    <select mc-name=\"select\" style=\"width:100%\" size=10></select>\r\n</div>\r\n"
 
 /***/ },
-/* 250 */
+/* 248 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -36221,9 +35927,9 @@
 	var task = __webpack_require__(116);
 	var mUtil = __webpack_require__(7);
 
-	var tmplHtml = __webpack_require__(251);
+	var tmplHtml = __webpack_require__(249);
 
-	var itemTmplSrc = __webpack_require__(252);
+	var itemTmplSrc = __webpack_require__(250);
 	var itemTmpl = hogan.compile(itemTmplSrc);
 
 	exports.setup = function(dom){
@@ -36315,19 +36021,19 @@
 
 
 /***/ },
-/* 251 */
+/* 249 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">患者検索</button>\r\n<div mc-name=\"workspace\" style=\"display:none\">\r\n    <form mc-name=\"searchForm\" onsubmit=\"return false;\">\r\n        <input mc-name=\"text\" class=\"alpha search-patient-input\">\r\n        <button mc-name=\"searchButton\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"select\" size=\"16\" style=\"width:100%\"></select>\r\n    </div>\r\n</div>\r\n"
 
 /***/ },
-/* 252 */
+/* 250 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 253 */
+/* 251 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -36339,8 +36045,8 @@
 	__webpack_require__(2);
 	var task = __webpack_require__(116)
 
-	var tmplHtml = __webpack_require__(254);
-	var optionTmpl = hogan.compile(__webpack_require__(255));
+	var tmplHtml = __webpack_require__(252);
+	var optionTmpl = hogan.compile(__webpack_require__(253));
 
 	exports.setup = function(dom){
 		dom.html(tmplHtml);
@@ -36393,19 +36099,19 @@
 
 
 /***/ },
-/* 254 */
+/* 252 */
 /***/ function(module, exports) {
 
 	module.exports = "<button>最近の受診</button>\r\n<div>\r\n  <select size=\"20\" style=\"display:none\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 255 */
+/* 253 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value=\"{{patient_id}}\">[{{patient_id_part}}] {{last_name}} {{first_name}}</option>\r\n"
 
 /***/ },
-/* 256 */
+/* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -36416,8 +36122,8 @@
 	var task = __webpack_require__(116);
 	var mUtil = __webpack_require__(7);
 
-	var tmplHtml = __webpack_require__(257);
-	var resultTmplSrc = __webpack_require__(258);
+	var tmplHtml = __webpack_require__(255);
+	var resultTmplSrc = __webpack_require__(256);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 
 	exports.setup = function(dom){
@@ -36493,19 +36199,19 @@
 
 
 /***/ },
-/* 257 */
+/* 255 */
 /***/ function(module, exports) {
 
 	module.exports = "<button mc-name=\"button\">本日の受診</button>\r\n<div mc-name=\"selectWrapper\" style=\"display:none\">\r\n\t<select mc-name=\"select\" size=\"20\"></select>\r\n</div>\r\n"
 
 /***/ },
-/* 258 */
+/* 256 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<option value=\"{{patient_id}}\">[{{patient_id_label}}] {{last_name}} {{first_name}}</option>\r\n{{/list}}\r\n"
 
 /***/ },
-/* 259 */
+/* 257 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -36517,9 +36223,9 @@
 	var hogan = __webpack_require__(121);
 	var kanjidate = __webpack_require__(124);
 
-	var mainTmpl = hogan.compile(__webpack_require__(260));
-	var optionTmpl = hogan.compile(__webpack_require__(261));
-	var dispTmpl = hogan.compile(__webpack_require__(262));
+	var mainTmpl = hogan.compile(__webpack_require__(258));
+	var optionTmpl = hogan.compile(__webpack_require__(259));
+	var dispTmpl = hogan.compile(__webpack_require__(260));
 
 	function getSearchTextDom(dom){
 		return dom.find("input[mc-name=searchText]");
@@ -36634,33 +36340,33 @@
 
 
 /***/ },
-/* 260 */
+/* 258 */
 /***/ function(module, exports) {
 
 	module.exports = "<div mc-name=\"disp\" style=\"font-size: 13px\">\r\n    {{#patient}}\r\n        {{> disp}}\r\n    {{/patient}}\r\n</div>\r\n\r\n<div class=\"dialog-commandbox\">\r\n    <button mc-name=\"enterLink\">診察受付</button>\r\n</div>\r\n\r\n<div mc-name=\"searchWrapper\">\r\n    <form mc-name=\"searchForm\" style=\"margin: 4px 0\">\r\n        <input mc-name=\"searchText\"/>\r\n        <button mc-name=\"searchLink\">検索</button>\r\n    </form>\r\n    <div>\r\n        <select mc-name=\"searchResult\" size=\"8\"></select>\r\n    </div>    \r\n</div>"
 
 /***/ },
-/* 261 */
+/* 259 */
 /***/ function(module, exports) {
 
 	module.exports = "<option value='{{patient_id}}'>[{{patient_id_part}}] {{last_name}} {{first_name}}</option>"
 
 /***/ },
-/* 262 */
+/* 260 */
 /***/ function(module, exports) {
 
 	module.exports = "<table width=\"100%\">\r\n    <tr>\r\n        <td style=\"width:65px\">患者番号：</td>\r\n        <td mc-name=\"patientId\">{{patient_id}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">名前：</td>\r\n        <td mc-name=\"name\">{{last_name}} {{first_name}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">よみ：</td>\r\n        <td mc-name=\"yomi\">{{last_name_yomi}} {{first_name_yomi}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">生年月日：</td>\r\n        <td mc-name=\"birthday\">{{birthday_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">性別：</td>\r\n        <td mc-name=\"sex\">{{sex_label}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">住所：</td>\r\n        <td mc-name=\"address\">{{address}}</td>\r\n    </tr>\r\n    <tr>\r\n        <td style=\"width:65px\">電話：</td>\r\n        <td mc-name=\"phone\">{{phone}}</td>\r\n    </tr>\r\n</table>"
 
 /***/ },
-/* 263 */
+/* 261 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var $ = __webpack_require__(1);
 	var hogan = __webpack_require__(121);
-	var tmplSrc = __webpack_require__(264);
-	var resultTmplSrc = __webpack_require__(265);
+	var tmplSrc = __webpack_require__(262);
+	var resultTmplSrc = __webpack_require__(263);
 	var resultTmpl = hogan.compile(resultTmplSrc);
 	var modal = __webpack_require__(132);
 	var task = __webpack_require__(116);
@@ -36734,13 +36440,13 @@
 
 
 /***/ },
-/* 264 */
+/* 262 */
 /***/ function(module, exports) {
 
 	module.exports = "<div style=\"width:300px\">\r\n\t<form mc-name=\"search-form\" onsubmit=\"return false\">\r\n\t\t<input mc-name=\"searchText\" />\r\n\t\t<button mc-name=\"searchButton\">検索</button>\r\n\t</form>\r\n\t<div mc-name=\"resultBox\" style=\"height: 360px;font-size:12px;margin-top:6px;border:1px solid #ccc\"></div>\r\n</div>"
 
 /***/ },
-/* 265 */
+/* 263 */
 /***/ function(module, exports) {
 
 	module.exports = "{{#list}}\r\n\t<div style=\"margin:2px 0;padding: 3px;border: 1px solid #ccc\">\r\n\t\t<div name=\"title\"\r\n\t\t\tstyle=\"font-weight: bold; margin-bottom: 4px; color: green\">\r\n\t\t\t({{patient_id}}) [{{last_name}} {{first_name}}]\r\n\t\t\t{{ date_label }}\r\n\t\t</div>\r\n\t\t<div name=\"content\">\r\n\t\t\t{{& content}}\r\n\t\t</div>\r\n\t</div>;\r\n{{/list}}\r\n"

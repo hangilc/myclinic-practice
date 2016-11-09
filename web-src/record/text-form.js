@@ -8,11 +8,6 @@ var task = require("../task");
 var service = require("myclinic-service-api");
 var mUtil = require("../../myclinic-util");
 var conti = require("conti");
-var rcptUtil = require("../../rcpt-util");
-var moment = require("moment");
-var modal = require("../../myclinic-modal");
-var shohousenTmplSrc = require("raw!./shohousen-dialog.html");
-var shohousenTmpl = hogan.compile(shohousenTmplSrc);
 
 exports.create = function(text){
 	var isEditing = text.text_id > 0;
@@ -132,135 +127,12 @@ function bindDelete(dom, textId){
 	});
 }
 
-function fetchData(visitId, cb){
-	var data = {};
-	conti.exec([
-		function(done){
-			service.getVisitWithFullHoken(visitId, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				data.visit = result;
-				done();
-			})
-		},
-		function(done){
-			service.getPatient(data.visit.patient_id, function(err, result){
-				if( err ){
-					done(err);
-					return;
-				}
-				data.patient = result;
-				done();
-			})
-		}
-	], function(err){
-		if( err ){
-			cb(err);
-			return;
-		}
-		data.futanWari = rcptUtil.calcFutanWari(data.visit, data.patient);
-		cb(undefined, data);
-	})
-}
-
-function extendShohousenData(data, dbData){
-	var patient = dbData.patient;
-	if( patient ){
-		var lastName = patient.last_name || "";
-		var firstName = patient.first_name || "";
-		if( lastName || firstName ){
-			data.shimei = lastName + firstName;
-		}
-		if( patient.birth_day && patient.birth_day !== "0000-00-00" ){
-			var birthday = moment(patient.birth_day);
-			if( birthday.isValid() ){
-				data.birthday = [birthday.year(), birthday.month()+1, birthday.date()];
-			}
-		}
-		if( patient.sex === "M" || patient.sex === "F" ){
-			data.sex = patient.sex;
-		}
-	}
-	var visit = dbData.visit;
-	if( visit ){
-		var shahokokuho = visit.shahokokuho;
-		if( shahokokuho ){
-			data["hokensha-bangou"] = "" + shahokokuho.hokensha_bangou;
-			data.hihokensha = [shahokokuho.hihokensha_kigou || "", shahokokuho.hihokensha_bangou || ""].join(" ・ ");
-			if( 0 === +shahokokuho.honnin ){
-				data["kubun-hifuyousha"] = true;
-			} else if( 1 === +shahokokuho.honnin ){
-				data["kubun-hihokensha"] = true;
-			}
-		}
-		var koukikourei = visit.koukikourei;
-		if( koukikourei ){
-			data["hokensha-bangou"] = "" + koukikourei.hokensha_bangou;
-			data["hihokensha"] = "" + koukikourei.hihokensha_bangou;
-		}
-		var kouhi_list = visit.kouhi_list || [];
-		if( kouhi_list.length > 0 ){
-			data["kouhi-1-futansha"] = kouhi_list[0].futansha;
-			data["kouhi-1-jukyuusha"] = kouhi_list[0].jukyuusha;
-		}
-		if( kouhi_list.length > 1 ){
-			data["kouhi-2-futansha"] = kouhi_list[1].futansha;
-			data["kouhi-2-jukyuusha"] = kouhi_list[1].jukyuusha;
-		}
-		// var at = moment(visit.v_datetime);
-		var at = moment();
-		data["koufu-date"] = [at.year(), at.month()+1, at.date()];
-	}
-}
-
-function shohousenDialog(dom, data){
-	modal.startModal({
-		title: "処方箋発行",
-		position: "fixed",
-		init: function(content, close){
-			var c = $(content);
-			var jsonData = JSON.stringify(data);
-			var html = shohousenTmpl.render({});
-			c.html(html);
-			c.find("input[name=json-data]").val(jsonData);
-			c.find("button[mc-name=enter]").click(function(event){
-				setImmediate(function(){
-					close();
-					dom.trigger("cancel-edit");
-				})
-			})
-			c.find("button[mc-name=cancel]").click(function(event){
-				event.preventDefault();
-				event.stopPropagation();
-				close();
-				dom.trigger("cancel-edit");
-			})
-		}
-	})
-
-}
-
 function bindShohousen(dom, visitId, content){
 	dom.find("[mc-name=prescribeLink]").click(function(event){
 		setImmediate(function(){
 			close();
 			dom.trigger("cancel-edit");
 		});
-//		event.preventDefault();
-//		fetchData(visitId, function(err, result){
-//			if( err ){
-//				alert(err);
-//				return;
-//			}
-//			var data = {
-//				"drugs": content,
-//				"futan-wari": result.futanWari
-//			}
-//			extendShohousenData(data, result);
-//			shohousenDialog(dom, data);
-//		})
 	})
 }
 
