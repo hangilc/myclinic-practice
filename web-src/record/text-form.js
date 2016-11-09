@@ -26,7 +26,7 @@ exports.create = function(text){
 	bindCancel(dom);
 	bindDelete(dom, text.text_id);
 	if( isEditing ){
-		// bindShohousen(dom, text.visit_id, text.content);
+		bindShohousen(dom, text.visit_id, text.content);
 		bindCopy(dom, text);
 	}
 	return dom;
@@ -244,19 +244,23 @@ function shohousenDialog(dom, data){
 
 function bindShohousen(dom, visitId, content){
 	dom.find("[mc-name=prescribeLink]").click(function(event){
-		event.preventDefault();
-		fetchData(visitId, function(err, result){
-			if( err ){
-				alert(err);
-				return;
-			}
-			var data = {
-				"drugs": content,
-				"futan-wari": result.futanWari
-			}
-			extendShohousenData(data, result);
-			shohousenDialog(dom, data);
-		})
+		setImmediate(function(){
+			close();
+			dom.trigger("cancel-edit");
+		});
+//		event.preventDefault();
+//		fetchData(visitId, function(err, result){
+//			if( err ){
+//				alert(err);
+//				return;
+//			}
+//			var data = {
+//				"drugs": content,
+//				"futan-wari": result.futanWari
+//			}
+//			extendShohousenData(data, result);
+//			shohousenDialog(dom, data);
+//		})
 	})
 }
 

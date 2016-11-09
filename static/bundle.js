@@ -29223,7 +29223,7 @@
 		bindCancel(dom);
 		bindDelete(dom, text.text_id);
 		if( isEditing ){
-			// bindShohousen(dom, text.visit_id, text.content);
+			bindShohousen(dom, text.visit_id, text.content);
 			bindCopy(dom, text);
 		}
 		return dom;
@@ -29441,19 +29441,23 @@
 
 	function bindShohousen(dom, visitId, content){
 		dom.find("[mc-name=prescribeLink]").click(function(event){
-			event.preventDefault();
-			fetchData(visitId, function(err, result){
-				if( err ){
-					alert(err);
-					return;
-				}
-				var data = {
-					"drugs": content,
-					"futan-wari": result.futanWari
-				}
-				extendShohousenData(data, result);
-				shohousenDialog(dom, data);
-			})
+			setImmediate(function(){
+				close();
+				dom.trigger("cancel-edit");
+			});
+	//		event.preventDefault();
+	//		fetchData(visitId, function(err, result){
+	//			if( err ){
+	//				alert(err);
+	//				return;
+	//			}
+	//			var data = {
+	//				"drugs": content,
+	//				"futan-wari": result.futanWari
+	//			}
+	//			extendShohousenData(data, result);
+	//			shohousenDialog(dom, data);
+	//		})
 		})
 	}
 
@@ -29501,7 +29505,7 @@
 /* 147 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t\t<a mc-name=\"prescribeLink\" target=\"shohousen\" href=\"shohousen-from-text/{{textId}}\" class=\"cmd-link\">処方箋発行</a>\r\n\t\t<a mc-name=\"copy\" href=\"javascript:void(0)\" class=\"cmd-link\">コピー</a>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
+	module.exports = "<div class=\"enter-text\">\r\n\t<textarea mc-name=\"content\" name=\"content\">{{content}}</textarea>\r\n\r\n\t<div>\r\n\t    <a mc-name=\"enterLink\" href=\"javascript:void(0)\" class=\"cmd-link\">入力</a>\r\n\t    <a mc-name=\"cancelLink\" href=\"javascript:void(0)\" class=\"cmd-link\">キャンセル</a>\r\n\t    {{#isEditing}}\r\n\t    <a mc-name=\"deleteLink\" href=\"javascript:void(0)\" class=\"cmd-link\" >削除</a>\r\n\t\t<a mc-name=\"prescribeLink\" target=\"shohousen\" \r\n\t\t\thref=\"shohousen-redirect.html?text_id={{textId}}\" class=\"cmd-link\">処方箋発行</a>\r\n\t\t<a mc-name=\"copy\" href=\"javascript:void(0)\" class=\"cmd-link\">コピー</a>\r\n\t    {{/isEditing}}\r\n\t</div>\r\n</div>\r\n"
 
 /***/ },
 /* 148 */
