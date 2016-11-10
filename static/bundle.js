@@ -27968,7 +27968,7 @@
 /* 126 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(setImmediate) {"use strict";
+	"use strict";
 
 	var $ = __webpack_require__(1);
 	var Account = __webpack_require__(127);
@@ -27978,8 +27978,9 @@
 	var service = __webpack_require__(117);
 	var kanjidate = __webpack_require__(124);
 	var mUtil = __webpack_require__(7);
-	var tmplHtml = __webpack_require__(133);
 	var hogan = __webpack_require__(121);
+	var tmplHtml = __webpack_require__(133);
+	var tmpl = hogan.compile(tmplHtml);
 	var referTmplSrc = __webpack_require__(134);
 	var referTmpl = hogan.compile(referTmplSrc);
 
@@ -27992,7 +27993,7 @@
 		dom.listen("rx-start-page", function(appData){
 			patientId = appData.currentPatientId;
 			if( appData.currentPatientId > 0 ){
-				dom.html(tmplHtml);
+				dom.html(tmpl.render({ patientId: patientId }));
 			} else {
 				dom.html("");
 			}
@@ -28005,6 +28006,7 @@
 			event.preventDefault();
 			doSearchText(patientId);
 		});
+		/**
 		dom.on("click", referLinkSelector, function(event){
 			event.preventDefault();
 			var patient;
@@ -28061,6 +28063,7 @@
 				return;
 			})
 		})
+		**/
 		dom.on("click", "[mc-name=endPatientButton]", function(event){
 			event.preventDefault();
 			dom.trigger("end-patient");
@@ -28144,7 +28147,6 @@
 	// 	$("body").trigger("exam-ended");
 	// });
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).setImmediate))
 
 /***/ },
 /* 127 */
@@ -28604,7 +28606,7 @@
 /* 133 */
 /***/ function(module, exports) {
 
-	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\" class=\"cmd-link\">文章検索</a> |\r\n\t<a mc-name=\"createReferLink\" href=\"javascript:void(0)\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
+	module.exports = "<div id=\"current-menu\">\r\n    <button mc-name=\"accountButton\">会計</button>\r\n    <button mc-name=\"endPatientButton\">患者終了</button>\r\n    <a mc-name=\"searchTextLink\" href=\"javascript:void(0)\" class=\"cmd-link\">文章検索</a> |\r\n\t<a mc-name=\"createReferLink\" href=\"refer-redirect.html?patient_id={{patientId}}\" \r\n\t\ttarget=\"refer\" class=\"cmd-link\">紹介状作成</a>\r\n</div>\r\n<div mc-name=\"accountArea\"></div>\r\n"
 
 /***/ },
 /* 134 */

@@ -7,6 +7,7 @@
   "scripts": {
     "build": "webpack web-src/main.js static/bundle.js",
     "build-shohousen": "webpack web-src/shohousen-redirect.js static/shohousen-redirect-bundle.js",
+    "build-refer": "webpack web-src/refer-redirect.js static/refer-redirect-bundle.js",
     "test-server": "node test-server",
     "make-random": "node make-random"
   },

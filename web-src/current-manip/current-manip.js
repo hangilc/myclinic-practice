@@ -8,8 +8,9 @@ var task = require("../task");
 var service = require("myclinic-service-api");
 var kanjidate = require("kanjidate");
 var mUtil = require("../../myclinic-util");
-var tmplHtml = require("raw!./current-manip.html");
 var hogan = require("hogan.js");
+var tmplHtml = require("raw!./current-manip.html");
+var tmpl = hogan.compile(tmplHtml);
 var referTmplSrc = require("raw!./submit-refer.html");
 var referTmpl = hogan.compile(referTmplSrc);
 
@@ -22,7 +23,7 @@ exports.setup = function(dom, referUrl){
 	dom.listen("rx-start-page", function(appData){
 		patientId = appData.currentPatientId;
 		if( appData.currentPatientId > 0 ){
-			dom.html(tmplHtml);
+			dom.html(tmpl.render({ patientId: patientId }));
 		} else {
 			dom.html("");
 		}
@@ -35,6 +36,7 @@ exports.setup = function(dom, referUrl){
 		event.preventDefault();
 		doSearchText(patientId);
 	});
+	/**
 	dom.on("click", referLinkSelector, function(event){
 		event.preventDefault();
 		var patient;
@@ -91,6 +93,7 @@ exports.setup = function(dom, referUrl){
 			return;
 		})
 	})
+	**/
 	dom.on("click", "[mc-name=endPatientButton]", function(event){
 		event.preventDefault();
 		dom.trigger("end-patient");
