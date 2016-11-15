@@ -32190,6 +32190,9 @@
 			if( visitId === targetVisitId ){
 				var currentList = lookupShinryou(dom, visitId).slice();
 				shinryouList = shinryouList.slice();
+				shinryouList.sort(function(a,b){
+					return a.shinryoucode - b.shinryoucode;
+				});
 				while( currentList.length > 0 && shinryouList.length > 0 ){
 					var curr = currentList[0];
 					var shin = shinryouList[0];
