@@ -4,6 +4,7 @@
 * add check before change charge
 * implement manage presc example
 * isn't it better to remove 'today' restriction from end_exam? (myclinic-db)
+* calcFutanWari を service に移行して、rcpt.js と rcpt-util.js を削除する。
 
 -- DONE --
 * 患者検索で結果が１件だった場合は、その患者の表示を開始する。 ; done 2016/8/19
