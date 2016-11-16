@@ -2,7 +2,6 @@
 
 var service = require("myclinic-service-api");
 var conti = require("conti");
-var rcptUtil = require("../rcpt-util");
 var moment = require("moment");
 var kanjidate = require("kanjidate");
 var mUtil = require("../myclinic-util.js");
