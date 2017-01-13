@@ -119,8 +119,8 @@ function extendShohousenData(data, dbData){
 			data["kouhi-2-futansha"] = kouhi_list[1].futansha;
 			data["kouhi-2-jukyuusha"] = kouhi_list[1].jukyuusha;
 		}
-		// var at = moment(visit.v_datetime);
-		var at = moment();
+		var at = moment(visit.v_datetime);
+		//var at = moment();
 		data["koufu-date"] = [at.year(), at.month()+1, at.date()];
 	}
 }
