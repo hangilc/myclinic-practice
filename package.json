@@ -1,6 +1,6 @@
 {
   "name": "myclinic-practice",
-  "version": "1.1.22",
+  "version": "1.1.23",
   "description": "A web service component for myclinic (an electronic medical record system for private clinics)",
   "repository": "git@github.com:hangilc/myclinic-practice.git",
   "main": "index.js",
