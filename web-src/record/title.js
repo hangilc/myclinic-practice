@@ -12,7 +12,7 @@ var tmpl = hogan.compile(tmplSrc);
 exports.setup = function(dom, visit, currentVisitId, tempVisitId){
 	var label = kanjidate.format("{G}{N:2}年{M:2}月{D:2}日（{W}） {h:2}時{m:2}分", visit.v_datetime);
 	dom.data("visit-id", visit.visit_id);
-	render(dom, label, currentVisitId, tempVisitId);
+	render(dom, label, currentVisitId, tempVisitId, visit.visit_id);
 	bindClick(dom);
 	bindDelete(dom);
 	bindSetTemp(dom);
@@ -33,9 +33,10 @@ function renderClass(dom, currentVisitId, tempVisitId){
 	}
 }
 
-function render(dom, label, currentVisitId, tempVisitId){
+function render(dom, label, currentVisitId, tempVisitId, visitId){
 	var html = tmpl.render({
-		label: label
+		label: label,
+		visitId: visitId
 	});
 	dom.html(html);
 	renderClass(dom, currentVisitId, tempVisitId);

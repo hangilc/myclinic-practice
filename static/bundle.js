@@ -28970,7 +28970,7 @@
 	exports.setup = function(dom, visit, currentVisitId, tempVisitId){
 		var label = kanjidate.format("{G}{N:2}年{M:2}月{D:2}日（{W}） {h:2}時{m:2}分", visit.v_datetime);
 		dom.data("visit-id", visit.visit_id);
-		render(dom, label, currentVisitId, tempVisitId);
+		render(dom, label, currentVisitId, tempVisitId, visit.visit_id);
 		bindClick(dom);
 		bindDelete(dom);
 		bindSetTemp(dom);
@@ -28991,9 +28991,10 @@
 		}
 	}
 
-	function render(dom, label, currentVisitId, tempVisitId){
+	function render(dom, label, currentVisitId, tempVisitId, visitId){
 		var html = tmpl.render({
-			label: label
+			label: label,
+			visitId: visitId
 		});
 		dom.html(html);
 		renderClass(dom, currentVisitId, tempVisitId);
@@ -29067,7 +29068,7 @@
 /* 141 */
 /***/ function(module, exports) {
 
-	module.exports = "<div mc-name=\"titleBox\" class=\"visit-date\">\r\n    <a href=\"javascript:void(0)\" class=\"record-title\">\r\n    \t<span mc-name=\"label\">{{label}}</span>\r\n    </a>\r\n</div>\r\n<div mc-name=\"workarea\" class=\"record-title-workarea\" style=\"display:none\">\r\n    <a mc-name=\"deleteVisitLink\" class=\"cmd-link\" href=\"javascript:void(0)\">この診察を削除</a> |\r\n    <a mc-name=\"setCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察設定</a> |\r\n    <a mc-name=\"unsetCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察解除</a>\r\n</div>\r\n"
+	module.exports = "<div mc-name=\"titleBox\" class=\"visit-date\">\r\n    <a href=\"javascript:void(0)\" class=\"record-title\">\r\n    \t<span mc-name=\"label\">{{label}}</span>\r\n    </a>\r\n</div>\r\n<div mc-name=\"workarea\" class=\"record-title-workarea\" style=\"display:none\">\r\n    <a mc-name=\"deleteVisitLink\" class=\"cmd-link\" href=\"javascript:void(0)\">この診察を削除</a> |\r\n    <a mc-name=\"setCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察設定</a> |\r\n    <a mc-name=\"unsetCurrentTmpVisitId\" class=\"cmd-link\" href=\"javascript:void(0)\">暫定診察解除</a> |\r\n    <a class=\"cmd-link\" target=\"meisai\" href=\"/meisai?visit_id={{visitId}}\">診療明細</a>\r\n</div>\r\n"
 
 /***/ },
 /* 142 */
